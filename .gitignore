@@ -1,0 +1,38 @@
+# --- Secretos y entorno local ---
+.env
+.venv/
+venv/
+env/
+.kaggle/
+
+# --- Datos de la competencia (NO versionar: privacidad/reglas de Kaggle) ---
+# Todo esto se re-descarga con: python scripts/download_data.py
+environment_files/
+arc_agi_3_wheels/
+ARC-AGI-3-Agents/
+data/
+
+# --- Salidas de ejecución ---
+recordings/
+replays/
+logs.log
+features_out/
+submission*.tar.gz
+submission*.json
+*.zip
+
+# --- Python ---
+__pycache__/
+*.pyc
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Modelos / artefactos pesados ---
+models/
+*.safetensors
+*.bin
+*.pt
+
+# --- Editor ---
+.vscode/
+.idea/

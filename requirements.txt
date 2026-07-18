@@ -1,0 +1,6 @@
+# Local dev. arcengine y arc_agi se instalan desde arc_agi_3_wheels/ (datos de la
+# competencia, no versionados): pip install arc_agi_3_wheels/*.whl
+numpy
+pandas
+pyarrow
+kaggle

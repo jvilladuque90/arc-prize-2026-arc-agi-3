@@ -33,6 +33,9 @@ DOCKER_IMAGE = ("gcr.io/kaggle-private-byod/python@sha256:"
 KERNELS = {
     "features": {"notebook": "notebooks/features.ipynb", "slug": "arc-agi3-features",
                  "title": "arc agi3 features"},
+    # Submission dual-mode (gateway en rerun / offline en Save & Run). CPU: no gasta cuota G4.
+    "submit": {"notebook": "notebooks/submit.ipynb", "slug": "arc-agi3-submit",
+               "title": "arc agi3 submit"},
 }
 
 

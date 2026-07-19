@@ -60,8 +60,25 @@ Salidas (`scripts/extract_features.py`, local, o el kernel `arc-agi3-features` e
 - `action_summary.csv` — perfil por (juego, acción): p_change, píxeles cambiados, p_level_up.
 - `games_summary.csv` — una fila por juego (tags, niveles, respuesta a acciones).
 
-Estas features alimentan la siguiente fase: clasificar el tipo de juego (keyboard vs
-click), mapear regiones interactivas y construir el world model del agente.
+Estas features alimentan al agente: clasificación de juego (keyboard vs click),
+regiones interactivas y firma estructural de objetos.
+
+## Agente: GraphExplorer (`src/arc3/agent.py`)
+
+Exploración de grafo de estados (síntesis de lo mejor del LB público, ver
+[docs/STRATEGY.md](docs/STRATEGY.md)): hashing de frames con máscara de borde 3px +
+máscara de contador aprendida; candidatos de click por componentes conexas ordenadas por
+*button-likeness* + rejilla de cobertura; supresión *deadsig* de clases de click inertes;
+BFS sobre el grafo aprendido hacia nodos con acciones pendientes y replay determinista.
+
+Evaluación local (`python scripts/eval_agent.py`): **20 niveles / 25 juegos**
+(0.80/juego) con 5000 acciones y ≤90 s por juego, CPU pura.
+
+La submission (`scripts/build_submit_notebook.py` → `notebooks/submit.ipynb`,
+kernel `arc-agi3-submit`) es dual-mode: en el rerun real espera el gateway
+(`http://gateway:8001`) y juega los juegos ocultos vía `arc_agi` en modo competition;
+en Save & Run juega los 25 públicos offline como validación. El `submission.parquet`
+es un dummy — el score lo calculan las partidas contra el gateway.
 
 ## Setup local
 

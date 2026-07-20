@@ -60,8 +60,8 @@ class GraphExplorer:
         self._counter_seen = 0
         self._counter_mask: Optional[np.ndarray] = None
 
-        # P(cambio) por acción simple: [cambios, usos]
-        self._act_stats: dict[int, list[int]] = {a: [0, 0] for a in SIMPLE_IDS}
+        # stats por acción simple: [cambios, usos, nodos_nuevos]
+        self._act_stats: dict[int, list[int]] = {a: [0, 0, 0] for a in SIMPLE_IDS}
         # deadsig por clase estructural de click (color, size, is_rect)
         self._dead_sigs: dict[tuple[int, int, bool], int] = {}
         self._eff_sigs: set[tuple[int, int, bool]] = set()
@@ -141,11 +141,11 @@ class GraphExplorer:
     def _simple_order(self, available: list[int]) -> list[int]:
         acts = [a for a in SIMPLE_IDS if not available or a in available]
 
-        def p_change(a: int) -> float:
-            chg, uses = self._act_stats[a]
+        def score(a: int) -> float:
+            chg, uses, _new = self._act_stats[a]
             return 0.5 if uses == 0 else chg / uses
 
-        return sorted(acts, key=lambda a: -p_change(a))
+        return sorted(acts, key=lambda a: -score(a))
 
     def _fill_pending(self, node: _Node, grid: np.ndarray, available: list[int]) -> None:
         for a in self._simple_order(available):
@@ -203,6 +203,7 @@ class GraphExplorer:
             if aid in self._act_stats:
                 self._act_stats[aid][1] += 1
                 self._act_stats[aid][0] += int(changed)
+                self._act_stats[aid][2] += int(self._key(grid) not in self._nodes)
             if aid == 6:
                 sig = self._sig_at(self._last_grid, ax, ay)
                 if sig is not None:

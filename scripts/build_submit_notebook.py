@@ -51,19 +51,18 @@ pd.DataFrame([["1_0", "1", True, 1]],
 '''
 
 RUN = '''\
-import numpy as np
-from collections import deque
 sys.path.insert(0, "/kaggle/working/src")
 from urllib.request import urlopen
 
-from arcengine import GameAction
 from arc_agi.base import Arcade, OperationMode
-from arc3.agent import GraphExplorer
-from arc3.features import frame_to_grid
+from arc3.runner import run_games
 
-TOTAL_BUDGET_S = (8 * 3600 - 600) if TRUE_SUBMISSION else 1500
+# En rerun cada acción es un request HTTP al gateway (latencia-bound): la concurrencia
+# multiplica el throughput (el milestone winner usaba 28). Offline es CPU-bound.
+WORKERS = 14 if TRUE_SUBMISSION else 4
+TOTAL_BUDGET_S = (8 * 3600 - 900) - (time.time() - NOTEBOOK_START) if TRUE_SUBMISSION else 1200
 MAX_ACTIONS_PER_GAME = 15000
-MIN_GAME_S, MAX_GAME_S = 60.0, 900.0
+MAX_GAME_S = 2400.0 if TRUE_SUBMISSION else 90.0
 
 
 def wait_for_gateway(base_url, timeout_s=600.0):
@@ -92,7 +91,7 @@ else:
                     environments_dir=str(COMP_ROOT / "environment_files"))
 
 game_ids = [e.game_id for e in arcade.available_environments]
-print(len(game_ids), "juegos")
+print(len(game_ids), "juegos,", WORKERS, "workers, budget", int(TOTAL_BUDGET_S), "s")
 
 try:
     card_id = arcade.open_scorecard(tags=["agent", "graph-explorer"])
@@ -100,55 +99,9 @@ except Exception as e:
     print("open_scorecard:", e)
     card_id = None
 
-
-def play(env, game_id, time_budget_s):
-    agent = GraphExplorer(game_id, max_actions=MAX_ACTIONS_PER_GAME)
-    t0 = time.time()
-    frame = env.observation_space or env.reset()
-    best = 0
-    while frame is not None and not agent.done and time.time() - t0 < time_budget_s:
-        try:
-            grid = frame_to_grid(frame.frame)
-            aid, x, y = agent.choose(grid, frame.state.value, frame.levels_completed,
-                                     list(frame.available_actions or []))
-            action = GameAction.from_id(aid)
-            data = {"game_id": game_id}
-            if aid == 6:
-                data.update(x=x, y=y)
-            frame = env.reset() if aid == 0 else env.step(action, data=data)
-        except Exception as e:
-            print(f"  {game_id} error paso: {e}")
-            try:
-                frame = env.reset()
-            except Exception:
-                break
-        if frame is not None:
-            best = max(best, frame.levels_completed)
-            if frame.state.value == "WIN":
-                break
-    return best, agent.actions_taken, round(time.time() - t0, 1)
-
-
-results = []
-for i, game_id in enumerate(game_ids):
-    remaining = TOTAL_BUDGET_S - (time.time() - NOTEBOOK_START)
-    games_left = len(game_ids) - i
-    if remaining < MIN_GAME_S:
-        print("presupuesto agotado; quedan", games_left)
-        break
-    budget = max(MIN_GAME_S, min(MAX_GAME_S, remaining / games_left))
-    try:
-        env = arcade.make(game_id, scorecard_id=card_id)
-        if env is None:
-            print(f"  {game_id}: make() devolvió None")
-            continue
-        levels, steps, secs = play(env, game_id, budget)
-        results.append((game_id, levels, steps, secs))
-        print(f"[{i+1}/{len(game_ids)}] {game_id}: {levels} niveles, {steps} acciones, {secs}s")
-    except Exception as e:
-        print(f"  {game_id}: ERROR {e}")
-
-print("TOTAL niveles:", sum(r[1] for r in results))
+results = run_games(arcade, game_ids, total_budget_s=TOTAL_BUDGET_S, workers=WORKERS,
+                    max_actions=MAX_ACTIONS_PER_GAME, max_game_s=MAX_GAME_S,
+                    card_id=card_id)
 '''
 
 REPORT = '''\
@@ -160,7 +113,7 @@ except Exception as e:
     print("close_scorecard:", e)
 
 import pandas as pd
-df = pd.DataFrame(results, columns=["game_id", "levels", "actions", "seconds"])
+df = pd.DataFrame(results).sort_values("game_id")
 df.to_csv("/kaggle/working/results.csv", index=False)
 print(df.to_string(index=False))
 print("TOTAL:", df.levels.sum(), "niveles en", len(df), "juegos")

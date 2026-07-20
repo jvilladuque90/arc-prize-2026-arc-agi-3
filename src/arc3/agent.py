@@ -28,8 +28,8 @@ COUNTER_FRACTION = 0.8   # celda contador si cambia en >=80% de las transiciones
 COUNTER_MAX_INTERIOR = 0.2  # la máscara aprendida no puede tapar >20% del interior
 CLICK_CAP = 64       # candidatos de click por nodo
 DEAD_K = 2           # clase de click muerta tras K usos inertes
-MAX_EXHAUSTED_RESETS = 8
-RESET_LOOP_BREAK = 20
+MAX_EXHAUSTED_RESETS = 40   # reinicios diversificados antes de rendirse
+RESET_LOOP_BREAK = 30
 
 # ids de acción: 0=RESET, 1..5 y 7 simples, 6=click(x,y)
 SIMPLE_IDS = (1, 2, 3, 4, 5, 7)
@@ -74,6 +74,7 @@ class GraphExplorer:
         self._replay_target: Optional[int] = None
         self._exhausted_resets = 0
         self._consecutive_resets = 0
+        self._salt = 0   # perturba el orden de candidatos en cada reinicio diversificado
         self.done = False
 
     # ---------- hashing ----------
@@ -130,16 +131,26 @@ class GraphExplorer:
             scored.append((score, int(round(cx)), int(round(cy))))
         scored.sort(key=lambda t: -t[0])
         cands = [(6, x, y) for _, x, y in scored[:CLICK_CAP]]
-        # rejilla gruesa de cobertura (paso 8, centrada)
-        for gy in range(4, GRID, 8):
-            for gx in range(4, GRID, 8):
-                if len(cands) >= CLICK_CAP:
+        # rejilla de cobertura; se densifica con cada reinicio diversificado (salt)
+        stride = 8 if self._salt == 0 else 4 if self._salt < 3 else 2
+        offset = (self._salt * 3) % max(stride, 1)
+        cap = CLICK_CAP if self._salt == 0 else CLICK_CAP * 4
+        for gy in range(offset, GRID, stride):
+            for gx in range(offset, GRID, stride):
+                if len(cands) >= cap:
                     break
-                cands.append((6, gx, gy))
-        return cands[:CLICK_CAP]
+                c = (6, gx, gy)
+                if c not in cands:
+                    cands.append(c)
+        return cands[:cap]
 
     def _simple_order(self, available: list[int]) -> list[int]:
         acts = [a for a in SIMPLE_IDS if not available or a in available]
+        # rotación por salt: cada reinicio diversificado prueba un orden base distinto,
+        # así el desempate entre acciones no probadas genera trayectorias nuevas.
+        if self._salt and acts:
+            r = self._salt % len(acts)
+            acts = acts[r:] + acts[:r]
 
         def score(a: int) -> float:
             chg, uses, _new = self._act_stats[a]
@@ -261,8 +272,17 @@ class GraphExplorer:
             self._replay_target = self._edges.get((key, action))
             return self._commit(grid, key, action)
 
-        # grafo alcanzable agotado: RESET para reintentar desde el inicio del nivel
+        # grafo alcanzable agotado: reinicio DIVERSIFICADO. En juegos deterministas,
+        # re-explorar con el mismo orden repetiría la trayectoria; subimos el salt para
+        # densificar clicks y perturbar el orden, y abrimos de nuevo la exploración
+        # (olvidamos pending/tried; conservamos dead/eff sigs y la máscara aprendida).
         self._exhausted_resets += 1
+        self._salt += 1
+        self._nodes.clear()
+        self._edges.clear()
+        self._adj.clear()
+        self._replay.clear()
+        self._replay_target = None
         if self._exhausted_resets >= MAX_EXHAUSTED_RESETS:
             self.done = True
         return self._commit(grid, key, RESET_KEY)

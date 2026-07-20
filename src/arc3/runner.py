@@ -13,12 +13,16 @@ from __future__ import annotations
 
 import threading
 import time
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from arcengine import GameAction
 
 from .agent import GraphExplorer
 from .features import frame_to_grid
+
+# Fábrica de agente inyectable: el notebook LLM la reemplaza por una que crea LLMAgent.
+# Firma: (game_id: str, max_actions: int) -> agente con .choose(...) y .done.
+_AGENT_FACTORY: Optional[Callable[[str, int], Any]] = None
 
 
 def play_game(
@@ -28,8 +32,12 @@ def play_game(
     max_actions: int = 15000,
     stop_event: Optional[threading.Event] = None,
 ) -> dict[str, Any]:
-    """Juega un env (EnvironmentWrapper de arc_agi) con GraphExplorer hasta agotar budget."""
-    agent = GraphExplorer(game_id, max_actions=max_actions)
+    """Juega un env (EnvironmentWrapper de arc_agi) hasta agotar budget.
+
+    Usa _AGENT_FACTORY si está definida (LLMAgent), si no GraphExplorer.
+    """
+    agent = (_AGENT_FACTORY or (lambda gid, ma: GraphExplorer(gid, max_actions=ma)))(
+        game_id, max_actions)
     t0 = time.time()
     try:
         frame = env.observation_space or env.reset()

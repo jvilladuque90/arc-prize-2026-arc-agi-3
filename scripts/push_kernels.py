@@ -46,6 +46,12 @@ KERNELS = {
              "default_datasets": ["jeroencottaar/taaf-kaggle-source-share",
                                   "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                                   "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
+    # Fase 3 (NUESTRO agente): LLMAgent con features objetuales + fallback. REQUIERE --gpu.
+    #   wheels vLLM + modelo Qwen3-27B-FP8 (públicos). GASTA CUOTA G4 (~30 min validación).
+    "llm": {"notebook": "notebooks/llm.ipynb", "slug": "arc-agi3-llm",
+            "title": "arc agi3 llm",
+            "default_datasets": ["driessmit1/arc3-vllm-h100-wheelhouse-v3",
+                                 "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
 }
 
 

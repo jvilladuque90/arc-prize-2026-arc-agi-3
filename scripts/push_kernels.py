@@ -36,6 +36,16 @@ KERNELS = {
     # Submission dual-mode (gateway en rerun / offline en Save & Run). CPU: no gasta cuota G4.
     "submit": {"notebook": "notebooks/submit.ipynb", "slug": "arc-agi3-submit",
                "title": "arc agi3 submit"},
+    # Fase 3: baseline LLM (duck harness Tufa Labs). REQUIERE --gpu y los 3 datasets:
+    #   --dataset jeroencottaar/taaf-kaggle-source-share
+    #   --dataset driessmit1/arc3-vllm-h100-wheelhouse-v3
+    #   --dataset driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot
+    # GASTA CUOTA G4: en Save & Run corre ~TAAF_OFFLINE_SOFT_MIN min (default 25) de validación.
+    "duck": {"notebook": "notebooks/duck.ipynb", "slug": "arc-agi3-duck",
+             "title": "arc agi3 duck",
+             "default_datasets": ["jeroencottaar/taaf-kaggle-source-share",
+                                  "driessmit1/arc3-vllm-h100-wheelhouse-v3",
+                                  "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
 }
 
 
@@ -66,6 +76,7 @@ def main() -> int:
     user = os.environ.get("KAGGLE_USERNAME", "juliancamilovilla")
 
     cfg = KERNELS[args.kernel]
+    datasets = args.dataset or cfg.get("default_datasets", [])
     meta = {
         "id": f"{user}/{cfg['slug']}",
         "title": cfg["title"],
@@ -75,7 +86,7 @@ def main() -> int:
         "is_private": True,
         "enable_gpu": bool(args.gpu),
         "enable_internet": False,  # obligatorio en evaluación; igual que RTX_G4
-        "dataset_sources": args.dataset,
+        "dataset_sources": datasets,
         "competition_sources": [COMP],
         "model_sources": [],
         "kernel_sources": [],

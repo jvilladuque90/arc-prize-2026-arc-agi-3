@@ -50,6 +50,37 @@ objetuales en el prompt** (hueco que ninguno de los top explota). El código del
 público (`jeroencottaar/taaf-kaggle-source-share`, descargado en scratchpad) — estudiar
 `ARC3-Inference/inference/agent/tool_agent.py`.
 
+## Registro de submissions
+
+| ver | método | offline (25) | LB oculto | nota |
+|---|---|---|---|---|
+| v1 | GraphExplorer serie, CPU | 24 niveles | **0.25** | baseline |
+| v2 | + runner paralelo (14 workers) | 18 (contención CPU) | **0.25** | el paralelismo no movió el score → el cuello NO es throughput |
+| v3 | + reinicio diversificado (salt: densifica clicks, rota orden) | — | pend. | quita el techo de "grafo agotado→done"; cn04 0→1 offline |
+
+**Conclusión clave:** v2==v1 prueba que la exploración pura tiene un techo semántico
+(~0.25) en los juegos ocultos, no un límite de compute. Los juegos que quedan en 0
+(g50t, re86, wa30, tr87) necesitan entender el objetivo, no explorar más. → la subida
+real exige la Fase 3 (LLM). v3 es la última mejora barata de la rama de exploración.
+
+## Fase 3 — harness LLM en la G4 (plan concreto)
+
+El ganador (Tufa Labs) y el 0.86 son VLM locales. Piezas públicas ya localizadas:
+- `jeroencottaar/taaf-kaggle-source-share` — bundle con el solver (descargado en scratchpad).
+- `driessmit1/arc3-vllm-h100-wheelhouse-v3` — wheels vLLM 0.19 (verificado accesible).
+- `driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot` — pesos 27B FP8 (~27 GB, verificado).
+- `deploy_target.pkl`: `accelerator=NvidiaRtxPro6000`, `max_runtime_s≈32400` (9h).
+
+Ruta económica (no quemar cuota G4 a ciegas):
+1. Fork del notebook legible del ganador adjuntando esos 3 datasets + GPU RTX Pro 6000;
+   correr **una** validación offline con `soft_end` recortado (~20 min) para confirmar que
+   vLLM arranca y juega los 25 públicos. Es el baseline LLM a batir.
+2. Nuestro aporte diferencial (lo que ninguno del top explota): inyectar en el prompt del
+   VLM nuestras **features objetuales** (`src/arc3/features`: componentes, saliencia de
+   botones, vector de movimiento, diffs) y usar el GraphExplorer como **fallback** cuando
+   el LLM falla/timeout — ensemble LLM+búsqueda. Estudiar `ARC3-Inference/inference/agent/
+   tool_agent.py` (scratchpad/taaf_source) para el punto de inyección del prompt.
+
 ## Validación
 
 Local (25 juegos públicos) con `arcade.get_scorecard()`: score, niveles, acciones por juego.

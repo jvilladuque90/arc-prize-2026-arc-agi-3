@@ -80,14 +80,24 @@ wh = find_wheelhouse()
 if wh is not None and MODEL_DIR is not None:
     subprocess.check_call([sys.executable,"-m","pip","install","--quiet","--no-index",
         f"--find-links={wh}","vllm"], stdout=subprocess.DEVNULL)
+    # El crash previo fue el autotuner de flashinfer al capturar el grafo. --enforce-eager
+    # salta torch.compile + cudagraph (donde se dispara el autotune); FLASH_ATTN evita la
+    # ruta flashinfer de atención; desactivamos el sampler flashinfer. max-model-len 16k
+    # basta para nuestros prompts cortos y baja presión de KV.
+    serve_env = os.environ.copy()
+    serve_env.update({
+        "VLLM_ATTENTION_BACKEND": "FLASH_ATTN",
+        "VLLM_USE_FLASHINFER_SAMPLER": "0",
+        "VLLM_NO_USAGE_STATS": "1",
+    })
     cmd = [sys.executable,"-m","vllm.entrypoints.openai.api_server",
            "--model", str(MODEL_DIR), "--served-model-name", SERVED,
            "--host", VLLM_HOST, "--port", str(VLLM_PORT),
-           "--tensor-parallel-size","1","--enable-prefix-caching",
-           "--max-model-len","32768","--gpu-memory-utilization","0.92"]
+           "--tensor-parallel-size","1","--enforce-eager","--enable-prefix-caching",
+           "--max-model-len","16384","--gpu-memory-utilization","0.90"]
     print("arrancando vLLM:", " ".join(cmd), flush=True)
     logf = SERVER_LOG.open("w")
-    proc = subprocess.Popen(cmd, stdout=logf, stderr=subprocess.STDOUT)
+    proc = subprocess.Popen(cmd, stdout=logf, stderr=subprocess.STDOUT, env=serve_env)
     # esperar readiness
     ready = False
     dl = time.monotonic() + 900

@@ -64,6 +64,7 @@ class LLMAgent:
         self._prev_hash: Optional[str] = None
         self._prev_action: Optional[dict[str, Any]] = None
         self._prev_levels = 0
+        self._llm_calls = 0
         self._llm_fails = 0
 
     # ----- memoria de inefectividad -----
@@ -144,6 +145,7 @@ class LLMAgent:
             user = build_user_text(grid, self._prev_grid, available_actions, levels,
                                    ineffective=self._ineffective(frame_hash))
             img = frame_png_data_uri(grid) if self.use_image else None
+            self._llm_calls += 1
             reply = self.chat_fn(SYSTEM_PROMPT, user, img)
             actions = parse_actions(reply)
         except Exception:

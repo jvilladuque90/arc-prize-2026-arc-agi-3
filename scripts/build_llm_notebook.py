@@ -172,7 +172,9 @@ if TRUE_SUBMISSION:
 else:
     arcade = Arcade(operation_mode=OperationMode.OFFLINE,
                     environments_dir=str(COMP_ROOT/"environment_files"))
-    BUDGET = OFFLINE_SOFT_MIN*60; WORKERS=2; MAXG=300.0
+    # vLLM agrupa (continuous batching) los requests concurrentes: subir workers eleva el
+    # throughput del LLM en la MISMA GPU. Clave para que el LLM haga suficientes acciones.
+    BUDGET = OFFLINE_SOFT_MIN*60; WORKERS=8; MAXG=600.0
 
 game_ids=[e.game_id for e in arcade.available_environments]
 try: card_id = arcade.open_scorecard(tags=["agent","llm"])

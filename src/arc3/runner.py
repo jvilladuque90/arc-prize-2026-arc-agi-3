@@ -76,9 +76,11 @@ def play_game(
         "game_id": game_id,
         "levels": best,
         "win": win,
-        "actions": agent.actions_taken,
+        "actions": getattr(agent, "actions_taken", 0),
         "seconds": round(time.time() - t0, 1),
-        "nodes": len(agent._nodes),
+        "nodes": len(getattr(agent, "_nodes", ()) or ()),   # GraphExplorer; LLMAgent no tiene
+        "llm_calls": getattr(agent, "_llm_calls", 0),
+        "llm_fails": getattr(agent, "_llm_fails", 0),
     }
 
 

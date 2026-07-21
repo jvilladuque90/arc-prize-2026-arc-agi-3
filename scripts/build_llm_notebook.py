@@ -163,15 +163,16 @@ RUN = '''\
 sys.path.insert(0, "/kaggle/working/src")
 from arc_agi.base import Arcade, OperationMode
 from arc3.runner import run_games, play_game
-from arc3.llm_agent import LLMAgent
+from arc3.llm_agent import HybridAgent
+from arc3.agent import GraphExplorer
 import arc3.runner as runner_mod
 
-# inyectar LLMAgent (con nuestro chat_fn) como política del runner, GraphExplorer de fallback
+# Híbrido: el explorador bankea niveles fáciles (piso ~0.25) y delega en el LLM cuando se
+# atasca (techo semántico). Si vLLM no arrancó, explorador puro. Ver docs/STRATEGY.md.
 USE_IMAGE = os.environ.get("ARC_USE_IMAGE","0") == "1"
 def make_agent(game_id, max_actions):
     if ready:
-        return LLMAgent(game_id, chat_fn, max_actions=max_actions, use_image=USE_IMAGE)
-    from arc3.agent import GraphExplorer
+        return HybridAgent(game_id, chat_fn, max_actions=max_actions, use_image=USE_IMAGE)
     return GraphExplorer(game_id, max_actions=max_actions)
 runner_mod._AGENT_FACTORY = make_agent  # play_game lo usa si existe
 

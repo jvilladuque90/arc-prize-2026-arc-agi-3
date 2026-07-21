@@ -56,7 +56,9 @@ público (`jeroencottaar/taaf-kaggle-source-share`, descargado en scratchpad) �
 |---|---|---|---|---|
 | v1 | GraphExplorer serie, CPU | 24 niveles | **0.25** | baseline |
 | v2 | + runner paralelo (14 workers) | 18 (contención CPU) | **0.25** | el paralelismo no movió el score → el cuello NO es throughput |
-| v3 | + reinicio diversificado (salt: densifica clicks, rota orden) | — | pend. | quita el techo de "grafo agotado→done"; cn04 0→1 offline |
+| v3 | + reinicio diversificado (salt: densifica clicks, rota orden) | 17 | **0.25** | los reinicios tampoco mueven el LB oculto → exploración pura tope-capada |
+| llm | LLMAgent (Qwen3-27B-FP8 en G4, features en prompt) | 1 (30min) | pend. | vLLM arranca (Marlin FP8); el modelo LEE nuestras features; llm_fails 6.5% |
+| hybrid | explorador (piso ~0.25) + LLM al atascarse (techo) | — | pend. | domina a ambos: mantiene el piso y añade el techo LLM gastando pocas inferencias |
 
 **Conclusión clave:** v2==v1 prueba que la exploración pura tiene un techo semántico
 (~0.25) en los juegos ocultos, no un límite de compute. Los juegos que quedan en 0

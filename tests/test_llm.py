@@ -10,7 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from arc3.llm_prompt import (  # noqa: E402
     build_user_text, describe_objects, parse_actions, render_frame_png,
 )
-from arc3.llm_agent import LLMAgent  # noqa: E402
+from arc3.llm_agent import HybridAgent, LLMAgent  # noqa: E402
 
 
 def _grid_with_button():
@@ -84,6 +84,23 @@ def test_llm_agent_plan_queue():
     g2 = g.copy(); g2[0, 0] = 1
     a2 = ag.choose(g2, "NOT_FINISHED", 0, [1, 2, 3])[0]
     assert a1 == 1 and a2 == 2
+
+
+def test_hybrid_starts_explorer_then_switches_to_llm():
+    llm_used = {"n": 0}
+
+    def chat(system, user, image):
+        llm_used["n"] += 1
+        return '{"actions":[{"name":"up"}]}'
+
+    ag = HybridAgent("g", chat, stuck_actions=3)
+    g = np.zeros((64, 64), dtype=np.int8)
+    # sin progreso de nivel: tras stuck_actions pasos debe cambiar al LLM
+    for _ in range(6):
+        ag.choose(g, "NOT_FINISHED", 0, [1, 2, 3, 6])
+    assert ag._using_llm is True and llm_used["n"] >= 1
+    # expone atributos que el runner espera
+    assert hasattr(ag, "_nodes") and isinstance(ag._llm_calls, int)
 
 
 if __name__ == "__main__":

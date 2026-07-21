@@ -171,3 +171,80 @@ class LLMAgent:
         self._prev_action = action
         aid = action["id"]
         return aid, int(action.get("x", -1)), int(action.get("y", -1))
+
+
+class HybridAgent:
+    """Explorador barato para el piso + LLM cuando se estanca, para el techo.
+
+    Racional (docs/STRATEGY.md): la exploración pura está capada en 0.25 (v1=v2=v3), pero
+    resuelve gratis los niveles fáciles. El LLM (lento) es la única vía a los niveles que
+    exigen entender el objetivo. El híbrido deja al GraphExplorer bankear niveles mientras
+    progresa, y delega en el LLMAgent SOLO cuando el explorador se atasca (agota su grafo
+    o pasa mucho sin subir de nivel). Garantiza >= piso del explorador y añade el techo LLM,
+    gastando pocas inferencias (solo donde hacen falta).
+    """
+
+    def __init__(
+        self,
+        game_id: str,
+        chat_fn: ChatFn,
+        max_actions: int = 15000,
+        stuck_actions: int = 300,
+        use_image: bool = False,
+    ) -> None:
+        self.game_id = game_id
+        self.max_actions = max_actions
+        self.stuck_actions = stuck_actions
+        self.actions_taken = 0
+        self.done = False
+
+        self._explorer = GraphExplorer(game_id, max_actions=max_actions)
+        self._llm = LLMAgent(game_id, chat_fn, max_actions=max_actions, use_image=use_image)
+        self._using_llm = False
+        self._best_levels = 0
+        self._since_progress = 0
+
+    @property
+    def _nodes(self):  # compat con runner.play_game
+        return self._explorer._nodes
+
+    @property
+    def _llm_calls(self) -> int:
+        return self._llm._llm_calls
+
+    @property
+    def _llm_fails(self) -> int:
+        return self._llm._llm_fails
+
+    def choose(
+        self, grid: np.ndarray, state: str, levels_completed: int,
+        available_actions: list[int],
+    ) -> tuple[int, int, int]:
+        self.actions_taken += 1
+        if self.actions_taken > self.max_actions:
+            self.done = True
+
+        # progreso => resetea el contador de estancamiento; regresión imposible (monótono)
+        if levels_completed > self._best_levels:
+            self._best_levels = levels_completed
+            self._since_progress = 0
+            self._using_llm = False   # el explorador volvió a avanzar: dejarlo seguir barato
+        else:
+            self._since_progress += 1
+
+        # ¿atascado? el explorador agotó su grafo alcanzable, o mucho sin progreso
+        explorer_stuck = (self._explorer._exhausted_resets >= 1
+                          or self._since_progress >= self.stuck_actions)
+        if explorer_stuck and not self._using_llm:
+            self._using_llm = True
+
+        if self._using_llm:
+            out = self._llm.choose(grid, state, levels_completed, available_actions)
+            self.done = self.done or self._llm.done
+            return out
+        out = self._explorer.choose(grid, state, levels_completed, available_actions)
+        # el explorador puede declararse done al agotarse; en híbrido eso solo dispara el LLM
+        if self._explorer.done:
+            self._explorer.done = False
+            self._using_llm = True
+        return out

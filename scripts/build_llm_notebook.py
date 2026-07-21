@@ -84,8 +84,13 @@ if wh is not None and MODEL_DIR is not None:
     # salta torch.compile + cudagraph (donde se dispara el autotune); FLASH_ATTN evita la
     # ruta flashinfer de atención; desactivamos el sampler flashinfer. max-model-len 16k
     # basta para nuestros prompts cortos y baja presión de KV.
+    # El crash es el kernel GEMM FP8 de flashinfer (FlashInferFP8ScaledMMLinearKernel):
+    # su autotuner JIT muere. Forzamos el kernel Marlin FP8 (Triton, sin flashinfer) con
+    # VLLM_TEST_FORCE_FP8_MARLIN=1. Sumado a FLASH_ATTN + enforce-eager, no queda ninguna
+    # ruta que dependa de flashinfer.
     serve_env = os.environ.copy()
     serve_env.update({
+        "VLLM_TEST_FORCE_FP8_MARLIN": "1",
         "VLLM_ATTENTION_BACKEND": "FLASH_ATTN",
         "VLLM_USE_FLASHINFER_SAMPLER": "0",
         "VLLM_NO_USAGE_STATS": "1",

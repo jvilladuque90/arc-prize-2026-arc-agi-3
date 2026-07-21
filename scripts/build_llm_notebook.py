@@ -133,12 +133,30 @@ def chat_fn(system, user_text, image_data_uri):
     body = {"model": SERVED, "messages":[
                 {"role":"system","content":system},
                 {"role":"user","content": content if image_data_uri else user_text}],
-            "max_tokens":512,"temperature":0.4}
+            "max_tokens":800,"temperature":0.3,
+            # Qwen3 es modelo de razonamiento: sin esto emite <think> largo y el JSON
+            # de acciones se trunca. enable_thinking=False -> responde directo.
+            "chat_template_kwargs":{"enable_thinking":False}}
     req = urllib.request.Request(f"{VLLM_BASE}/chat/completions",
             data=json.dumps(body).encode(), headers={"Content-Type":"application/json"})
     with urllib.request.urlopen(req, timeout=120) as r:
         out = json.loads(r.read())
     return out["choices"][0]["message"]["content"]
+
+# SMOKE TEST: una llamada real, imprime respuesta cruda + acciones parseadas (barato,
+# evita gastar la corrida entera a ciegas si el formato del modelo no encaja).
+if ready:
+    import numpy as np
+    sys.path.insert(0, "/kaggle/working/src")
+    from arc3.llm_prompt import SYSTEM_PROMPT, build_user_text, parse_actions
+    g = np.zeros((64,64), dtype=np.int8); g[10:14,20:24]=2; g[40,40]=5
+    smoke_user = build_user_text(g, None, [1,2,3,4,6], 0)
+    try:
+        raw = chat_fn(SYSTEM_PROMPT, smoke_user, None)
+        print("SMOKE raw (first 500):", repr(raw[:500]), flush=True)
+        print("SMOKE parsed actions:", parse_actions(raw), flush=True)
+    except Exception as e:
+        print("SMOKE error:", e, flush=True)
 '''
 
 RUN = '''\

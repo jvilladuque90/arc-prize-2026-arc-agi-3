@@ -86,6 +86,27 @@ def test_llm_agent_plan_queue():
     assert a1 == 1 and a2 == 2
 
 
+def test_reflection_updates_and_injects_memory():
+    seen = {"reflected": False, "mem_in_prompt": False}
+
+    def chat(system, user, image):
+        if system.startswith("You are analyzing"):   # llamada de reflexión
+            seen["reflected"] = True
+            return "# Memory\n## Rules\n- click red to score\n## Goal\n- reach top\n## Avoid\n- edges"
+        if "MEMORY:" in user:
+            seen["mem_in_prompt"] = True
+        return '{"actions":[{"name":"right"}]}'
+
+    ag = LLMAgent("g", chat)
+    g = np.zeros((64, 64), dtype=np.int8)
+    # alterna el grid para acumular historial y disparar reflexión tras REFLECT_EVERY pasos
+    for i in range(40):
+        g2 = g.copy(); g2[0, i % 64] = (i % 5) + 1
+        ag.choose(g2, "NOT_FINISHED", 0, [1, 2, 3, 4])
+    assert seen["reflected"] and ag._memory.startswith("# Memory")
+    assert seen["mem_in_prompt"]
+
+
 def test_hybrid_starts_explorer_then_switches_to_llm():
     llm_used = {"n": 0}
 

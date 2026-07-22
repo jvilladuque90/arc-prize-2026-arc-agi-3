@@ -24,15 +24,19 @@ import numpy as np
 
 from .agent import GraphExplorer
 from .features import frame_to_grid
+from .features import transition_features
 from .llm_prompt import (
     ACTION_NAMES,
+    REFLECT_SYSTEM,
     SYSTEM_PROMPT,
+    build_reflection_text,
     build_user_text,
     frame_png_data_uri,
     parse_actions,
 )
 
 ChatFn = Callable[[str, str, Optional[str]], str]
+REFLECT_EVERY = 15   # transiciones LLM entre reflexiones
 
 
 def _hash(grid: np.ndarray, border: int = 3) -> str:
@@ -66,6 +70,9 @@ class LLMAgent:
         self._prev_levels = 0
         self._llm_calls = 0
         self._llm_fails = 0
+        self._memory: str = ""          # memoria de reflexión (reglas/objetivo/evitar)
+        self._history: list[str] = []   # transiciones compactas para reflexionar
+        self._since_reflect = 0
 
     # ----- memoria de inefectividad -----
 
@@ -82,11 +89,30 @@ class LLMAgent:
             return
         changed = bool((self._prev_grid != grid).any())
         leveled = levels != self._prev_levels
+        # registro compacto de la transición para la reflexión
+        tf = transition_features(self._prev_grid, grid)
+        self._history.append(
+            f"{self._fail_key(self._prev_action)} -> changed={tf['n_changed']} "
+            f"move=({tf['move_dy']},{tf['move_dx']}) level_delta={levels - self._prev_levels}")
         if not changed and not leveled and self._prev_hash is not None:
             self._failed.setdefault(self._prev_hash, set()).add(
                 self._fail_key(self._prev_action))
         if not changed:  # plan que no mueve nada se aborta
             self._plan.clear()
+
+    def _maybe_reflect(self, levels: int) -> None:
+        """Cada REFLECT_EVERY transiciones LLM, resume el historial en memoria accionable."""
+        self._since_reflect += 1
+        if self._since_reflect < REFLECT_EVERY or len(self._history) < 5:
+            return
+        self._since_reflect = 0
+        try:
+            text = build_reflection_text(self._history, self._memory, levels)
+            new_mem = self.chat_fn(REFLECT_SYSTEM, text, None)
+            if new_mem and "#" in new_mem:
+                self._memory = new_mem.strip()[:1800]
+        except Exception:
+            pass
 
     # ----- API principal -----
 
@@ -105,6 +131,7 @@ class LLMAgent:
         if levels_completed > self._prev_levels:
             self._failed.clear()   # lo inefectivo en un nivel puede servir en el siguiente
             self._plan.clear()
+            self._history.clear()  # las reglas pueden cambiar de nivel; memoria se re-forma
         self._prev_levels = levels_completed
 
         if state in ("NOT_PLAYED", "GAME_OVER"):
@@ -142,8 +169,10 @@ class LLMAgent:
         available_actions: list[int], levels: int,
     ) -> Optional[dict[str, Any]]:
         try:
+            self._maybe_reflect(levels)
             user = build_user_text(grid, self._prev_grid, available_actions, levels,
-                                   ineffective=self._ineffective(frame_hash))
+                                   ineffective=self._ineffective(frame_hash),
+                                   memory=self._memory or None)
             img = frame_png_data_uri(grid) if self.use_image else None
             self._llm_calls += 1
             reply = self.chat_fn(SYSTEM_PROMPT, user, img)

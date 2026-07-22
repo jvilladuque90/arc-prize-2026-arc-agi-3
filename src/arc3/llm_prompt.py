@@ -122,6 +122,26 @@ def build_user_text(
     return "\n".join(parts)
 
 
+REFLECT_SYSTEM = (
+    "You are analyzing your own play of an interactive 64x64 grid puzzle to build a memory "
+    "that will guide future actions. From the transition history, infer the game's rules, the "
+    "likely goal, what progress looks like, and which actions to avoid. Be concrete and concise. "
+    "Respond ONLY in this markdown format (each section <=3 short bullet points, total <1500 chars):\n"
+    "# Memory\n## Rules\n- ...\n## Goal\n- ...\n## Progress\n- ...\n## Avoid\n- ..."
+)
+
+
+def build_reflection_text(history: list[str], memory: Optional[str], levels: int) -> str:
+    """Prompt de reflexión: resume el historial de transiciones en memoria accionable."""
+    parts = [f"levels_completed_so_far={levels}"]
+    if memory:
+        parts.append("PREVIOUS MEMORY (revise if evidence contradicts it):\n" + memory)
+    parts.append("RECENT TRANSITIONS (action -> numeric effect):")
+    parts.extend(history[-40:])
+    parts.append("Write the updated # Memory now.")
+    return "\n".join(parts)
+
+
 def parse_actions(text: str) -> list[dict[str, Any]]:
     """Extrae la lista de acciones del texto del LLM de forma robusta.
 

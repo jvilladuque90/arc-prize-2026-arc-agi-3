@@ -191,6 +191,23 @@ juego jugado en muchos pasos, así que TTT significaría **actualizar el LoRA on
 | 2026-07-22 | + Reflection memory (opción A); trigger diario 8pm; Save & Run como banco de pruebas con diagnóstico | replicar el diferencial del agente 0.86; iterar sin gastar submission |
 | 2026-07-22 | Diagnóstico v8: el LLM entiende mecánica+objetivo (memoria excelente) pero no rompe el piso; re-elige clicks pese a saber que no sirven | volcado real de prompts/respuestas/reflexiones en el log de Save & Run |
 | 2026-07-22 | + Inyección de "action effectiveness" (P(cambio) por acción) en el prompt | contrarresta el desfase observado: dato duro de qué acciones mueven el mundo |
+| 2026-07-22 | v9: fallos 7.7%→5% pero niveles offline planos (9) | los tweaks de prompt mejoran robustez, no rompen el muro; el cuello es planeación/objetivo, no el prompt |
+
+## Diagnóstico del muro (2026-07-22)
+
+Save & Run con volcado confirma: el LLM **entiende** la mecánica y el objetivo (la memoria de
+reflexión infiere reglas correctas y hasta el tipo de meta), pero **no ejecuta un plan** hacia
+ese objetivo. Los niveles que completa son los mismos que la exploración ya alcanza. Los tweaks
+de prompt (effectiveness, ineffective, memoria) reducen fallos pero no añaden niveles.
+
+**Conclusión:** para romper 0.25 hacen falta inversiones mayores, no más ajuste de prompt:
+1. **Planner sobre simulador** (estilo FORGE): si el `.py` del juego es accesible en el rerun,
+   buscar la solución en el simulador local domina al LLM. Depende de accesibilidad del source.
+2. **LoRA-SFT** (opción B) sobre trayectorias del solver, con augmentación fuerte.
+3. **Loop agéntico más profundo**: multi-candidato + verificación, o búsqueda guiada por el LLM
+   (el LLM propone sub-objetivos; la búsqueda los alcanza).
+
+Estas son decisiones de inversión (coste G4 + ingeniería) a consultar antes de ejecutar.
 
 > **Convención:** toda decisión de estrategia nueva se añade a esta tabla y actualiza las
 > secciones relevantes arriba, junto con la fecha de "Última actualización".

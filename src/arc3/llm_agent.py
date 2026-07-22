@@ -73,6 +73,8 @@ class LLMAgent:
         self._memory: str = ""          # memoria de reflexión (reglas/objetivo/evitar)
         self._history: list[str] = []   # transiciones compactas para reflexionar
         self._since_reflect = 0
+        # efectividad por tipo de acción: id -> [cambios, usos]
+        self._eff: dict[int, list[int]] = {}
         # diagnóstico (para inspeccionar en los logs de Save & Run):
         self.diag_enabled = False
         self.diag: dict[str, Any] = {
@@ -91,11 +93,25 @@ class LLMAgent:
     def _ineffective(self, frame_hash: str) -> list[str]:
         return sorted(self._failed.get(frame_hash, set()))
 
+    def _effectiveness_summary(self) -> str:
+        """Resumen legible de P(cambio) por acción (nombre) para inyectar al LLM."""
+        from .llm_prompt import ACTION_NAMES
+        parts = []
+        for aid, (chg, uses) in sorted(self._eff.items()):
+            if uses >= 2:
+                name = ACTION_NAMES.get(aid, f"a{aid}")
+                parts.append(f"{name}={chg}/{uses} changed")
+        return ", ".join(parts)
+
     def _digest_previous(self, grid: np.ndarray, levels: int) -> None:
         if self._prev_grid is None or self._prev_action is None:
             return
         changed = bool((self._prev_grid != grid).any())
         leveled = levels != self._prev_levels
+        aid = self._prev_action["id"]
+        st = self._eff.setdefault(aid, [0, 0])
+        st[1] += 1
+        st[0] += int(changed)
         # registro compacto de la transición para la reflexión
         tf = transition_features(self._prev_grid, grid)
         self._history.append(
@@ -181,7 +197,8 @@ class LLMAgent:
             self._maybe_reflect(levels)
             user = build_user_text(grid, self._prev_grid, available_actions, levels,
                                    ineffective=self._ineffective(frame_hash),
-                                   memory=self._memory or None)
+                                   memory=self._memory or None,
+                                   effectiveness=self._effectiveness_summary() or None)
             img = frame_png_data_uri(grid) if self.use_image else None
             self._llm_calls += 1
             reply = self.chat_fn(SYSTEM_PROMPT, user, img)

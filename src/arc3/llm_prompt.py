@@ -103,6 +103,7 @@ def build_user_text(
     levels_completed: int,
     ineffective: Optional[list[str]] = None,
     memory: Optional[str] = None,
+    effectiveness: Optional[str] = None,
 ) -> str:
     """Texto del turno: acciones legales + estructura de objetos + efecto de la última acción."""
     legal = [ACTION_NAMES[a] for a in available_actions if a in ACTION_NAMES] or \
@@ -114,11 +115,16 @@ def build_user_text(
         describe_objects(grid),
         describe_last_transition(prev_grid, grid),
     ]
+    if effectiveness:
+        # dato duro de qué acciones han movido el mundo: contrarresta que el LLM insista en
+        # acciones que su propia experiencia ya mostró inútiles (visto en el diagnóstico v8).
+        parts.append(f"ACTION EFFECTIVENESS so far: {effectiveness}")
     if ineffective:
         parts.append(f"ineffective_in_this_state={ineffective[:20]}")
     if memory:
         parts.append(f"MEMORY:\n{memory}")
-    parts.append("Return your JSON now.")
+    parts.append("Return your JSON now. Prefer action TYPES that have been effective; "
+                 "if clicks are ineffective, use movement to explore toward the goal.")
     return "\n".join(parts)
 
 

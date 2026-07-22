@@ -107,6 +107,32 @@ def test_reflection_updates_and_injects_memory():
     assert seen["mem_in_prompt"]
 
 
+def test_parse_goal():
+    from arc3.llm_prompt import parse_goal
+    assert parse_goal('{"reasoning":"x","goal":{"x":10,"y":20},"actions":[{"name":"up"}]}') == (10, 20)
+    assert parse_goal('{"actions":[{"name":"up"}]}') is None
+    assert parse_goal('{"goal":{"x":999,"y":-5},"actions":[]}') == (63, 0)
+
+
+def test_guided_navigation_uses_motion_model():
+    # el LLM fija un goal y devuelve movimientos; tras aprender el modelo de movimiento,
+    # el agente debe navegar solo (nav_used > 0).
+    def chat(system, user, image):
+        if system.startswith("You are analyzing"):
+            return "# Memory\n## Rules\n- move\n## Goal\n- reach\n## Avoid\n- x"
+        return '{"goal":{"x":60,"y":30},"actions":[{"name":"right"}]}'
+
+    ag = LLMAgent("g", chat)
+    # simula frames donde ACTION4(right) traslada un objeto hacia +x de forma coherente
+    base = np.zeros((64, 64), dtype=np.int8)
+    for step in range(20):
+        g = base.copy()
+        x = min(10 + step, 62)
+        g[30:33, x:x + 3] = 2   # objeto que se mueve a la derecha
+        ag.choose(g, "NOT_FINISHED", 0, [1, 2, 3, 4])
+    assert ag._nav_used >= 1   # navegó con el modelo aprendido en algún paso
+
+
 def test_hybrid_starts_explorer_then_switches_to_llm():
     llm_used = {"n": 0}
 

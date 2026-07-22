@@ -22,7 +22,7 @@ from typing import Any, Callable, Optional
 
 import numpy as np
 
-from .agent import GraphExplorer
+from .agent import SIMPLE_IDS, GraphExplorer
 from .features import frame_to_grid
 from .features import transition_features
 from .llm_prompt import (
@@ -33,6 +33,7 @@ from .llm_prompt import (
     build_user_text,
     frame_png_data_uri,
     parse_actions,
+    parse_goal,
 )
 
 ChatFn = Callable[[str, str, Optional[str]], str]
@@ -75,6 +76,13 @@ class LLMAgent:
         self._since_reflect = 0
         # efectividad por tipo de acción: id -> [cambios, usos]
         self._eff: dict[int, list[int]] = {}
+        # búsqueda guiada: modelo de movimiento (acción -> [sum_dy,sum_dx,count]),
+        # posición estimada del avatar, y sub-objetivo espacial propuesto por el LLM.
+        self._motion: dict[int, list[float]] = {}
+        self._avatar_xy: Optional[tuple[float, float]] = None
+        self._goal: Optional[tuple[int, int]] = None
+        self._nav_left = 0
+        self._nav_used = 0
         # diagnóstico (para inspeccionar en los logs de Save & Run):
         self.diag_enabled = False
         self.diag: dict[str, Any] = {
@@ -92,6 +100,39 @@ class LLMAgent:
 
     def _ineffective(self, frame_hash: str) -> list[str]:
         return sorted(self._failed.get(frame_hash, set()))
+
+    def _largest_centroid(self, grid: np.ndarray) -> Optional[tuple[float, float]]:
+        from .features import connected_components
+        counts = np.bincount(grid.ravel(), minlength=16)
+        objs = connected_components(grid, int(counts.argmax()))
+        if not objs:
+            return None
+        cy, cx = objs[0]["centroid"]
+        return (cy, cx)   # (y, x)
+
+    def _nav_action(self, available: list[int]) -> Optional[tuple[int, int, int]]:
+        """Elige la acción de movimiento cuyo vector aprendido más acerca al objetivo."""
+        if self._goal is None or self._avatar_xy is None or not self._motion:
+            return None
+        gx, gy = self._goal
+        ay, ax = self._avatar_xy
+        dist = ((ay - gy) ** 2 + (ax - gx) ** 2) ** 0.5
+        if dist <= 2:                       # objetivo alcanzado
+            self._goal = None
+            return None
+        best = None
+        best_d = dist
+        for aid, (sdy, sdx, n) in self._motion.items():
+            if n < 1 or (available and aid not in available):
+                continue
+            vy, vx = sdy / n, sdx / n
+            nd = ((ay + vy - gy) ** 2 + (ax + vx - gx) ** 2) ** 0.5
+            if nd < best_d:
+                best_d, best = nd, aid
+        if best is None:                    # ningún movimiento acerca: abandonar nav
+            self._goal = None
+            return None
+        return (best, -1, -1)
 
     def _effectiveness_summary(self) -> str:
         """Resumen legible de P(cambio) por acción (nombre) para inyectar al LLM."""
@@ -114,6 +155,16 @@ class LLMAgent:
         st[0] += int(changed)
         # registro compacto de la transición para la reflexión
         tf = transition_features(self._prev_grid, grid)
+        # modelo de movimiento: si una acción simple produjo una traslación coherente,
+        # aprende su vector y actualiza la posición estimada del avatar.
+        if aid in SIMPLE_IDS and tf["move_score"] > 0.6 and (tf["move_dy"] or tf["move_dx"]):
+            m = self._motion.setdefault(aid, [0.0, 0.0, 0.0])
+            m[0] += tf["move_dy"]; m[1] += tf["move_dx"]; m[2] += 1
+            if self._avatar_xy is None:
+                self._avatar_xy = self._largest_centroid(grid)
+            if self._avatar_xy is not None:
+                self._avatar_xy = (self._avatar_xy[0] + tf["move_dy"],
+                                   self._avatar_xy[1] + tf["move_dx"])
         self._history.append(
             f"{self._fail_key(self._prev_action)} -> changed={tf['n_changed']} "
             f"move=({tf['move_dy']},{tf['move_dx']}) level_delta={levels - self._prev_levels}")
@@ -164,6 +215,15 @@ class LLMAgent:
 
         frame_hash = _hash(grid)
 
+        # 0) navegación guiada: si el LLM fijó un objetivo, acercarnos con el modelo de
+        #    movimiento aprendido (sin gastar llamadas al LLM en cada paso).
+        if self._goal is not None and self._nav_left > 0:
+            nav = self._nav_action(available_actions)
+            if nav is not None:
+                self._nav_left -= 1
+                self._nav_used += 1
+                return self._emit(grid, {"id": nav[0]})
+
         # 1) plan pendiente que siga siendo legal y no inefectivo
         while self._plan:
             a = self._plan.popleft()
@@ -203,6 +263,11 @@ class LLMAgent:
             self._llm_calls += 1
             reply = self.chat_fn(SYSTEM_PROMPT, user, img)
             actions = parse_actions(reply)
+            goal = parse_goal(reply)
+            if goal is not None and self._motion:   # activar navegación hacia el objetivo
+                self._goal = goal
+                self._nav_left = 12
+                self._avatar_xy = self._avatar_xy or self._largest_centroid(grid)
         except Exception as e:
             self.diag["fail_exception"] += 1
             if self.diag_enabled and len(self.diag["samples"]) < 6:
@@ -295,6 +360,10 @@ class HybridAgent:
     @property
     def _memory(self) -> str:
         return self._llm._memory
+
+    @property
+    def _nav_used(self) -> int:
+        return self._llm._nav_used
 
     def choose(
         self, grid: np.ndarray, state: str, levels_completed: int,

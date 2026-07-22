@@ -209,5 +209,7 @@ de prompt (effectiveness, ineffective, memoria) reducen fallos pero no añaden n
 
 Estas son decisiones de inversión (coste G4 + ingeniería) a consultar antes de ejecutar.
 
+| 2026-07-22 | **Loop agéntico + búsqueda guiada** (elegido): el LLM propone un sub-objetivo espacial `goal:{x,y}`; un controlador de navegación con **modelo de movimiento aprendido** (acción→vector, de las features) alcanza el objetivo sin gastar llamadas al LLM por paso | ataca la causa raíz (planeación); en test la navegación reemplaza ~½ de las llamadas al LLM |
+
 > **Convención:** toda decisión de estrategia nueva se añade a esta tabla y actualiza las
 > secciones relevantes arriba, junto con la fecha de "Última actualización".

@@ -89,10 +89,13 @@ SYSTEM_PROMPT = (
     "(colors 0-15, coordinates x=0..63 left-to-right, y=0..63 top-to-bottom). "
     "You explore to discover the rules, then act to complete levels. "
     "Trust the numeric STRUCTURE and TRANSITION data over the image when they disagree. "
-    "Respond ONLY with a JSON object: {\"reasoning\": \"...\", \"actions\": [ ... ]} where "
-    "each action is either {\"name\": \"up|down|left|right|action5|action7\"} or "
-    "{\"name\": \"click\", \"x\": <0-63>, \"y\": <0-63>}. Plan 1-3 actions. Prefer actions "
-    "not marked ineffective. To find interactive elements, click objects with high button_score."
+    "Respond ONLY with a JSON object: {\"reasoning\": \"...\", \"goal\": {\"x\":<0-63>,\"y\":<0-63>}, "
+    "\"actions\": [ ... ]} where each action is either "
+    "{\"name\": \"up|down|left|right|action5|action7\"} or "
+    "{\"name\": \"click\", \"x\": <0-63>, \"y\": <0-63>}. "
+    "\"goal\" is OPTIONAL: if the game needs moving an avatar to a target location, set goal to "
+    "that target cell and the system will navigate there for you. Plan 1-3 actions. Prefer "
+    "actions not marked ineffective. To find interactive elements, click high button_score objects."
 )
 
 
@@ -177,6 +180,20 @@ def parse_actions(text: str) -> list[dict[str, Any]]:
                 entry["x"] = entry["y"] = 32
         out.append(entry)
     return out
+
+
+def parse_goal(text: str) -> Optional[tuple[int, int]]:
+    """Extrae un sub-objetivo espacial {"goal":{"x","y"}} si el LLM lo propuso."""
+    obj = _extract_json_with_actions(text)
+    if not obj:
+        return None
+    g = obj.get("goal")
+    if isinstance(g, dict) and "x" in g and "y" in g:
+        try:
+            return (max(0, min(63, int(g["x"]))), max(0, min(63, int(g["y"]))))
+        except (TypeError, ValueError):
+            return None
+    return None
 
 
 def _extract_json_with_actions(text: str) -> Optional[dict[str, Any]]:

@@ -83,6 +83,7 @@ def play_game(
         "nodes": len(getattr(agent, "_nodes", ()) or ()),   # GraphExplorer; LLMAgent no tiene
         "llm_calls": getattr(agent, "_llm_calls", 0),
         "llm_fails": getattr(agent, "_llm_fails", 0),
+        "nav_used": getattr(agent, "_nav_used", 0),         # pasos de navegación guiada
         "diag": getattr(agent, "diag", None),               # muestras LLM/reflexión para logs
         "memory": getattr(agent, "_memory", ""),
     }

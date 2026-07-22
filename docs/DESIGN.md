@@ -210,6 +210,20 @@ de prompt (effectiveness, ineffective, memoria) reducen fallos pero no añaden n
 Estas son decisiones de inversión (coste G4 + ingeniería) a consultar antes de ejecutar.
 
 | 2026-07-22 | **Loop agéntico + búsqueda guiada** (elegido): el LLM propone un sub-objetivo espacial `goal:{x,y}`; un controlador de navegación con **modelo de movimiento aprendido** (acción→vector, de las features) alcanza el objetivo sin gastar llamadas al LLM por paso | ataca la causa raíz (planeación); en test la navegación reemplaza ~½ de las llamadas al LLM |
+| 2026-07-22 | v10 Save&Run: navegación activa (nav_used=1692), fallos 3.7% (récord), pero niveles offline planos (9) | la navegación es más capaz/eficiente pero el test offline (30min) está limitado por tiempo; el rerun oculto (8h) es donde la eficiencia compone. Plateau offline v6–v10 = 9 |
+
+## Nota sobre el plateau offline (2026-07-22)
+
+Los niveles **offline** se estancan en ~9 (v6–v10) pese a mejoras reales (reflexión,
+effectiveness, navegación guiada, fallos 7.7%→3.7%). Dos lecturas:
+1. El test offline son **30 min/8 workers sobre 25 juegos** → limitado por tiempo. Las mejoras
+   de eficiencia (navegación reemplaza ½ de las llamadas LLM) **componen en el rerun de 8 h**,
+   donde el tiempo por juego es mucho mayor. El offline subestima al agente en el oculto.
+2. Los juegos que faltan necesitan más que navegación (click-puzzles, match-config, lógica
+   multi-paso). Próximos sub-objetivos a añadir al loop: `click_all(sig)`, `match_target`.
+
+El siguiente dato duro es el **score oculto de v10** (lo envía el trigger diario). Decidir más
+inversión (LoRA / planner sobre simulador) tras ver ese número.
 
 > **Convención:** toda decisión de estrategia nueva se añade a esta tabla y actualiza las
 > secciones relevantes arriba, junto con la fecha de "Última actualización".

@@ -204,8 +204,33 @@ pd.DataFrame([["1_0","1",True,1]],columns=["row_id","game_id","end_of_game","sco
 
 results = run_games(arcade, game_ids, total_budget_s=BUDGET, workers=WORKERS,
                     max_actions=15000, max_game_s=MAXG, card_id=card_id)
-pd.DataFrame(results).to_csv("/kaggle/working/results.csv", index=False)
+
+# CSV sin los campos voluminosos; diag/memory se imprimen abajo.
+slim = [{k: v for k, v in r.items() if k not in ("diag", "memory")} for r in results]
+pd.DataFrame(slim).to_csv("/kaggle/working/results.csv", index=False)
 print("TOTAL niveles:", sum(r["levels"] for r in results))
+
+# ---- DIAGNOSTICO: que genera el LLM (para iterar via Save & Run sin gastar submission) ----
+print("\\n" + "="*70 + "\\nDIAGNOSTICO LLM (primeros juegos con actividad)\\n" + "="*70)
+shown = 0
+for r in sorted(results, key=lambda x: -x.get("llm_calls", 0)):
+    d = r.get("diag")
+    if not d or shown >= 3:
+        continue
+    shown += 1
+    print(f"\\n### {r['game_id']}  niveles={r['levels']} acciones={r['actions']} "
+          f"llm_calls={r['llm_calls']} llm_fails={r['llm_fails']}")
+    print(f"  fallos: exception={d['fail_exception']} parse_empty={d['fail_parse_empty']} "
+          f"no_legal={d['fail_no_legal']}")
+    for j, s in enumerate(d.get("samples", [])[:3]):
+        print(f"  --- sample {j}: PROMPT ---\\n  {s[0][:280]}")
+        print(f"  --- RAW REPLY ---\\n  {repr(s[1])[:380]}")
+        print(f"  --- PARSED ---  {s[2]}")
+    for j, m in enumerate(d.get("reflections", [])[:2]):
+        print(f"  --- REFLECTION {j} ---\\n  {m[:380]}")
+    if r.get("memory"):
+        print(f"  --- MEMORIA FINAL ---\\n  {r['memory'][:500]}")
+print("\\n(fin diagnostico)")
 '''
 
 

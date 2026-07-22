@@ -73,6 +73,13 @@ class LLMAgent:
         self._memory: str = ""          # memoria de reflexión (reglas/objetivo/evitar)
         self._history: list[str] = []   # transiciones compactas para reflexionar
         self._since_reflect = 0
+        # diagnóstico (para inspeccionar en los logs de Save & Run):
+        self.diag_enabled = False
+        self.diag: dict[str, Any] = {
+            "fail_exception": 0, "fail_parse_empty": 0, "fail_no_legal": 0,
+            "samples": [],   # (user_snippet, raw_reply, parsed) de las primeras decisiones
+            "reflections": [],
+        }
 
     # ----- memoria de inefectividad -----
 
@@ -111,6 +118,8 @@ class LLMAgent:
             new_mem = self.chat_fn(REFLECT_SYSTEM, text, None)
             if new_mem and "#" in new_mem:
                 self._memory = new_mem.strip()[:1800]
+                if self.diag_enabled and len(self.diag["reflections"]) < 4:
+                    self.diag["reflections"].append(self._memory[:400])
         except Exception:
             pass
 
@@ -177,7 +186,15 @@ class LLMAgent:
             self._llm_calls += 1
             reply = self.chat_fn(SYSTEM_PROMPT, user, img)
             actions = parse_actions(reply)
-        except Exception:
+        except Exception as e:
+            self.diag["fail_exception"] += 1
+            if self.diag_enabled and len(self.diag["samples"]) < 6:
+                self.diag["samples"].append(("EXCEPTION", str(e)[:200], None))
+            return None
+        if self.diag_enabled and len(self.diag["samples"]) < 6:
+            self.diag["samples"].append((user[:300], reply[:400], actions))
+        if not actions:
+            self.diag["fail_parse_empty"] += 1
             return None
         # filtrar por legalidad e inefectividad conocida
         legal = []
@@ -189,6 +206,7 @@ class LLMAgent:
                 continue
             legal.append(a)
         if not legal:
+            self.diag["fail_no_legal"] += 1
             return None
         for a in legal[1:self.plan_max]:
             self._plan.append(a)
@@ -244,6 +262,22 @@ class HybridAgent:
     @property
     def _llm_fails(self) -> int:
         return self._llm._llm_fails
+
+    @property
+    def diag_enabled(self) -> bool:
+        return self._llm.diag_enabled
+
+    @diag_enabled.setter
+    def diag_enabled(self, v: bool) -> None:
+        self._llm.diag_enabled = v
+
+    @property
+    def diag(self) -> dict:
+        return self._llm.diag
+
+    @property
+    def _memory(self) -> str:
+        return self._llm._memory
 
     def choose(
         self, grid: np.ndarray, state: str, levels_completed: int,

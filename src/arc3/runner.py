@@ -38,6 +38,8 @@ def play_game(
     """
     agent = (_AGENT_FACTORY or (lambda gid, ma: GraphExplorer(gid, max_actions=ma)))(
         game_id, max_actions)
+    if hasattr(agent, "diag_enabled"):
+        agent.diag_enabled = True   # capturar muestras LLM/reflexión para los logs
     t0 = time.time()
     try:
         frame = env.observation_space or env.reset()
@@ -81,6 +83,8 @@ def play_game(
         "nodes": len(getattr(agent, "_nodes", ()) or ()),   # GraphExplorer; LLMAgent no tiene
         "llm_calls": getattr(agent, "_llm_calls", 0),
         "llm_fails": getattr(agent, "_llm_fails", 0),
+        "diag": getattr(agent, "diag", None),               # muestras LLM/reflexión para logs
+        "memory": getattr(agent, "_memory", ""),
     }
 
 

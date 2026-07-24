@@ -93,8 +93,9 @@ SYSTEM_PROMPT = (
     "\"actions\": [ ... ]} where each action is either "
     "{\"name\": \"up|down|left|right|action5|action7\"} or "
     "{\"name\": \"click\", \"x\": <0-63>, \"y\": <0-63>}. "
-    "\"goal\" is OPTIONAL: if the game needs moving an avatar to a target location, set goal to "
-    "that target cell and the system will navigate there for you. Plan 1-3 actions. Prefer "
+    "\"goal\" is OPTIONAL. Two forms: (a) {\"x\":..,\"y\":..} to make the system NAVIGATE an avatar to "
+    "that target cell; (b) {\"type\":\"click_all\",\"color\":C} to make the system CLICK every object of "
+    "color C (use when the goal is to clear/toggle all cells of a kind). Plan 1-3 actions. Prefer "
     "actions not marked ineffective. To find interactive elements, click high button_score objects."
 )
 
@@ -182,15 +183,27 @@ def parse_actions(text: str) -> list[dict[str, Any]]:
     return out
 
 
-def parse_goal(text: str) -> Optional[tuple[int, int]]:
-    """Extrae un sub-objetivo espacial {"goal":{"x","y"}} si el LLM lo propuso."""
+def parse_goal(text: str) -> Optional[dict[str, Any]]:
+    """Extrae un sub-objetivo del LLM. Soporta dos tipos:
+      {"goal":{"x","y"}}              -> {"type":"reach","x","y"}       (navegar)
+      {"goal":{"type":"click_all","color":C}} -> {"type":"click_all","color":C}  (clickear la clase)
+    """
     obj = _extract_json_with_actions(text)
     if not obj:
         return None
     g = obj.get("goal")
-    if isinstance(g, dict) and "x" in g and "y" in g:
+    if not isinstance(g, dict):
+        return None
+    gtype = str(g.get("type", "reach")).lower()
+    if gtype == "click_all" and "color" in g:
         try:
-            return (max(0, min(63, int(g["x"]))), max(0, min(63, int(g["y"]))))
+            return {"type": "click_all", "color": int(g["color"]) % 16}
+        except (TypeError, ValueError):
+            return None
+    if "x" in g and "y" in g:
+        try:
+            return {"type": "reach",
+                    "x": max(0, min(63, int(g["x"]))), "y": max(0, min(63, int(g["y"])))}
         except (TypeError, ValueError):
             return None
     return None

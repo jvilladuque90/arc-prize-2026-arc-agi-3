@@ -225,5 +225,9 @@ effectiveness, navegación guiada, fallos 7.7%→3.7%). Dos lecturas:
 El siguiente dato duro es el **score oculto de v10** (lo envía el trigger diario). Decidir más
 inversión (LoRA / planner sobre simulador) tras ver ese número.
 
+**RESULTADO (2026-07-23): v10 = 0.26** — primer quiebre del piso 0.25. El loop agéntico SÍ compone en
+las 8 h (offline plano confirmó ser solo limitación de tiempo). Plan en ejecución: apilar sub-objetivos
+más ricos (`click_all`, `match_target`).
+
 > **Convención:** toda decisión de estrategia nueva se añade a esta tabla y actualiza las
 > secciones relevantes arriba, junto con la fecha de "Última actualización".

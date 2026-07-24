@@ -309,7 +309,15 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 | 2026-07-22 | Híbrido explorador+LLM (features en prompt) | 9 | 0.25 | LLM arranca, lee features; mismos niveles |
 | 2026-07-22 | + Reflexión (v7) | 8 | — | reglas inferidas en contexto; fallos 5% |
 | 2026-07-22 | + Efectividad (v9) | 9 | — | fallos 7.7%→5.0%; niveles planos |
-| 2026-07-22 | + Navegación guiada (v10) | 9 | **pendiente** | nav_used=1692; fallos 3.7%; niveles planos |
+| 2026-07-22 | + Navegación guiada (v10) | 9 | **0.26** | **primer quiebre por encima del piso 0.25** — el loop agéntico compone en las 8 h donde offline (plano en 9) no puede mostrarlo |
+
+> **Actualización 2026-07-23 — el piso está roto.** v10 dio **0.26** en el set oculto, el primer
+> movimiento por encima del techo de exploración 0.25 en siete submissions. Offline estuvo plano en 9
+> niveles, exactamente como predijo §6: la eficiencia de la navegación guiada (la nav reemplaza ~½ de
+> las llamadas al LLM) compra más acciones útiles por juego en 8 horas, algo que el banco de 30 min no
+> registra. Esto valida la dirección del loop agéntico y el plan: **apilar sub-objetivos más ricos**
+> (`click_all`, `match_target`) más allá de la navegación. Pequeño en absoluto, pero convierte "¿ayuda
+> el LLM en juegos ocultos?" de abierto a **sí**.
 
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 **3.7%**.

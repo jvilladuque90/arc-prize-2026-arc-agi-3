@@ -80,9 +80,10 @@ class LLMAgent:
         # posición estimada del avatar, y sub-objetivo espacial propuesto por el LLM.
         self._motion: dict[int, list[float]] = {}
         self._avatar_xy: Optional[tuple[float, float]] = None
-        self._goal: Optional[tuple[int, int]] = None
+        self._goal: Optional[dict[str, Any]] = None   # {"type":"reach"|"click_all", ...}
         self._nav_left = 0
         self._nav_used = 0
+        self._clicked_goal: set[tuple[int, int]] = set()   # celdas ya clickeadas para click_all
         # diagnóstico (para inspeccionar en los logs de Save & Run):
         self.diag_enabled = False
         self.diag: dict[str, Any] = {
@@ -110,11 +111,40 @@ class LLMAgent:
         cy, cx = objs[0]["centroid"]
         return (cy, cx)   # (y, x)
 
+    def _goal_action(self, grid: np.ndarray, available: list[int]) -> Optional[tuple[int, int, int]]:
+        """Despacha el sub-objetivo activo a su controlador (reach / click_all)."""
+        if self._goal is None:
+            return None
+        if self._goal["type"] == "click_all":
+            return self._click_all_action(grid, available)
+        return self._nav_action(available)
+
+    def _click_all_action(self, grid: np.ndarray, available: list[int]) -> Optional[tuple[int, int, int]]:
+        """Clickea el siguiente objeto no clickeado del color objetivo (goal click_all)."""
+        if available and 6 not in available:
+            self._goal = None
+            return None
+        from .features import connected_components
+        counts = np.bincount(grid.ravel(), minlength=16)
+        target = self._goal["color"]
+        for o in connected_components(grid, int(counts.argmax())):
+            if o["color"] != target:
+                continue
+            cy, cx = o["centroid"]
+            cell = (int(round(cx)), int(round(cy)))
+            if cell in self._clicked_goal:
+                continue
+            self._clicked_goal.add(cell)
+            return (6, cell[0], cell[1])
+        self._goal = None   # no quedan objetos del color -> objetivo cumplido
+        return None
+
     def _nav_action(self, available: list[int]) -> Optional[tuple[int, int, int]]:
         """Elige la acción de movimiento cuyo vector aprendido más acerca al objetivo."""
-        if self._goal is None or self._avatar_xy is None or not self._motion:
+        if self._goal is None or self._goal["type"] != "reach" or \
+                self._avatar_xy is None or not self._motion:
             return None
-        gx, gy = self._goal
+        gx, gy = self._goal["x"], self._goal["y"]
         ay, ax = self._avatar_xy
         dist = ((ay - gy) ** 2 + (ax - gx) ** 2) ** 0.5
         if dist <= 2:                       # objetivo alcanzado
@@ -215,14 +245,15 @@ class LLMAgent:
 
         frame_hash = _hash(grid)
 
-        # 0) navegación guiada: si el LLM fijó un objetivo, acercarnos con el modelo de
-        #    movimiento aprendido (sin gastar llamadas al LLM en cada paso).
+        # 0) búsqueda guiada: si el LLM fijó un sub-objetivo, perseguirlo con el controlador
+        #    correspondiente (navegar / click_all) sin gastar llamadas al LLM en cada paso.
         if self._goal is not None and self._nav_left > 0:
-            nav = self._nav_action(available_actions)
-            if nav is not None:
+            ga = self._goal_action(grid, available_actions)
+            if ga is not None:
                 self._nav_left -= 1
                 self._nav_used += 1
-                return self._emit(grid, {"id": nav[0]})
+                act = {"id": ga[0]} if ga[0] != 6 else {"id": 6, "x": ga[1], "y": ga[2]}
+                return self._emit(grid, act)
 
         # 1) plan pendiente que siga siendo legal y no inefectivo
         while self._plan:
@@ -264,10 +295,16 @@ class LLMAgent:
             reply = self.chat_fn(SYSTEM_PROMPT, user, img)
             actions = parse_actions(reply)
             goal = parse_goal(reply)
-            if goal is not None and self._motion:   # activar navegación hacia el objetivo
-                self._goal = goal
-                self._nav_left = 12
-                self._avatar_xy = self._avatar_xy or self._largest_centroid(grid)
+            if goal is not None:
+                # reach necesita modelo de movimiento; click_all no
+                if goal["type"] == "reach" and not self._motion:
+                    goal = None
+                if goal is not None:
+                    self._goal = goal
+                    self._nav_left = 16 if goal["type"] == "click_all" else 12
+                    self._clicked_goal.clear()
+                    if goal["type"] == "reach":
+                        self._avatar_xy = self._avatar_xy or self._largest_centroid(grid)
         except Exception as e:
             self.diag["fail_exception"] += 1
             if self.diag_enabled and len(self.diag["samples"]) < 6:

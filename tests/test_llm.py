@@ -109,9 +109,31 @@ def test_reflection_updates_and_injects_memory():
 
 def test_parse_goal():
     from arc3.llm_prompt import parse_goal
-    assert parse_goal('{"reasoning":"x","goal":{"x":10,"y":20},"actions":[{"name":"up"}]}') == (10, 20)
+    assert parse_goal('{"reasoning":"x","goal":{"x":10,"y":20},"actions":[{"name":"up"}]}') == \
+        {"type": "reach", "x": 10, "y": 20}
     assert parse_goal('{"actions":[{"name":"up"}]}') is None
-    assert parse_goal('{"goal":{"x":999,"y":-5},"actions":[]}') == (63, 0)
+    assert parse_goal('{"goal":{"x":999,"y":-5},"actions":[]}') == {"type": "reach", "x": 63, "y": 0}
+    assert parse_goal('{"goal":{"type":"click_all","color":3},"actions":[]}') == \
+        {"type": "click_all", "color": 3}
+
+
+def test_click_all_clicks_each_object_of_color():
+    def chat(system, user, image):
+        if system.startswith("You are analyzing"):
+            return "# Memory\n## Rules\n- x\n## Goal\n- y\n## Avoid\n- z"
+        return '{"goal":{"type":"click_all","color":2},"actions":[{"name":"click","x":0,"y":0}]}'
+
+    ag = LLMAgent("g", chat)
+    g = np.zeros((64, 64), dtype=np.int8)
+    g[10:12, 10:12] = 2      # dos objetos color 2 en posiciones distintas
+    g[40:42, 50:52] = 2
+    clicks = []
+    for _ in range(6):
+        aid, x, y = ag.choose(g, "NOT_FINISHED", 0, [6])
+        if aid == 6:
+            clicks.append((x, y))
+    # debe clickear ambos centros distintos (no repetir el mismo)
+    assert len(set(clicks)) >= 2
 
 
 def test_guided_navigation_uses_motion_model():

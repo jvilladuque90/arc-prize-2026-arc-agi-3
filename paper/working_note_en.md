@@ -298,7 +298,17 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 | 2026-07-22 | + Reflection (v7) | 8 | — | rules inferred in-context; fails 5% |
 | 2026-07-22 | + Effectiveness (v9) | 9 | — | fails 7.7%→5.0%; levels flat |
 | 2026-07-22 | + Guided navigation (v10) | 9 | **0.26** | **first break above the 0.25 floor** — the agentic loop compounds over 8 h where offline (flat at 9) cannot show it |
-| 2026-07-24 | + click_all subgoal (v11) | 9 | pending | nav_used 1692→**2588** (subgoal controllers replace more LLM calls); fails 3.7%→**3.2%** |
+| 2026-07-24 | + click_all subgoal (v11) | 9 | **0.25** | **regression to the floor** — click_all clicked 16 objects blindly and wasted the action budget on games where clicking is inert, displacing v10's navigation gain |
+| 2026-07-24 | + guarded click_all (v12) | 9 | pending | abort the click_all excursion the instant a click yields no change → the subgoal can only help, never waste budget; navigation (the 0.26 lever) untouched |
+
+> **Update 2026-07-24 — a clean negative and its fix.** v11 (adding a blind `click_all` subgoal)
+> scored **0.25**, *below* v10's 0.26 — a real regression back to the exploration floor. The metric is
+> discrete (~0.01 ≈ one hidden level), so 0.26→0.25 means click_all *lost* the one level navigation had
+> won: its controller committed up to 16 clicks per invocation without checking effect, burning the
+> action budget on games where clicking is inert. The lesson is the same one the exploration A/B taught:
+> **an unguarded excursion is net-negative on a task where the action budget is the binding constraint.**
+> Fix (v12): the click_all excursion aborts the instant a click produces no frame change, so it can only
+> help; navigation — the proven 0.26 lever — is left untouched.
 
 > **Update 2026-07-23 — the floor is broken.** v10 scored **0.26** on the hidden set, the first
 > movement above the 0.25 exploration ceiling across seven submissions. Offline was flat at 9 levels,
@@ -308,7 +318,7 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > navigation. Small in absolute terms, but it turns "does the LLM help at all on hidden games?" from
 > open to **yes**.
 
-**Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → **3.2%**.
+**Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +
 `enable_thinking=False`.
 

@@ -203,6 +203,14 @@ class LLMAgent:
                 self._fail_key(self._prev_action))
         if not changed:  # plan que no mueve nada se aborta
             self._plan.clear()
+            # GUARD (v11=0.25 regresó): click_all clickeaba 16 objetos a ciegas y malgastaba
+            # acciones donde clickear no sirve. Abortar la excursión click_all en cuanto un
+            # click no produce cambio -> solo puede ayudar, nunca dañar. La navegación tiene
+            # su propia salida (_nav_action devuelve None si nada acerca) y no se toca aquí.
+            if (self._goal is not None and self._goal.get("type") == "click_all"
+                    and self._prev_action["id"] == 6 and not leveled):
+                self._goal = None
+                self._nav_left = 0
 
     def _maybe_reflect(self, levels: int) -> None:
         """Cada REFLECT_EVERY transiciones LLM, resume el historial en memoria accionable."""

@@ -310,7 +310,18 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 | 2026-07-22 | + Reflexión (v7) | 8 | — | reglas inferidas en contexto; fallos 5% |
 | 2026-07-22 | + Efectividad (v9) | 9 | — | fallos 7.7%→5.0%; niveles planos |
 | 2026-07-22 | + Navegación guiada (v10) | 9 | **0.26** | **primer quiebre por encima del piso 0.25** — el loop agéntico compone en las 8 h donde offline (plano en 9) no puede mostrarlo |
-| 2026-07-24 | + sub-objetivo click_all (v11) | 9 | pendiente | nav_used 1692→**2588** (los controladores de sub-objetivo reemplazan más llamadas al LLM); fallos 3.7%→**3.2%** |
+| 2026-07-24 | + sub-objetivo click_all (v11) | 9 | **0.25** | **regresión al piso** — click_all clickeaba 16 objetos a ciegas y malgastaba el presupuesto de acciones donde clickear es inerte, desplazando la ganancia de navegación de v10 |
+| 2026-07-24 | + click_all guardado (v12) | 9 | pendiente | aborta la excursión click_all en cuanto un click no produce cambio → el sub-objetivo solo puede ayudar, nunca malgastar; la navegación (el lever de 0.26) intacta |
+
+> **Actualización 2026-07-24 — un negativo limpio y su corrección.** v11 (añadiendo un sub-objetivo
+> `click_all` ciego) dio **0.25**, *por debajo* del 0.26 de v10 — una regresión real al piso de
+> exploración. La métrica es discreta (~0.01 ≈ un nivel oculto), así que 0.26→0.25 significa que
+> click_all *perdió* el nivel que la navegación había ganado: su controlador cometía hasta 16 clicks por
+> invocación sin verificar efecto, quemando el presupuesto de acciones en juegos donde clickear es
+> inerte. La lección es la misma que enseñó el A/B de exploración: **una excursión sin guardar es
+> net-negativa en una tarea donde el presupuesto de acciones es la restricción vinculante.** Corrección
+> (v12): la excursión click_all aborta en cuanto un click no produce cambio de frame, así solo puede
+> ayudar; la navegación — el lever probado de 0.26 — queda intacta.
 
 > **Actualización 2026-07-23 — el piso está roto.** v10 dio **0.26** en el set oculto, el primer
 > movimiento por encima del techo de exploración 0.25 en siete submissions. Offline estuvo plano en 9

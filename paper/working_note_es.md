@@ -310,6 +310,7 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 | 2026-07-22 | + Reflexión (v7) | 8 | — | reglas inferidas en contexto; fallos 5% |
 | 2026-07-22 | + Efectividad (v9) | 9 | — | fallos 7.7%→5.0%; niveles planos |
 | 2026-07-22 | + Navegación guiada (v10) | 9 | **0.26** | **primer quiebre por encima del piso 0.25** — el loop agéntico compone en las 8 h donde offline (plano en 9) no puede mostrarlo |
+| 2026-07-24 | + sub-objetivo click_all (v11) | 9 | pendiente | nav_used 1692→**2588** (los controladores de sub-objetivo reemplazan más llamadas al LLM); fallos 3.7%→**3.2%** |
 
 > **Actualización 2026-07-23 — el piso está roto.** v10 dio **0.26** en el set oculto, el primer
 > movimiento por encima del techo de exploración 0.25 en siete submissions. Offline estuvo plano en 9
@@ -320,7 +321,7 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > el LLM en juegos ocultos?" de abierto a **sí**.
 
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
-**3.7%**.
+3.7% → **3.2%**.
 **vLLM en RTX Pro 6000:** modelo 33.7 GiB, KV cache 45 GiB; arranca con Marlin FP8 + FLASH_ATTN +
 `enable_thinking=False`.
 

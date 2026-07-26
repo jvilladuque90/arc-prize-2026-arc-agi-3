@@ -299,7 +299,22 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 | 2026-07-22 | + Effectiveness (v9) | 9 | — | fails 7.7%→5.0%; levels flat |
 | 2026-07-22 | + Guided navigation (v10) | 9 | **0.26** | **first break above the 0.25 floor** — the agentic loop compounds over 8 h where offline (flat at 9) cannot show it |
 | 2026-07-24 | + click_all subgoal (v11) | 9 | **0.25** | **regression to the floor** — click_all clicked 16 objects blindly and wasted the action budget on games where clicking is inert, displacing v10's navigation gain |
-| 2026-07-24 | + guarded click_all (v12) | 9 | pending | abort the click_all excursion the instant a click yields no change → the subgoal can only help, never waste budget; navigation (the 0.26 lever) untouched |
+| 2026-07-24 | + guarded click_all (v12) | 7 | **0.25** | even the *guarded* click_all did not recover 0.26 → forces the honest reading below: 0.26 was within run-to-run noise |
+
+> **Update 2026-07-26 — the honest correction: 0.26 was within noise.** Across **seven** LLM/hybrid
+> submissions the hidden score is **0.26 once (v10) and 0.25 six times** (v1–v3, hybrid, v11, v12). With
+> a discrete metric (~0.01 ≈ one hidden level out of ~110), LLM temperature 0.3, and exploration
+> randomness, a single 0.26 among seven runs is **most consistent with run-to-run seed variance, not a
+> reproducible breakthrough** — the guarded click_all (v12) failing to recover it is the decisive
+> evidence. I over-read v10=0.26 as "breaking the floor"; the disciplined conclusion is that the
+> **LLM agentic loop has not robustly cleared 0.25**, and incremental subgoals produce differences that
+> the ±one-level noise band swamps. This is precisely the seed-variance discipline the genre demands
+> ("run-to-run variance swamps most improvements"): **at the current signal-to-noise, one 1/day
+> submission cannot distinguish these variants.** Strategic consequence: stop spending daily slots on
+> noise-level subgoal tweaks; the next move must be a *qualitatively stronger* lever whose expected
+> effect exceeds the one-level noise band (simulator-planner if the game source is reachable in the
+> rerun, or LoRA-SFT), or an explicit variance-reduction protocol (repeat the same config to estimate
+> the true mean before trusting any delta).
 
 > **Update 2026-07-24 — a clean negative and its fix.** v11 (adding a blind `click_all` subgoal)
 > scored **0.25**, *below* v10's 0.26 — a real regression back to the exploration floor. The metric is
@@ -310,13 +325,13 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > Fix (v12): the click_all excursion aborts the instant a click produces no frame change, so it can only
 > help; navigation — the proven 0.26 lever — is left untouched.
 
-> **Update 2026-07-23 — the floor is broken.** v10 scored **0.26** on the hidden set, the first
-> movement above the 0.25 exploration ceiling across seven submissions. Offline was flat at 9 levels,
-> exactly as §6 predicted: the guided-navigation efficiency (nav replaces ~½ of LLM calls) buys more
-> useful actions per game over 8 hours, which the 30-min bench cannot register. This validates the
-> agentic-loop direction and the plan: **stack richer subgoals** (`click_all`, `match_target`) beyond
-> navigation. Small in absolute terms, but it turns "does the LLM help at all on hidden games?" from
-> open to **yes**.
+> **Update 2026-07-23 — apparent break above the floor (later revised down as noise; see 2026-07-26).**
+> v10 scored **0.26** on the hidden set, the first reading above 0.25 in six submissions, which at the
+> time looked like the agentic loop compounding over 8 h. Two later submissions (v11, v12) both returned
+> to 0.25, and the honest re-reading — a single 0.26 among seven runs on a discrete metric — is that
+> **0.26 was within run-to-run seed variance, not a reproducible breakthrough** (see the 2026-07-26
+> update). I keep this entry to record the mistake: I over-read one favorable point before the noise
+> band was known.
 
 **Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +

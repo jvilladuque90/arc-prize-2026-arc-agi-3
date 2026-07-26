@@ -231,3 +231,5 @@ más ricos (`click_all`, `match_target`).
 
 > **Convención:** toda decisión de estrategia nueva se añade a esta tabla y actualiza las
 > secciones relevantes arriba, junto con la fecha de "Última actualización".
+
+**ACTUALIZACION 2026-07-26: 0.26 fue RUIDO.** 7 submissions LLM/hibrido = 0.26 una vez (v10), 0.25 seis veces. El loop agentico no supera 0.25 de forma robusta; los sub-objetivos incrementales estan por debajo de la banda de ruido (~1 nivel = 0.01). Proximo paso debe ser un lever cualitativamente mas fuerte (planner/LoRA) o protocolo de reduccion de varianza. Ver paper/working_note.

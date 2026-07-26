@@ -311,7 +311,23 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 | 2026-07-22 | + Efectividad (v9) | 9 | — | fallos 7.7%→5.0%; niveles planos |
 | 2026-07-22 | + Navegación guiada (v10) | 9 | **0.26** | **primer quiebre por encima del piso 0.25** — el loop agéntico compone en las 8 h donde offline (plano en 9) no puede mostrarlo |
 | 2026-07-24 | + sub-objetivo click_all (v11) | 9 | **0.25** | **regresión al piso** — click_all clickeaba 16 objetos a ciegas y malgastaba el presupuesto de acciones donde clickear es inerte, desplazando la ganancia de navegación de v10 |
-| 2026-07-24 | + click_all guardado (v12) | 9 | pendiente | aborta la excursión click_all en cuanto un click no produce cambio → el sub-objetivo solo puede ayudar, nunca malgastar; la navegación (el lever de 0.26) intacta |
+| 2026-07-24 | + click_all guardado (v12) | 7 | **0.25** | incluso el click_all *guardado* no recuperó 0.26 → fuerza la lectura honesta de abajo: 0.26 estaba dentro del ruido run-to-run |
+
+> **Actualización 2026-07-26 — la corrección honesta: 0.26 estaba dentro del ruido.** En **siete**
+> submissions LLM/híbrido el score oculto es **0.26 una vez (v10) y 0.25 seis veces** (v1–v3, híbrido,
+> v11, v12). Con métrica discreta (~0.01 ≈ un nivel oculto de ~110), temperatura 0.3 del LLM y azar de
+> exploración, un solo 0.26 entre siete corridas es **más consistente con varianza run-to-run que con un
+> quiebre reproducible** — que el click_all guardado (v12) no lo recuperara es la evidencia decisiva.
+> Sobre-leí v10=0.26 como "romper el piso"; la conclusión disciplinada es que el **loop agéntico LLM no
+> ha superado 0.25 de forma robusta**, y los sub-objetivos incrementales producen diferencias que la
+> banda de ruido de ±un-nivel se traga. Es justo la disciplina de varianza-por-semilla que el género
+> exige ("la varianza run-to-run se traga la mayoría de las mejoras"): **con el signal-to-noise actual,
+> una submission 1/día no distingue estas variantes.** Consecuencia estratégica: dejar de gastar slots
+> diarios en tweaks de sub-objetivo a nivel de ruido; el próximo movimiento debe ser un lever
+> *cualitativamente más fuerte* cuyo efecto esperado supere la banda de ruido de un-nivel (planner sobre
+> simulador si el source del juego es accesible en el rerun, o LoRA-SFT), o un protocolo explícito de
+> reducción de varianza (repetir la misma config para estimar la media real antes de confiar en un
+> delta).
 
 > **Actualización 2026-07-24 — un negativo limpio y su corrección.** v11 (añadiendo un sub-objetivo
 > `click_all` ciego) dio **0.25**, *por debajo* del 0.26 de v10 — una regresión real al piso de
@@ -323,13 +339,13 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > (v12): la excursión click_all aborta en cuanto un click no produce cambio de frame, así solo puede
 > ayudar; la navegación — el lever probado de 0.26 — queda intacta.
 
-> **Actualización 2026-07-23 — el piso está roto.** v10 dio **0.26** en el set oculto, el primer
-> movimiento por encima del techo de exploración 0.25 en siete submissions. Offline estuvo plano en 9
-> niveles, exactamente como predijo §6: la eficiencia de la navegación guiada (la nav reemplaza ~½ de
-> las llamadas al LLM) compra más acciones útiles por juego en 8 horas, algo que el banco de 30 min no
-> registra. Esto valida la dirección del loop agéntico y el plan: **apilar sub-objetivos más ricos**
-> (`click_all`, `match_target`) más allá de la navegación. Pequeño en absoluto, pero convierte "¿ayuda
-> el LLM en juegos ocultos?" de abierto a **sí**.
+> **Actualización 2026-07-23 — aparente quiebre del piso (luego revisado a la baja como ruido; ver
+> 2026-07-26).** v10 dio **0.26** en el set oculto, la primera lectura por encima de 0.25 en seis
+> submissions, que en el momento pareció el loop agéntico componiendo en las 8 h. Dos submissions
+> posteriores (v11, v12) volvieron ambas a 0.25, y la re-lectura honesta — un solo 0.26 entre siete
+> corridas en métrica discreta — es que **0.26 estaba dentro de la varianza run-to-run, no un quiebre
+> reproducible** (ver la actualización 2026-07-26). Conservo esta entrada para dejar registro del error:
+> sobre-leí un punto favorable antes de conocer la banda de ruido.
 
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 3.7% → **3.2%**.

@@ -313,6 +313,20 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 | 2026-07-24 | + sub-objetivo click_all (v11) | 9 | **0.25** | **regresión al piso** — click_all clickeaba 16 objetos a ciegas y malgastaba el presupuesto de acciones donde clickear es inerte, desplazando la ganancia de navegación de v10 |
 | 2026-07-24 | + click_all guardado (v12) | 7 | **0.25** | incluso el click_all *guardado* no recuperó 0.26 → fuerza la lectura honesta de abajo: 0.26 estaba dentro del ruido run-to-run |
 
+> **Actualización 2026-07-27 — confirmado por ablación, y un reencuadre de estrategia.** Re-enviar el
+> config *exacto* de v10 (nav-sola) dio **0.25** (la primera vez dio 0.26) — una medición directa,
+> mismo-config, de la banda de ruido que **confirma definitivamente que 0.26 fue varianza de semilla**.
+> El loop agéntico LLM no supera 0.25. **Pero la realización más importante es un reencuadre de qué
+> significa 0.25:** es el techo de *nuestro explorador*, no de la exploración. El mejor agente de
+> **exploración pura** público (poby7722 v47) da **0.54** en el set oculto — más del doble que el
+> nuestro — sin ML, sin GPU, solo con mejor hashing de estado, cobertura de candidatos de click,
+> detección de ciclos y disciplina de presupuesto por juego. Construimos el LLM sobre la premisa de que
+> "la exploración está capada en 0.25", pero esa premisa era falsa: nuestra *implementación* topó en
+> 0.25; la exploración tiene un headroom probado de 0.54 a **coste cero de GPU**. El pivote de mayor
+> valor esperado no es entonces un lever LLM más fuerte, sino **cerrar la brecha de exploración hasta la
+> referencia pública de 0.54** (solo-CPU, sin cuota, con la referencia en mano) — y luego poner el LLM
+> solo sobre lo que la exploración genuinamente no alcanza. Es la decisión que fuerza la ablación.
+
 > **Actualización 2026-07-26 — la corrección honesta: 0.26 estaba dentro del ruido.** En **siete**
 > submissions LLM/híbrido el score oculto es **0.26 una vez (v10) y 0.25 seis veces** (v1–v3, híbrido,
 > v11, v12). Con métrica discreta (~0.01 ≈ un nivel oculto de ~110), temperatura 0.3 del LLM y azar de

@@ -301,6 +301,19 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 | 2026-07-24 | + click_all subgoal (v11) | 9 | **0.25** | **regression to the floor** — click_all clicked 16 objects blindly and wasted the action budget on games where clicking is inert, displacing v10's navigation gain |
 | 2026-07-24 | + guarded click_all (v12) | 7 | **0.25** | even the *guarded* click_all did not recover 0.26 → forces the honest reading below: 0.26 was within run-to-run noise |
 
+> **Update 2026-07-27 — confirmed by ablation, and a strategy reframe.** Re-submitting v10's *exact*
+> navigation-only config scored **0.25** (it scored 0.26 the first time) — a direct, same-config
+> measurement of the noise band that **definitively confirms 0.26 was seed variance**. The LLM agentic
+> loop does not beat 0.25. **But the more important realization is a reframe of what 0.25 means:** it is
+> *our explorer's* ceiling, not exploration's. The strongest **pure-exploration** public agent
+> (poby7722 v47) scores **0.54** on the hidden set — more than double our explorer — with no ML, no GPU,
+> just better state-hashing, click-candidate coverage, cycle detection, and per-game budget discipline.
+> We built the LLM on the premise that "exploration is capped at 0.25", but that premise was wrong: our
+> *implementation* capped at 0.25; exploration itself has a proven 0.54 headroom at **zero GPU cost**.
+> The highest-expected-value pivot is therefore **not** a stronger LLM lever but **closing the
+> exploration gap to the public 0.54 reference** (CPU-only, no quota, reference in hand) — then layering
+> the LLM only on what exploration genuinely cannot reach. This is the decision the ablation forces.
+
 > **Update 2026-07-26 — the honest correction: 0.26 was within noise.** Across **seven** LLM/hybrid
 > submissions the hidden score is **0.26 once (v10) and 0.25 six times** (v1–v3, hybrid, v11, v12). With
 > a discrete metric (~0.01 ≈ one hidden level out of ~110), LLM temperature 0.3, and exploration

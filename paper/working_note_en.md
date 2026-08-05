@@ -239,6 +239,13 @@ A recurring question: would **LoRA** and **TTT** help here? My reasoned position
   adapts per-game *in context* without touching weights. If online learning is truly wanted, a light
   StochasticGoose-style CNN is the pragmatic choice, but it caps around 0.35–0.46.
 
+**Reframe (2026-07-27) — the training question is currently subordinate.** The ablation showed our
+in-context loop is noise-bound at 0.25, but the binding constraint turned out **not** to be a training
+tactic at all: our *world-model explorer* (no gradients, no GPU) scores 0.25 where the best public
+explorer scores 0.54. The highest-value learning to improve right now is the **gradient-free world
+model** (better state-hashing, click coverage, per-game budget), not any weight-training scheme. LoRA
+and TTT stay on the shelf until the explorer gap is closed. Full treatment in `docs/DESIGN.md §4`.
+
 ## 5. Contribution of individual ideas
 
 | Idea | Where measured | Contribution |

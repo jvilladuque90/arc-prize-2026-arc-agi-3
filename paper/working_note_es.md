@@ -249,6 +249,14 @@ Una pregunta recurrente: ¿ayudarían **LoRA** y **TTT** aquí? Mi posición raz
   sin tocar pesos. Si de verdad se quiere aprendizaje online, una CNN ligera estilo StochasticGoose es la
   opción pragmática, pero topa alrededor de 0.35–0.46.
 
+**Reencuadre (2026-07-27) — la pregunta de entrenamiento es hoy secundaria.** La ablación mostró que
+nuestro loop en-contexto es noise-bound en 0.25, pero la restricción vinculante resultó **no** ser una
+táctica de entrenamiento: nuestro *explorador modelo-del-mundo* (sin gradientes, sin GPU) da 0.25 donde
+el mejor explorador público da 0.54. El aprendizaje de mayor valor a mejorar ahora es el **modelo del
+mundo sin gradientes** (mejor hashing de estado, cobertura de clicks, presupuesto por juego), no ningún
+esquema de entrenar pesos. LoRA y TTT quedan en reserva hasta cerrar la brecha del explorador.
+Tratamiento completo en `docs/DESIGN.md §4`.
+
 ## 5. Contribución de las ideas individuales
 
 | Idea | Dónde se midió | Contribución |

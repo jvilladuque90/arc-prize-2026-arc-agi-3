@@ -1,7 +1,8 @@
 # ARC-AGI-3 — Diseño, features y estrategia (documento vivo)
 
 > **Documento vivo.** Se actualiza en cada decisión de estrategia. Ver el
-> [registro de decisiones](#registro-de-decisiones) al final. Última actualización: 2026-07-22.
+> [registro de decisiones](#5-registro-de-decisiones) y el [estado actual](#6-estado-actual-2026-07-29--resumen-ejecutivo)
+> al final. Última actualización: **2026-07-29**.
 
 ---
 
@@ -131,50 +132,119 @@ de razonamiento); `VLLM_TEST_FORCE_FP8_MARLIN=1` (evita el crash de flashinfer e
 
 ---
 
-## 4. Formas de entrenar / mejorar el modelo
+## 4. Tácticas de aprendizaje / entrenamiento (detallado)
 
-Espectro de menor a mayor coste. **El estado actual usa (A).**
+### 4.0. ¿Qué significa "entrenar" en ARC-AGI-3? (el encuadre)
 
-### (A) Aprendizaje en contexto — *sin entrenar pesos* — **[actual]**
-Reflexión periódica + features + memoria de inefectividad. Barato, generaliza a juegos
-nuevos, cero riesgo de overfit. Es lo que hizo el agente 0.86. **Primer lever a exprimir.**
+Esto es clave y suele confundirse. ARC-AGI-3 **no** es aprendizaje supervisado como ARC-AGI-2: no hay
+pares `input→output` que ajustar. Es un problema **RL-interactivo** (el agente actúa, observa, y solo
+recibe señal esparsa: `levels_completed`). "Aprender" aquí puede significar **tres cosas distintas**,
+y los tres coexisten en los agentes top del leaderboard:
 
-### (B) LoRA-SFT offline (behavior cloning) — *entrenar un adaptador pequeño*
-Fine-tune LoRA del LLM sobre **trayectorias buenas** de los 25 juegos de train. Fuente de
-trayectorias: (1) las secuencias con las que el **explorador/solver** completa niveles —
-podemos **cargar el `.py` del juego** y resolver con búsqueda en el simulador (como los agentes
-FORGE), generando trayectorias casi-óptimas; (2) augmentación (D4×color, reetiquetado).
-- **Pro:** enseña el **formato** de acción y **idiomas comunes** ("clickear botones",
-  "explorar y luego explotar") de forma nativa → menos fallos, mejores clicks.
-- **Contra / riesgo clave:** los juegos ocultos son **distintos** → SFT sobre 25 juegos puede
-  **sobreajustar** y no generalizar (el núcleo de la dificultad ARC). Mitigación: entrenar
-  *skills generales* y augmentar agresivamente, no memorizar soluciones concretas.
-- **Coste:** 1 corrida de entrenamiento en la G4 (LoRA r=16–64 sobre 27B es factible), datos
-  generados offline. Medio.
+1. **Aprender los PESOS del modelo** (con descenso de gradiente): SFT/LoRA offline, o RL. Cambia la red.
+2. **Aprender EN CONTEXTO** (sin tocar pesos): meter en el prompt lo aprendido durante la partida
+   (reglas, qué no funciona) para que el LLM lo use dentro de su ventana de atención.
+3. **Aprender un MODELO DEL MUNDO explícito** durante la partida: estructuras de datos (un grafo de
+   estados, un modelo de movimiento) que se actualizan con la experiencia — aprendizaje **sin
+   gradientes** y sin LLM.
 
-### (C) TTT — test-time training / adaptación por-juego
-En ARC-AGI-2 "TTT" = fine-tune en los ejemplos de la tarea al inferir. Aquí la "tarea" es un
-juego jugado en muchos pasos, así que TTT significaría **actualizar el LoRA online** con
-`(estado, acción, resultado)` durante la partida.
-- **Realidad:** vLLM (serving) **no** soporta bien updates de pesos online; montar
-  entrenamiento + servido del 27B en paralelo en 1 GPU es caro y frágil. El ganador **no** lo
-  hizo — su "adaptación en test" es la **memoria de reflexión** (nuestra opción A), que es TTT
-  *en contexto* sin tocar pesos.
-- **Alternativa ligera si se quiere aprendizaje online real:** una CNN pequeña estilo
-  *StochasticGoose* (política online por curiosidad, reward = "el frame cambió"), entrenada
-  desde cero por nivel. Barata y sin LLM, pero **techo bajo** (~0.35–0.46 en el LB público).
+La táctica correcta depende de cuál cuello domina. **Nuestro estado actual usa (2) y (3); no usamos
+(1).** Y el hallazgo reciente (§4.2) reordena las prioridades.
 
-### Recomendación
-1. **Exprimir (A)** — reflexión + prompt + features. Es donde estamos; medir vía Save & Run.
-2. Si (A) se estanca, **(B) LoRA-SFT** con trayectorias del solver-sobre-simulador y fuerte
-   augmentación, vigilando generalización en un held-out de juegos de train.
-3. **(C) TTT-online sobre el LLM: no** (coste/beneficio malo con vLLM). Usar reflexión como la
-   adaptación en test; considerar la CNN online solo como política auxiliar barata.
+### 4.1. Lo que USAMOS ahora: aprendizaje sin gradientes (in-context + world-model)
 
-> **¿Sirve LoRA + TTT aquí?** LoRA-SFT (B): **sí, condicionalmente** — útil para formato y
-> skills generales, con riesgo de overfit a los 25 juegos; el valor es enseñar a *generalizar*,
-> no a memorizar. TTT-online sobre el LLM (C): **no lo recomendamos** por incompatibilidad
-> práctica con vLLM y mal coste/beneficio; la reflexión en contexto cumple ese rol mejor.
+**(3) Modelo del mundo explícito (el GraphExplorer).** Es aprendizaje real, online, sin gradientes:
+- **Grafo de estados**: cada frame distinto (tras enmascarar) es un nodo; cada acción, una arista. El
+  agente *construye* este mapa jugando y lo *reusa* (BFS a nodos con acciones pendientes, replay tras
+  RESET). Aprende la topología del juego.
+- **Máscara de contador aprendida**: durante 12 transiciones aprende qué celdas interiores son ruido
+  (animaciones/contadores) y las congela — aprende a *ignorar* lo irrelevante.
+- **P(cambio) por acción y `deadsig`**: aprende qué acciones/clicks mueven el mundo en cada estado y
+  cuáles son inertes. Aprende la dinámica local.
+- **Modelo de movimiento** (`acción → vector (dy,dx)`): aprende cómo cada tecla mueve al avatar, y con
+  eso navega hacia objetivos. Aprende la física del juego.
+
+**(2) Aprendizaje en contexto (el LLMAgent).** El LLM está **congelado**; "aprende" solo dentro del
+prompt:
+- **Memoria de reflexión**: cada 15 transiciones, una 2ª llamada resume el historial en reglas
+  (`## Rules / ## Goal / ## Avoid`) que se re-inyectan. El modelo *acumula* comprensión sin cambiar
+  pesos — es TTT *en contexto*.
+- **Memoria de inefectividad** por `(hash_estado, acción)` y **efectividad** por acción: datos duros
+  re-inyectados para que no repita lo que ya falló.
+
+**Por qué esta táctica (y no entrenar pesos):** (a) **generaliza** a juegos nuevos por diseño — no hay
+riesgo de overfit porque no ajustamos nada a los 25 de train; (b) es **barata** (sin corridas de
+entrenamiento); (c) es exactamente lo que hizo el mejor agente público de un-solo-LLM (LB 0.86). Es el
+primer lever a exprimir antes de pagar el coste de entrenar.
+
+### 4.2. Estado HONESTO de esta táctica (2026-07-27 — crítico, reordena todo)
+
+Medimos con submissions reales y una **ablación** (re-enviar el mismo config): el loop in-context del
+LLM **no supera 0.25 de forma robusta**. La memoria *funciona* (infiere reglas correctas, verificado en
+los logs), pero **no se traduce en niveles nuevos** por encima del piso de exploración; el único 0.26
+resultó ser **ruido de semilla** (banda medida ~1 nivel ≈ 0.01, ver §6-bis del working note).
+
+**El reencuadre que esto fuerza:** el cuello inmediato **no** es la táctica de entrenamiento del LLM.
+Es que nuestro **modelo-del-mundo explorador (0.25) está muy por debajo del explorador público
+(poby7722 = 0.54)** — más del doble, sin ML y sin GPU. Cerrar esa brecha **no requiere entrenar pesos**:
+es ingeniería del aprendizaje-sin-gradientes (mejor hashing de estado, cobertura de candidatos de
+click, detección de ciclos, presupuesto serial-por-juego). Por eso la prioridad #1 dejó de ser "más
+LLM" y pasó a "arreglar el explorador". El LLM se reserva para lo que la exploración *genuinamente* no
+alcanza.
+
+### 4.3. (B) LoRA-SFT offline — entrenar un adaptador pequeño (cuándo y cómo)
+
+Si (2)+(3) se agotan, el siguiente escalón **sí** toca pesos. Mecánica:
+- **Qué es LoRA**: en vez de re-entrenar los 27B parámetros, se inserta un par de matrices de bajo
+  rango `A·B` (rango r=16–64) en las capas de atención; solo se entrenan esos ~0.1% de parámetros.
+  Cabe en la G4 y es rápido.
+- **De dónde salen los datos (behavior cloning)**: generamos **trayectorias buenas** offline. La fuente
+  potente: **cargar el `.py` del juego** (accesible offline en los 25 de train) y **resolverlo con
+  búsqueda en el simulador** (BFS/beam, estilo FORGE) → secuencias `(estado → acción óptima)`. Luego se
+  entrena al LLM a imitar esas acciones dado el estado + nuestras features.
+- **Augmentación** (obligatoria contra overfit): D4 (rotaciones/reflejos) × permutación de colores ×
+  reetiquetado de acciones equivalentes → multiplica los 25 juegos en miles de variantes.
+- **El riesgo central (el núcleo de ARC)**: los juegos **ocultos son distintos** de los 25 de train.
+  SFT puede **memorizar** soluciones concretas y **no generalizar**. La mitigación no es opcional:
+  entrenar *skills generales* ("ir hacia el botón pequeño y raro", "explorar y luego explotar"), no
+  soluciones; y validar en un **held-out** de juegos de train nunca vistos por el SFT. Si el held-out no
+  mejora, el SFT está memorizando y no sirve.
+- **Coste**: 1 corrida de entrenamiento en la G4 + generación de datos offline. Medio.
+
+### 4.4. (C) TTT online sobre el LLM — por qué NO
+
+"TTT" (test-time training) en ARC-AGI-2 = fine-tunear en los ejemplos de la tarea al inferir. Aquí sería
+**actualizar el LoRA online** con `(estado, acción, resultado)` durante la partida de 8 h.
+- **Por qué no**: vLLM (el servidor de inferencia) **no** soporta bien updates de pesos en caliente;
+  montar entrenamiento **y** servido del 27B en paralelo en **una** GPU es caro, frágil y come el
+  presupuesto de 8 h. El ganador (1.21) **no** lo hizo.
+- **Qué hacemos en su lugar**: la **memoria de reflexión** ES la adaptación en test — TTT *en contexto*,
+  sin tocar pesos, sin el coste. Cumple el mismo rol (el agente se especializa al juego actual) de forma
+  robusta.
+
+### 4.5. (D) RL online ligero (CNN estilo StochasticGoose) — la alternativa sin LLM
+
+Si se quisiera aprendizaje **online con gradientes** pero barato: una CNN pequeña (no un LLM) entrenada
+desde cero **por nivel**, con reward de curiosidad (`+1` si la acción cambió el frame). Es lo que hizo
+el sample oficial. **Pro**: barata, sin GPU cara, adapta online de verdad. **Contra**: **techo bajo**
+(~0.35–0.46 en el LB) porque aprende "qué hace algo", no "cuál es el objetivo". La descartamos como vía
+principal, pero es un candidato de política auxiliar si el explorador+LLM dejan huecos.
+
+### 4.6. Recomendación (actualizada tras el reencuadre 2026-07-27)
+
+| Prioridad | Táctica | Tipo de aprendizaje | Coste | Estado |
+|---|---|---|---|---|
+| **1** | Cerrar la brecha del **explorador** a 0.54 (hashing, cobertura, presupuesto serial) | mundo explícito, sin gradientes | CPU, **sin cuota G4** | **el lever de mayor valor ahora** |
+| 2 | LLM in-context (reflexión+features) solo sobre juegos que la exploración no alcanza | en contexto, sin gradientes | G4 (inferencia) | construido; noise-bound sobre el piso actual |
+| 3 | LoRA-SFT con trayectorias del solver + augmentación fuerte + held-out | pesos, offline | G4 (1 entrenamiento) | si 1–2 se agotan |
+| 4 | TTT-online sobre el LLM | pesos, online | alto/frágil | **descartado** (usar reflexión) |
+
+> **¿Sirve LoRA + TTT aquí?** **LoRA-SFT**: sí, condicionalmente — para formato y skills generales, con
+> riesgo real de overfit a los 25 juegos; el valor es enseñar a *generalizar*, no a memorizar, y hay que
+> probarlo en held-out. **TTT-online sobre el LLM**: no — incompatible en la práctica con vLLM y mal
+> coste/beneficio; la reflexión en contexto ya cumple ese papel. **Y el punto más importante hoy**: el
+> cuello actual no se resuelve con *ninguna* forma de entrenar pesos, sino mejorando el **modelo del
+> mundo sin gradientes** del explorador (0.25→0.54), que es gratis en GPU.
 
 ---
 
@@ -233,3 +303,35 @@ más ricos (`click_all`, `match_target`).
 > secciones relevantes arriba, junto con la fecha de "Última actualización".
 
 **ACTUALIZACION 2026-07-26: 0.26 fue RUIDO.** 7 submissions LLM/hibrido = 0.26 una vez (v10), 0.25 seis veces. El loop agentico no supera 0.25 de forma robusta; los sub-objetivos incrementales estan por debajo de la banda de ruido (~1 nivel = 0.01). Proximo paso debe ser un lever cualitativamente mas fuerte (planner/LoRA) o protocolo de reduccion de varianza. Ver paper/working_note.
+
+**ABLACION 2026-07-27: confirmado.** Re-enviar el config EXACTO de v10 (nav-sola) dio **0.25** (antes 0.26) → medición directa, mismo-config, de la banda de ruido. 0.26 = varianza de semilla, sin ambigüedad. Además, **reencuadre**: 0.25 es el techo de *nuestro* explorador, no de la exploración (poby7722 = 0.54 sin ML). Prioridad #1 pasa a **cerrar la brecha del explorador** (CPU, sin cuota).
+
+**REDUCCIÓN DE VARIANZA 2026-07-27 (elegido por el usuario):** temp LLM → 0 (greedy, determinista); explorador ya determinista (sin RNG); varianza residual por timing/concurrencia medida ~1 nivel. Regla: solo cambios con efecto esperado ≥3 niveles (≈0.03) valen un slot.
+
+---
+
+## 6. Estado actual (2026-07-29) — resumen ejecutivo
+
+**Dónde estamos:** score oculto **0.25** (nuestro mejor robusto), igual al piso de exploración. El
+agente es sofisticado y funciona técnicamente (explorador + LLM con features + reflexión + navegación
+guiada + click_all guardado), pero **el LLM no ha superado el piso de exploración de forma medible** —
+confirmado por ablación.
+
+**Qué aprendimos (lo valioso):**
+1. El 0.25 no es el límite de la exploración, es el límite de *nuestra* exploración; hay headroom
+   probado a 0.54 sin GPU.
+2. Con métrica discreta (~1 nivel = 0.01) y ruido de timing, los micro-cambios de prompt no se pueden
+   distinguir del ruido; hace falta un lever grande.
+3. La táctica de "entrenamiento" correcta ahora es **aprendizaje sin gradientes** (mejorar el modelo del
+   mundo del explorador), no LoRA/TTT.
+
+**Camino elegido:** reducción de varianza primero (hecho: agente determinista, banda cuantificada); el
+siguiente lever candidato de mayor valor es **cerrar la brecha del explorador a 0.54** (§4.6 prioridad
+#1), CPU-only, con la referencia pública en mano.
+
+**Infra estable:** submission = kernel `arc-agi3-llm` (dual-mode gateway/offline, vLLM boot con Marlin
+FP8 + thinking off); trigger diario 8pm auto-envía; Save & Run con volcado diagnóstico como banco de
+pruebas gratis; working notes EN+ES y este doc como documentos vivos.
+
+> **Convención:** toda decisión de estrategia nueva se añade al registro y actualiza las secciones
+> relevantes, junto con la fecha de "Última actualización".

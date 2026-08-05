@@ -36,3 +36,4 @@ models/
 # --- Editor ---
 .vscode/
 .idea/
+daily_submit.log

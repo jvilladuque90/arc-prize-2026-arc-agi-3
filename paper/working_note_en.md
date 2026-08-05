@@ -254,6 +254,25 @@ A recurring question: would **LoRA** and **TTT** help here? My reasoned position
 
 ## 6. Uncertainty estimation
 
+### 6-bis. Variance-reduction protocol (2026-07-27, the chosen next step)
+
+The v10=0.26 / v10-rerun=0.25 pair is a direct, same-config measurement of the hidden noise band:
+**≈0.01 (one level) of run-to-run variance for an identical submission.** Before trusting any future
+delta, we reduce and quantify variance:
+
+- **Source 1 — LLM sampling.** Removed: decoding temperature set to **0** (greedy), so the policy is
+  deterministic given the prompt.
+- **Source 2 — agent RNG.** The GraphExplorer has **no randomness** (verified: no `random`/`shuffle`);
+  the LLM path is now greedy. The agent is deterministic.
+- **Source 3 — timing/concurrency (irreducible).** The 8-h rerun with a thread pool and gateway
+  latency is wall-clock-dependent: which games get how many actions shifts between runs. Offline, a
+  fixed deterministic config still varies **~±2 levels** across repeats purely from this — the floor on
+  how small a *trustworthy* improvement can be.
+- **Protocol.** Freeze the best config; let the daily auto-submit accumulate **N repeated hidden
+  samples** of that frozen version to estimate its true mean ± band; only a change whose expected
+  effect clears that band (roughly **≥0.03–0.05**, i.e. 3–5 hidden levels) is worth a submission slot.
+  This is the discipline the v10 mistake bought.
+
 - **Offline ≠ hidden.** The Save & Run bench is 30 min / 8 workers over 25 games — **time-starved**.
   The hidden rerun is 8 h over ~110 games, so per-game the agent has far more time; efficiency gains
   (navigation, fewer LLM calls) **compound there** and cannot show offline. The offline "9 levels" is a

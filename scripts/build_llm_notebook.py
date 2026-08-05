@@ -133,7 +133,10 @@ def chat_fn(system, user_text, image_data_uri):
     body = {"model": SERVED, "messages":[
                 {"role":"system","content":system},
                 {"role":"user","content": content if image_data_uri else user_text}],
-            "max_tokens":800,"temperature":0.3,
+            # temperature 0 (greedy) para REDUCIR VARIANZA: decisiones deterministas dado el
+            # prompt -> las diferencias entre versiones dejan de estar enmascaradas por el
+            # muestreo del LLM (el 0.26 vs 0.25 resultó ser ruido, ver working notes).
+            "max_tokens":800,"temperature":0.0,
             # Qwen3 es modelo de razonamiento: sin esto emite <think> largo y el JSON
             # de acciones se trunca. enable_thinking=False -> responde directo.
             "chat_template_kwargs":{"enable_thinking":False}}

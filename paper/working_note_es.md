@@ -264,6 +264,25 @@ Una pregunta recurrente: ¿ayudarían **LoRA** y **TTT** aquí? Mi posición raz
 
 ## 6. Estimación de incertidumbre
 
+### 6-bis. Protocolo de reducción de varianza (2026-07-27, el siguiente paso elegido)
+
+El par v10=0.26 / v10-rerun=0.25 es una medición directa, mismo-config, de la banda de ruido oculta:
+**≈0.01 (un nivel) de varianza run-to-run para una submission idéntica.** Antes de confiar en cualquier
+delta futuro, reducimos y cuantificamos la varianza:
+
+- **Fuente 1 — muestreo del LLM.** Eliminada: temperatura de decodificación en **0** (greedy), así la
+  política es determinista dado el prompt.
+- **Fuente 2 — RNG del agente.** El GraphExplorer **no tiene aleatoriedad** (verificado: sin
+  `random`/`shuffle`); el camino LLM ahora es greedy. El agente es determinista.
+- **Fuente 3 — timing/concurrencia (irreducible).** El rerun de 8 h con pool de threads y latencia del
+  gateway depende del reloj: cuántas acciones recibe cada juego cambia entre corridas. Offline, un
+  config determinista fijo aún varía **~±2 niveles** entre repeticiones solo por esto — el piso de qué
+  tan pequeña puede ser una mejora *confiable*.
+- **Protocolo.** Congelar el mejor config; dejar que el auto-envío diario acumule **N muestras ocultas
+  repetidas** de esa versión congelada para estimar su media real ± banda; solo un cambio cuyo efecto
+  esperado supere esa banda (aprox. **≥0.03–0.05**, es decir 3–5 niveles ocultos) vale un slot de
+  submission. Es la disciplina que compró el error de v10.
+
 - **Offline ≠ oculto.** El banco de Save & Run son 30 min / 8 workers sobre 25 juegos — **limitado por
   tiempo**. El rerun oculto son 8 h sobre ~110 juegos, así que por-juego el agente tiene mucho más tiempo;
   las ganancias de eficiencia (navegación, menos llamadas al LLM) **componen allí** y no se pueden mostrar

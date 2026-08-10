@@ -333,5 +333,45 @@ siguiente lever candidato de mayor valor es **cerrar la brecha del explorador a 
 FP8 + thinking off); trigger diario 8pm auto-envía; Save & Run con volcado diagnóstico como banco de
 pruebas gratis; working notes EN+ES y este doc como documentos vivos.
 
+---
+
+## 7. Auditoría de la estrategia sin-gradientes (2026-08-10, pedida por el usuario)
+
+Veredicto por punto, con evidencia:
+
+1. **Dirección: CORRECTA.** El LB público confirma que la exploración sin gradientes bien hecha (0.54)
+   supera al RL-online con gradientes (CNN, 0.35–0.46) en coste/beneficio, y es la base de todos los
+   agentes altos. Nuestro déficit era de **implementación/harness**, no de paradigma.
+2. **Fallo de proceso detectado (la lección de la auditoría):** declaramos "techo de exploración =
+   0.25" **sin calibrar contra la mejor referencia pública** (0.54), y pivotamos al LLM sobre esa
+   premisa falsa. Regla nueva: *antes de declarar un techo y pivotar, replicar la mejor referencia
+   pública de esa vía y medir contra ella.*
+3. **El harness pesa tanto como el algoritmo.** La brecha 0.25→0.54 es en parte **scheduling**: el
+   Swarm oficial corre todos los juegos **concurrentes** (cada uno con 8 h y 15000 acciones); nuestro
+   runner repartía presupuesto (~40 min/juego). Réplica fiel primero, mejoras después.
+4. **Diferencias de algoritmo detectadas** (nuestro explorador vs 0.54): (a) su contador de
+   agotamiento se **resetea al descubrir estados nuevos** (el nuestro nunca — abandona temprano);
+   (b) **sin deadsig** (nuestra supresión de clases de click pudo dañar exploración; su nota dice que
+   podas parecidas "mataron niveles"); (c) click-likeness `fill/(1+size)` plano (el suyo, validado con
+   A/B propio) vs nuestro score con rareza; (d) efectividad medida sobre **cambio de estado
+   enmascarado**, no de píxeles.
+5. **Reducción de varianza: BIEN** (agente determinista, banda medida ~1 nivel). Se mantiene la regla:
+   solo cambios con efecto esperado ≥3 niveles valen slot.
+6. **Límite conocido de la vía:** la exploración sin gradientes topa en ~0.54 público. Para 0.86–1.21
+   hace falta el LLM — pero **sobre la base 0.54**, no sobre 0.25. El trabajo LLM ya construido
+   (features, reflexión, navegación) queda listo para re-montarse sobre la base nueva.
+7. **Idea del usuario — JUEGOS SINTÉTICOS (aceptada, registrada como lever de validación):** los
+   environment_files son subclases de `ARCBaseGame` (python puro sobre arcengine). Podemos **generar
+   variantes sintéticas** (permutación de colores, reflejos/rotaciones, tamaños, mecánicas simples
+   recombinadas) y usarlas como: (a) **held-out de generalización** — validar mejoras del explorador
+   sin gastar slots ni sobreajustar a los 25 públicos; (b) banco de calibración de la banda de ruido;
+   (c) a futuro, fuente de trayectorias para LoRA-SFT (§4.3) con menos riesgo de memorizar.
+   Encaja exactamente con "monitorear y generalizar".
+
+**Plan post-auditoría:** (i) réplica fiel 0.54 enviada (kernel `arc-agi3-explorer054`); (ii) según su
+score real, A/B de nuestras diferencias (deadsig off/on, reset-de-contador, likeness) sobre esa base;
+(iii) juegos sintéticos como held-out para iterar sin slots; (iv) re-montar el LLM sobre la base nueva
+solo donde la exploración se agote de verdad.
+
 > **Convención:** toda decisión de estrategia nueva se añade al registro y actualiza las secciones
 > relevantes, junto con la fecha de "Última actualización".

@@ -388,6 +388,22 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > reproducible** (ver la actualización 2026-07-26). Conservo esta entrada para dejar registro del error:
 > sobre-leí un punto favorable antes de conocer la banda de ruido.
 
+| 2026-08-10 | **Réplica fiel del pipeline público 0.54** (harness Swarm oficial + Explore2 vendorizado, con atribución) | — | pendiente | el pivote auditado: nuestro 0.25 era el techo de *nuestra implementación*; la réplica cierra la brecha de harness (todos los juegos concurrentes, 8 h c/u) y las de algoritmo (reset del contador al descubrir, sin deadsig, likeness plano fill/(1+size)) |
+
+> **Actualización 2026-08-10 — auditoría de estrategia y la submission réplica.** Dos negativos
+> operativos y un pivote: (1) la tarea de auto-envío diario **falló en silencio ~2 semanas**
+> (`$ErrorAction=Stop` abortaba antes de loguear; `kaggle` fuera del PATH de la tarea) — slots
+> perdidos; ya robustecida con try/catch, logging completo y resolución del ejecutable. (2) La
+> **auditoría de la estrategia sin-gradientes** pedida por el usuario confirmó la dirección (evidencia
+> pública: exploración sin gradientes 0.54 > RL-online CNN 0.35–0.46) pero marcó el fallo de proceso:
+> declaramos "exploración capada en 0.25" **sin calibrar contra la mejor referencia pública**, y
+> pivotamos al LLM sobre esa premisa falsa. Regla nueva: replicar la referencia antes de declarar un
+> techo. (3) La **idea del usuario de juegos sintéticos** se adopta como lever de validación: los
+> environment files son subclases `ARCBaseGame` en python puro, así que podemos generar variantes como
+> held-out de generalización para iterar sin gastar slots. La réplica fiel del pipeline 0.54 (kernel
+> `arc-agi3-explorer054`, CPU) queda enviada; su score oculto real es la nueva base sobre la que el
+> stack LLM se re-monta solo donde la exploración se agote de verdad.
+
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 3.7% → **3.2%**.
 **vLLM en RTX Pro 6000:** modelo 33.7 GiB, KV cache 45 GiB; arranca con Marlin FP8 + FLASH_ATTN +

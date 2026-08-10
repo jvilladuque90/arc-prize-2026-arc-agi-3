@@ -372,6 +372,21 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > update). I keep this entry to record the mistake: I over-read one favorable point before the noise
 > band was known.
 
+| 2026-08-10 | **Faithful replica of the public 0.54 pipeline** (official Swarm harness + vendored Explore2, attributed) | — | pending | the audited pivot: our 0.25 was our *implementation's* ceiling; the replica closes the harness gap (all games concurrent, 8 h each) and the algorithm gaps (stuck-counter reset on discovery, no deadsig, flat fill/(1+size) likeness) |
+
+> **Update 2026-08-10 — strategy audit and the replica submission.** Two operational negatives and a
+> pivot: (1) the daily auto-submit task **failed silently for ~2 weeks** (`$ErrorAction=Stop` aborted
+> before logging; `kaggle` not on the task's PATH) — wasted slots; now hardened with try/catch, full
+> logging and executable resolution. (2) A requested **audit of the gradient-free strategy** confirmed
+> the direction (public evidence: gradient-free exploration 0.54 > online-RL CNN 0.35–0.46) but flagged
+> the process failure: we declared "exploration capped at 0.25" **without calibrating against the best
+> public reference**, and pivoted to the LLM on that false premise. New rule: replicate the reference
+> before declaring a ceiling. (3) The **user's synthetic-games idea** is adopted as a validation lever:
+> environment files are pure-Python `ARCBaseGame` subclasses, so we can generate variants as a
+> generalization held-out to iterate without spending submission slots. The faithful replica of the
+> 0.54 pipeline (kernel `arc-agi3-explorer054`, CPU-only) is submitted; its real hidden score is the
+> new baseline on which our LLM stack gets re-mounted only where exploration truly exhausts.
+
 **Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +
 `enable_thinking=False`.

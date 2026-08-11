@@ -95,7 +95,10 @@ def main() -> int:
         "code_file": Path(cfg["notebook"]).name,
         "language": "python",
         "kernel_type": "notebook",
-        "is_private": True,
+        # PUBLICO: las reglas del ARC Prize exigen "all code and methods must be open
+        # sourced to be eligible for prizes" (milestone #2: 2026-09-30). Kernels publicos
+        # + repo con licencia MIT = cumplimiento.
+        "is_private": False,
         "enable_gpu": bool(args.gpu),
         "enable_internet": False,  # obligatorio en evaluación; igual que RTX_G4
         "dataset_sources": datasets,

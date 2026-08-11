@@ -87,3 +87,19 @@ python -m venv .venv && .venv\Scripts\activate      # Windows
 pip install arc_agi_3_wheels\arcengine-0.9.3-py3-none-any.whl arc_agi_3_wheels\arc_agi-0.9.8-py3-none-any.whl pandas pyarrow
 python scripts/extract_features.py --games ls20 --budget 120
 ```
+
+## Open source y atribución (elegibilidad ARC Prize)
+
+Las reglas del ARC Prize exigen que **todo el código y métodos sean open source** para optar a
+premios (milestone #2: 2026-09-30). Cumplimiento:
+
+- **Repo público**: https://github.com/jvilladuque90/arc-prize-2026-arc-agi-3 (licencia [MIT](LICENSE)).
+- **Kernels públicos** en Kaggle: `arc-agi3-duck`, `arc-agi3-explorer054`, `arc-agi3-llm`,
+  `arc-agi3-submit`, `arc-agi3-features` (usuario `juliancamilovilla`).
+- **Atribución de código de terceros** (todo público, de la propia competencia):
+  - `vendor/my_agent_v47.py`: vendorizado del notebook público de poby7722 (LB 0.54 en junio),
+    que a su vez porta técnicas de Occam (MIT) y la solución 3rd-place "just-explore" (MIT).
+  - `notebooks/duck.ipynb`: réplica del harness TAAF de Tufa Labs (público, ganador milestone jun)
+    en su variante fork pública de thtennant (`taaf-kaggle-source-share-fork`, con taaf-grafts),
+    con wheels vLLM y snapshot Qwen3-27B-FP8 públicos de driessmit1.
+- Los datos de la competencia **no** se redistribuyen en este repo (ver `.gitignore`).

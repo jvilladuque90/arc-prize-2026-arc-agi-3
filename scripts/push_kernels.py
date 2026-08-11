@@ -43,7 +43,9 @@ KERNELS = {
     # GASTA CUOTA G4: en Save & Run corre ~TAAF_OFFLINE_SOFT_MIN min (default 25) de validación.
     "duck": {"notebook": "notebooks/duck.ipynb", "slug": "arc-agi3-duck",
              "title": "arc agi3 duck",
-             "default_datasets": ["jeroencottaar/taaf-kaggle-source-share",
+             # 2026-08-10: bundle cambiado al fork publico del cluster 1.5 del LB
+             # (duck v12 de thtennant, con taaf-grafts de eficiencia)
+             "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
                                   "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                                   "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).

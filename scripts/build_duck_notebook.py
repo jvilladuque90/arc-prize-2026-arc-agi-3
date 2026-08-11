@@ -59,11 +59,11 @@ import arc_agi; print("arc_agi OK")
 BUNDLE = None
 for m in Path("/kaggle/input").rglob("taaf-kaggle-bundle.json"):
     BUNDLE = m.parent; break
-assert BUNDLE, "bundle TAAF no encontrado (adjunta jeroencottaar/taaf-kaggle-source-share)"
+assert BUNDLE, "bundle TAAF no encontrado (adjunta thtennant/taaf-kaggle-source-share-fork)"
 print("BUNDLE =", BUNDLE)
 
 # Mapear datasets adjuntos a sus mounts
-DATASET_SOURCES = ["jeroencottaar/taaf-kaggle-source-share",
+DATASET_SOURCES = ["thtennant/taaf-kaggle-source-share-fork",
                    "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                    "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]
 def mount(ref):
@@ -116,6 +116,14 @@ with open(BUNDLE/"benchmark_initial.pkl","rb") as f: bm = pickle.load(f)
 bm.job_dir = WORKING; bm.n_passes = 1; bm.game_weights = None
 os.environ.setdefault("RECORDINGS_DIR", str(WORKING/"server_recording"))
 
+# Graft install (replica del duck v12 publico, thtennant/taaf-kaggle-source-share-fork):
+# analizadores de eficiencia sobre el solver TAAF. Blindado: cualquier fallo -> stock.
+try:
+    from taaf_grafts.composite import install as _graft_install
+    _graft_install(bm, flags={"efficiency": True, "retry_guard": True, "shortcircuit": True})
+except Exception as exc:
+    print(f"[taaf_grafts] graft failed, running stock: {type(exc).__name__}: {exc}")
+
 import arc_agi, taaf.game_api
 def games_offline(d):
     spec = taaf.game_api.ArcadeSpec(operation_mode=arc_agi.OperationMode.OFFLINE, environments_dir=d)
@@ -155,6 +163,8 @@ finally:
 print("run terminado")
 ''',
 ]
+
+
 
 
 def code_cell(src: str) -> dict:

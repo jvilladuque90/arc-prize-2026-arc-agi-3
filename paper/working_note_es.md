@@ -405,7 +405,7 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > stack LLM se re-monta solo donde la exploración se agote de verdad.
 
 | 2026-08-10 | Réplica 0.54 enviada → **0.22** | — | **0.22** | ¡el set oculto CAMBIÓ (~1-jul)! El 0.54 era del set de junio; en el actual la exploración rinde 0.22–0.25 y nuestro explorador ya era mejor que la referencia. Lección: calibrar contra referencias VIGENTES |
-| 2026-08-11 | **Réplica duck v12-fork enviada** (TAAF + grafts, cluster 1.5 del LB actual) | 4 niveles/16min | pendiente | LB recalibrado: top 1.86, cluster 1.5–1.7 = forks del duck evolucionado. Validación G4: vLLM 200 tok/s, solver jugó 25 juegos. La submission más importante hasta ahora |
+| 2026-08-11 | **Réplica duck v12-fork enviada** (TAAF + grafts, cluster 1.5 del LB actual) | 4 niveles/16min | **1.17** | LB recalibrado: top 1.86, cluster 1.5–1.7 = forks del duck evolucionado. Validación G4: vLLM 200 tok/s, solver jugó 25 juegos. La submission más importante hasta ahora |
 
 > **Actualización 2026-08-11 — dos hallazgos que reordenan la estrategia.** (1) La réplica fiel del
 > "0.54" dio **0.22**: el set oculto rotó tras el milestone de junio — la exploración pura rinde menos
@@ -416,6 +416,20 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > (bundle thtennant con taaf-grafts), validamos en la G4 (solver completo jugando, 4 niveles en la
 > ventana corta de 16 min) y la enviamos. Trigger diario apuntado al duck. Sobre esa base (~1.5
 > esperado) se re-montan nuestros diferenciadores.
+
+> **Actualización 2026-08-11 (más tarde) — el duck marcó 1.17: el salto de estrategia es real.** La
+> réplica duck v12-fork dio **1.17 — 4.7× sobre todo lo que logró nuestro stack propio (0.25–0.26)** y
+> esencialmente el número del ganador del milestone de junio (TAAF stock = 1.21), pero sobre el set
+> oculto *actual, más difícil*. Quedó **por debajo del cluster 1.5–1.7**. El log de la validación
+> confirma que los grafts SÍ se instalaron (`TAAF_GRAFTS FEATURES={efficiency,retry_guard,
+> shortcircuit} API_VERSION=1`, sin línea de fallo), así que la brecha 1.17→1.5 (~33 niveles, muy
+> fuera de la banda de ruido de ~1 nivel) no es el graft caído: hay que buscarla en diferencias de
+> configuración con los forks del cluster (flags adicionales de graft, hiperparámetros del solver,
+> presupuestos). Conclusión que sí queda firme: **un harness LLM que razona sobre objetivos vale ~5×
+> frente a la exploración pura**, y nuestra plataforma (G4 + vLLM + receta de arranque Qwen3-27B-FP8)
+> reproduce de forma demostrable la clase de resultado del ganador del milestone. Siguiente: cerrar la
+> brecha 1.17→1.5 (diff de config contra el fork de referencia) y montar nuestro diferenciador
+> (inyección de features objetuales de `src/arc3` en el prompt del solver) sobre esta base.
 
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 3.7% → **3.2%**.

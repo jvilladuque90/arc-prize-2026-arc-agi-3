@@ -308,30 +308,36 @@ más ricos (`click_all`, `match_target`).
 
 **REDUCCIÓN DE VARIANZA 2026-07-27 (elegido por el usuario):** temp LLM → 0 (greedy, determinista); explorador ya determinista (sin RNG); varianza residual por timing/concurrencia medida ~1 nivel. Regla: solo cambios con efecto esperado ≥3 niveles (≈0.03) valen un slot.
 
+| 2026-08-10 | Auditoría (pedida por el usuario, §7): replicar la mejor referencia pública ANTES de declarar un techo; juegos sintéticos adoptados como held-out | el "techo 0.25 de la exploración" se declaró sin calibrar contra poby7722; trigger diario reparado (falló en silencio ~2 sem) |
+| 2026-08-10 | Réplica fiel del pipeline 0.54 enviada → **0.22** | el set oculto ROTÓ (~1-jul): el 0.54 era del set de junio; nuestra exploración (0.25) ya era mejor que la referencia en el set actual. Lección: toda referencia tiene fecha |
+| 2026-08-11 | **PIVOTE a base duck**: réplica del fork v12 de TAAF (thtennant, con taaf-grafts) → **1.17** (4.7× nuestro 0.25) | el LB actual (top 1.86, cluster 1.5–1.7) son forks del duck; grafts confirmados instalados en el log → brecha 1.17→1.5 = diferencias de config, no graft caído |
+| 2026-08-11 | Open-source completo: repo GitHub público (MIT), 5/5 kernels públicos, atribución en README | reglas ARC Prize: "all code and methods must be open sourced to be eligible" (milestone #2: 30-sep) |
+
 ---
 
-## 6. Estado actual (2026-07-29) — resumen ejecutivo
+## 6. Estado actual (2026-08-11) — resumen ejecutivo
 
-**Dónde estamos:** score oculto **0.25** (nuestro mejor robusto), igual al piso de exploración. El
-agente es sofisticado y funciona técnicamente (explorador + LLM con features + reflexión + navegación
-guiada + click_all guardado), pero **el LLM no ha superado el piso de exploración de forma medible** —
-confirmado por ablación.
+**Dónde estamos:** score oculto **1.17** (duck v12-fork: harness TAAF + Qwen3-27B-FP8 en la G4 +
+taaf-grafts), un salto de 4.7× sobre todo lo que logró nuestro stack propio (0.25–0.26). Es
+esencialmente el número del ganador del milestone de junio (1.21) pero sobre el set oculto actual,
+más difícil. LB: top 1.86, cluster denso 1.5–1.7 (forks del mismo duck).
 
 **Qué aprendimos (lo valioso):**
-1. El 0.25 no es el límite de la exploración, es el límite de *nuestra* exploración; hay headroom
-   probado a 0.54 sin GPU.
-2. Con métrica discreta (~1 nivel = 0.01) y ruido de timing, los micro-cambios de prompt no se pueden
-   distinguir del ruido; hace falta un lever grande.
-3. La táctica de "entrenamiento" correcta ahora es **aprendizaje sin gradientes** (mejorar el modelo del
-   mundo del explorador), no LoRA/TTT.
+1. **Un harness LLM que razona sobre objetivos vale ~5× frente a exploración pura** — la hipótesis
+   semántica era correcta; lo que faltaba era la escala/madurez del harness, no la idea.
+2. Toda referencia tiene fecha: el set oculto rota (la réplica "0.54" dio 0.22). Calibrar siempre
+   contra el LB vigente.
+3. La banda de ruido es ~1 nivel (0.01); la brecha 1.17→1.5 (~33 niveles) es real y explicable por
+   config, no por varianza.
 
-**Camino elegido:** reducción de varianza primero (hecho: agente determinista, banda cuantificada); el
-siguiente lever candidato de mayor valor es **cerrar la brecha del explorador a 0.54** (§4.6 prioridad
-#1), CPU-only, con la referencia pública en mano.
+**Camino elegido:** (1) cerrar la brecha 1.17→1.5 con diff de configuración contra los forks del
+cluster (flags de graft, hiperparámetros del solver, presupuestos); (2) montar nuestro diferenciador
+— inyección de features objetuales de `src/arc3` en el prompt del solver TAAF — sobre esa base;
+(3) juegos sintéticos como held-out de generalización para iterar sin gastar slots.
 
-**Infra estable:** submission = kernel `arc-agi3-llm` (dual-mode gateway/offline, vLLM boot con Marlin
+**Infra estable:** submission = kernel `arc-agi3-duck` (dual-mode gateway/offline, vLLM boot con Marlin
 FP8 + thinking off); trigger diario 8pm auto-envía; Save & Run con volcado diagnóstico como banco de
-pruebas gratis; working notes EN+ES y este doc como documentos vivos.
+pruebas gratis; working notes EN+ES y este doc como documentos vivos; todo público (repo MIT + kernels).
 
 ---
 

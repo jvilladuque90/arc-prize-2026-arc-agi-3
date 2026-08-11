@@ -388,7 +388,7 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > new baseline on which our LLM stack gets re-mounted only where exploration truly exhausts.
 
 | 2026-08-10 | 0.54-replica submitted → **0.22** | — | **0.22** | the hidden set CHANGED (~Jul-1)! 0.54 was measured on the June set; on the current set exploration yields 0.22–0.25 and our explorer was already better than the reference. Lesson: calibrate against CURRENT references |
-| 2026-08-11 | **duck v12-fork replica submitted** (TAAF + grafts, the current LB 1.5-cluster) | 4 levels/16min | pending | LB recalibrated: top 1.86, dense 1.5–1.7 cluster = evolved duck forks. G4 validation: vLLM at 200 tok/s, solver played all 25 games. Our most important submission yet |
+| 2026-08-11 | **duck v12-fork replica submitted** (TAAF + grafts, the current LB 1.5-cluster) | 4 levels/16min | **1.17** | LB recalibrated: top 1.86, dense 1.5–1.7 cluster = evolved duck forks. G4 validation: vLLM at 200 tok/s, solver played all 25 games. Our most important submission yet |
 
 > **Update 2026-08-11 — two findings that reorder the strategy.** (1) The faithful 0.54-replica scored
 > **0.22**: the hidden set rotated after the June milestone — pure exploration yields less on the
@@ -398,6 +398,19 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > forks. We adapted our duck infrastructure to the v12 fork (thtennant bundle with taaf-grafts),
 > validated on the G4 (full solver playing, 4 levels in the short 16-min window), and submitted it.
 > Daily trigger now points at the duck. Our differentiators get re-mounted on that (~1.5-expected) base.
+
+> **Update 2026-08-11 (later) — duck scored 1.17: the strategy jump is real.** The duck v12-fork
+> replica scored **1.17 — a 4.7× jump over every score of our own stack (0.25–0.26)** and essentially
+> the June milestone winner's number (TAAF stock = 1.21) on the *current, harder* hidden set. It lands
+> **below the 1.5–1.7 fork cluster**, though. The validation log confirms the grafts DID install
+> (`TAAF_GRAFTS FEATURES={efficiency,retry_guard,shortcircuit} API_VERSION=1`, no failure line), so
+> the 1.17→1.5 gap (~33 levels — far outside the ~1-level noise band) is not a fallen graft: it must
+> live in configuration differences vs the cluster forks (additional graft flags, solver
+> hyperparameters, budgets). What stands firm: **an LLM harness that reasons about goals is worth ~5×
+> over pure exploration**, and our platform (G4 + vLLM + Qwen3-27B-FP8 boot recipe) now demonstrably
+> reproduces the milestone-winner class of result. Next: close the 1.17→1.5 gap (config diff against
+> the reference fork), then mount our differentiator (object-feature injection from `src/arc3` into
+> the solver prompt) on this base.
 
 **Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +

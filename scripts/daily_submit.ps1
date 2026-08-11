@@ -7,7 +7,7 @@
 #   (a) $ErrorActionPreference=Stop abortaba en la llamada a kaggle sin loguear;
 #   (b) 'kaggle' puede no estar en PATH en el contexto de la tarea programada.
 param(
-  [string]$Kernel = "juliancamilovilla/arc-agi3-explorer054",
+  [string]$Kernel = "juliancamilovilla/arc-agi3-duck",
   [string]$Comp   = "arc-prize-2026-arc-agi-3",
   [string]$File   = "submission.parquet"
 )

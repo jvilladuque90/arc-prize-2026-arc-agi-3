@@ -404,6 +404,19 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > `arc-agi3-explorer054`, CPU) queda enviada; su score oculto real es la nueva base sobre la que el
 > stack LLM se re-monta solo donde la exploración se agote de verdad.
 
+| 2026-08-10 | Réplica 0.54 enviada → **0.22** | — | **0.22** | ¡el set oculto CAMBIÓ (~1-jul)! El 0.54 era del set de junio; en el actual la exploración rinde 0.22–0.25 y nuestro explorador ya era mejor que la referencia. Lección: calibrar contra referencias VIGENTES |
+| 2026-08-11 | **Réplica duck v12-fork enviada** (TAAF + grafts, cluster 1.5 del LB actual) | 4 niveles/16min | pendiente | LB recalibrado: top 1.86, cluster 1.5–1.7 = forks del duck evolucionado. Validación G4: vLLM 200 tok/s, solver jugó 25 juegos. La submission más importante hasta ahora |
+
+> **Actualización 2026-08-11 — dos hallazgos que reordenan la estrategia.** (1) La réplica fiel del
+> "0.54" dio **0.22**: el set oculto rotó tras el milestone de junio — la exploración pura rinde menos
+> en el set actual, nuestro 0.25 ya era mejor que la referencia, y la "brecha a 0.54" era un número
+> stale. Segunda instancia de la misma lección meta: **toda referencia tiene fecha; calibrar contra la
+> vigente**. (2) El LB actual (top 1.86, cluster denso 1.5–1.7 con fechas de agosto) está dominado por
+> forks del duck harness TAAF evolucionado. Adaptamos nuestra infraestructura duck al fork v12
+> (bundle thtennant con taaf-grafts), validamos en la G4 (solver completo jugando, 4 niveles en la
+> ventana corta de 16 min) y la enviamos. Trigger diario apuntado al duck. Sobre esa base (~1.5
+> esperado) se re-montan nuestros diferenciadores.
+
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 3.7% → **3.2%**.
 **vLLM en RTX Pro 6000:** modelo 33.7 GiB, KV cache 45 GiB; arranca con Marlin FP8 + FLASH_ATTN +

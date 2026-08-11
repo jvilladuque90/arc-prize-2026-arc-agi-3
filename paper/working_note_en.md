@@ -387,6 +387,18 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > 0.54 pipeline (kernel `arc-agi3-explorer054`, CPU-only) is submitted; its real hidden score is the
 > new baseline on which our LLM stack gets re-mounted only where exploration truly exhausts.
 
+| 2026-08-10 | 0.54-replica submitted → **0.22** | — | **0.22** | the hidden set CHANGED (~Jul-1)! 0.54 was measured on the June set; on the current set exploration yields 0.22–0.25 and our explorer was already better than the reference. Lesson: calibrate against CURRENT references |
+| 2026-08-11 | **duck v12-fork replica submitted** (TAAF + grafts, the current LB 1.5-cluster) | 4 levels/16min | pending | LB recalibrated: top 1.86, dense 1.5–1.7 cluster = evolved duck forks. G4 validation: vLLM at 200 tok/s, solver played all 25 games. Our most important submission yet |
+
+> **Update 2026-08-11 — two findings that reorder the strategy.** (1) The faithful 0.54-replica scored
+> **0.22**: the hidden set rotated after the June milestone — pure exploration yields less on the
+> current set, our 0.25 was already above the reference, and the "gap to 0.54" was a stale number. The
+> same meta-lesson twice: **every reference has a date; calibrate against the live one.** (2) The
+> current LB (top 1.86, dense 1.5–1.7 cluster, August dates) is dominated by evolved TAAF duck-harness
+> forks. We adapted our duck infrastructure to the v12 fork (thtennant bundle with taaf-grafts),
+> validated on the G4 (full solver playing, 4 levels in the short 16-min window), and submitted it.
+> Daily trigger now points at the duck. Our differentiators get re-mounted on that (~1.5-expected) base.
+
 **Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +
 `enable_thinking=False`.

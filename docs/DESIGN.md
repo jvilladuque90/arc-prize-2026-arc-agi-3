@@ -312,6 +312,8 @@ más ricos (`click_all`, `match_target`).
 | 2026-08-10 | Réplica fiel del pipeline 0.54 enviada → **0.22** | el set oculto ROTÓ (~1-jul): el 0.54 era del set de junio; nuestra exploración (0.25) ya era mejor que la referencia en el set actual. Lección: toda referencia tiene fecha |
 | 2026-08-11 | **PIVOTE a base duck**: réplica del fork v12 de TAAF (thtennant, con taaf-grafts) → **1.17** (4.7× nuestro 0.25) | el LB actual (top 1.86, cluster 1.5–1.7) son forks del duck; grafts confirmados instalados en el log → brecha 1.17→1.5 = diferencias de config, no graft caído |
 | 2026-08-11 | Open-source completo: repo GitHub público (MIT), 5/5 kernels públicos, atribución en README | reglas ARC Prize: "all code and methods must be open sourced to be eligible" (milestone #2: 30-sep) |
+| 2026-08-11 | Brecha 1.17→1.5 re-diagnosticada: NO es config — el v12 de thtennant usa flags idénticos a los nuestros | leído el notebook de referencia: `{efficiency, retry_guard, shortcircuit}` exacto. El duck tiene varianza alta entre corridas (Tufa: la versión legible "no tuvo la misma suerte" que el 1.21); el cluster 1.5–1.7 = máximo de N envíos diarios. Respuesta: enviar a diario (trigger ya lo hace) + cambios que muevan la media |
+| 2026-08-11 | **+ goalkeep** (duck v3, sigue al v18 de thtennant publicado hoy) | goalkeep retiene el modelo del mundo (el stock lo borra en cada game-over/nivel: no-vacío solo 33/481 turnos, medido por thtennant) e inyecta digest de resultados medidos por turno — la misma tesis de nuestra inyección de effectiveness de Fase 3. Piso garantizado: install() blindado → peor caso = config v12 (1.17) |
 
 ---
 
@@ -327,13 +329,16 @@ más difícil. LB: top 1.86, cluster denso 1.5–1.7 (forks del mismo duck).
    semántica era correcta; lo que faltaba era la escala/madurez del harness, no la idea.
 2. Toda referencia tiene fecha: el set oculto rota (la réplica "0.54" dio 0.22). Calibrar siempre
    contra el LB vigente.
-3. La banda de ruido es ~1 nivel (0.01); la brecha 1.17→1.5 (~33 niveles) es real y explicable por
-   config, no por varianza.
+3. La brecha 1.17→1.5 NO es de config: el v12 de referencia usa flags idénticos a los nuestros. El
+   duck tiene **varianza alta entre corridas** (Tufa mismo no reprodujo su 1.21 con la versión
+   legible) y el cluster 1.5–1.7 es el máximo de N envíos diarios. Nuestro 1.17 es 1 muestra.
 
-**Camino elegido:** (1) cerrar la brecha 1.17→1.5 con diff de configuración contra los forks del
-cluster (flags de graft, hiperparámetros del solver, presupuestos); (2) montar nuestro diferenciador
-— inyección de features objetuales de `src/arc3` en el prompt del solver TAAF — sobre esa base;
-(3) juegos sintéticos como held-out de generalización para iterar sin gastar slots.
+**Camino elegido:** (1) enviar a diario la mejor config (el trigger ya lo hace) — con varianza alta,
+cada slot es una muestra y el LB retiene el máximo; (2) adoptar cambios que muevan la MEDIA:
+`goalkeep` (v18 de thtennant, hoy) que retiene el modelo del mundo e inyecta resultados medidos por
+turno — convergente con nuestra tesis de inyección de features; (3) montar nuestro diferenciador
+(features objetuales de `src/arc3` en el prompt del solver TAAF) sobre esta base; (4) juegos
+sintéticos como held-out de generalización para iterar sin gastar slots.
 
 **Infra estable:** submission = kernel `arc-agi3-duck` (dual-mode gateway/offline, vLLM boot con Marlin
 FP8 + thinking off); trigger diario 8pm auto-envía; Save & Run con volcado diagnóstico como banco de

@@ -422,14 +422,25 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > esencialmente el número del ganador del milestone de junio (TAAF stock = 1.21), pero sobre el set
 > oculto *actual, más difícil*. Quedó **por debajo del cluster 1.5–1.7**. El log de la validación
 > confirma que los grafts SÍ se instalaron (`TAAF_GRAFTS FEATURES={efficiency,retry_guard,
-> shortcircuit} API_VERSION=1`, sin línea de fallo), así que la brecha 1.17→1.5 (~33 niveles, muy
-> fuera de la banda de ruido de ~1 nivel) no es el graft caído: hay que buscarla en diferencias de
-> configuración con los forks del cluster (flags adicionales de graft, hiperparámetros del solver,
-> presupuestos). Conclusión que sí queda firme: **un harness LLM que razona sobre objetivos vale ~5×
-> frente a la exploración pura**, y nuestra plataforma (G4 + vLLM + receta de arranque Qwen3-27B-FP8)
-> reproduce de forma demostrable la clase de resultado del ganador del milestone. Siguiente: cerrar la
-> brecha 1.17→1.5 (diff de config contra el fork de referencia) y montar nuestro diferenciador
-> (inyección de features objetuales de `src/arc3` en el prompt del solver) sobre esta base.
+> shortcircuit} API_VERSION=1`, sin línea de fallo). Conclusión firme: **un harness LLM que razona
+> sobre objetivos vale ~5× frente a la exploración pura**, y nuestra plataforma (G4 + vLLM + receta
+> de arranque Qwen3-27B-FP8) reproduce de forma demostrable la clase de resultado del ganador del
+> milestone.
+
+| 2026-08-11 | Brecha re-diagnosticada leyendo el notebook de referencia: el v12 de thtennant corre flags **idénticos a los nuestros** | — | — | la brecha 1.17→1.5 NO es config. El duck tiene varianza alta entre corridas (Tufa mismo anota que la versión legible "no tuvo la misma suerte" que su 1.21) y el cluster 1.5–1.7 es el máximo de N envíos diarios — nuestro 1.17 es una muestra |
+| 2026-08-11 | **duck v3 = + `goalkeep`** (siguiendo el v18 de thtennant, publicado el mismo día) | pendiente | pendiente | goalkeep corrige un defecto medido: el harness stock borra el modelo del mundo del agente en cada game-over/cambio de nivel (no-vacío solo 33/481 turnos) e inyecta un digest por turno de resultados MEDIDOS (tasa de cambio por acción, niveles, cadencia de game-over) — convergente con nuestra tesis de inyección de effectiveness de Fase 3. Install blindado: peor caso = config v12 (1.17) |
+
+> **Actualización 2026-08-11 (resolución de la brecha + goalkeep).** Bajar los notebooks reales de
+> thtennant resolvió la pregunta: su v12 (la referencia del cluster) habilita exactamente nuestros
+> tres flags — la réplica era fiel, y la distancia residual 1.17-vs-1.5 es **varianza de muestreo más
+> selección best-of-N**, no configuración. Consecuencia estratégica: con un harness de varianza alta,
+> cada slot diario es un boleto de lotería a la media actual; el camino hacia arriba es (a) sacar una
+> muestra cada día (el trigger de las 8pm ya lo hace) y (b) adoptar cambios que muevan la MEDIA. El
+> primero de esos cambios es gratis: thtennant publicó hoy el v18, que añade el graft `goalkeep` —
+> retiene el modelo del mundo del agente a través de game-overs e inyecta estadísticas medidas de
+> resultado por acción en cada turno. Eso es *precisamente* la tesis diferenciadora que construimos en
+> Fase 3 (inyección de action-effectiveness), ahora implementada dentro del harness fuerte. Nuestro
+> duck v3 la habilita; el slot de esta noche la lleva.
 
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 3.7% → **3.2%**.

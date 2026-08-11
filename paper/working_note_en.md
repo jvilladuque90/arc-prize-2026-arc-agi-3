@@ -403,14 +403,24 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > replica scored **1.17 — a 4.7× jump over every score of our own stack (0.25–0.26)** and essentially
 > the June milestone winner's number (TAAF stock = 1.21) on the *current, harder* hidden set. It lands
 > **below the 1.5–1.7 fork cluster**, though. The validation log confirms the grafts DID install
-> (`TAAF_GRAFTS FEATURES={efficiency,retry_guard,shortcircuit} API_VERSION=1`, no failure line), so
-> the 1.17→1.5 gap (~33 levels — far outside the ~1-level noise band) is not a fallen graft: it must
-> live in configuration differences vs the cluster forks (additional graft flags, solver
-> hyperparameters, budgets). What stands firm: **an LLM harness that reasons about goals is worth ~5×
-> over pure exploration**, and our platform (G4 + vLLM + Qwen3-27B-FP8 boot recipe) now demonstrably
-> reproduces the milestone-winner class of result. Next: close the 1.17→1.5 gap (config diff against
-> the reference fork), then mount our differentiator (object-feature injection from `src/arc3` into
-> the solver prompt) on this base.
+> (`TAAF_GRAFTS FEATURES={efficiency,retry_guard,shortcircuit} API_VERSION=1`, no failure line).
+> What stands firm: **an LLM harness that reasons about goals is worth ~5× over pure exploration**,
+> and our platform (G4 + vLLM + Qwen3-27B-FP8 boot recipe) now demonstrably reproduces the
+> milestone-winner class of result.
+
+| 2026-08-11 | Gap re-diagnosed by reading the reference notebook: thtennant's v12 runs flags **identical to ours** | — | — | the 1.17→1.5 gap is NOT config. The duck has high run-to-run variance (Tufa themselves note the readable version "hasn't had the same lucky result" as their 1.21) and the 1.5–1.7 cluster is the max over N daily submissions — our 1.17 is one sample |
+| 2026-08-11 | **duck v3 = + `goalkeep`** (following thtennant's v18, published the same day) | pending | pending | goalkeep fixes a measured defect: the stock harness wipes the agent's carried world model on every game-over/level change (non-empty on only 33/481 turns) and injects a per-turn digest of MEASURED outcomes (per-action board-change rates, level completions, game-over cadence) — convergent with our Phase-3 effectiveness-injection thesis. Guarded install: worst case = v12 config (1.17) |
+
+> **Update 2026-08-11 (gap resolution + goalkeep).** Pulling thtennant's actual notebooks resolved the
+> gap question: their v12 (the cluster reference) enables exactly our three flags — our replica was
+> faithful, and the residual 1.17-vs-1.5 distance is **sampling variance plus best-of-N selection**,
+> not configuration. The strategic consequence: with a high-variance harness, every daily slot is a
+> lottery ticket at the current mean; the way up is (a) draw a sample every day (the 8 pm trigger
+> already does) and (b) adopt changes that shift the mean. The first such change is free: thtennant
+> published v18 today, adding the `goalkeep` graft — which retains the agent's world model across
+> game-overs and injects measured action-outcome statistics into every turn. That is *precisely* the
+> differentiator thesis we built in Phase 3 (action-effectiveness injection), now implemented inside
+> the strong harness. Our duck v3 enables it; tonight's slot carries it.
 
 **Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +

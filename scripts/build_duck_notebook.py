@@ -116,11 +116,17 @@ with open(BUNDLE/"benchmark_initial.pkl","rb") as f: bm = pickle.load(f)
 bm.job_dir = WORKING; bm.n_passes = 1; bm.game_weights = None
 os.environ.setdefault("RECORDINGS_DIR", str(WORKING/"server_recording"))
 
-# Graft install (replica del duck v12 publico, thtennant/taaf-kaggle-source-share-fork):
-# analizadores de eficiencia sobre el solver TAAF. Blindado: cualquier fallo -> stock.
+# Graft install (replica del duck v18 publico, thtennant/taaf-kaggle-source-share-fork):
+# analizadores de eficiencia sobre el solver TAAF + goalkeep (v18, 2026-08-11): el
+# harness stock BORRA el modelo del mundo del agente en cada game-over/cambio de nivel
+# (medido por thtennant: modelo no-vacio en solo 33/481 turnos); goalkeep lo retiene e
+# inyecta un digest de resultados MEDIDOS (tasa de cambio por accion, niveles, cadencia
+# de game-over) cada turno — la misma tesis de nuestra inyeccion de effectiveness.
+# Blindado: cualquier fallo -> stock (piso = config v12 = 1.17).
 try:
     from taaf_grafts.composite import install as _graft_install
-    _graft_install(bm, flags={"efficiency": True, "retry_guard": True, "shortcircuit": True})
+    _graft_install(bm, flags={"efficiency": True, "retry_guard": True,
+                              "shortcircuit": True, "goalkeep": True})
 except Exception as exc:
     print(f"[taaf_grafts] graft failed, running stock: {type(exc).__name__}: {exc}")
 

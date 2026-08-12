@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -120,7 +121,23 @@ def main() -> int:
         return 0
 
     print(f"\nPublicando kernel '{meta['id']}' ...")
-    r = subprocess.run(["kaggle", "kernels", "push", "-p", str(tmp)])
+    r = subprocess.run(["kaggle", "kernels", "push", "-p", str(tmp)],
+                       capture_output=True, text=True)
+    print(r.stdout, end="")
+    if r.stderr:
+        print(r.stderr, end="")
+
+    # Registrar la version publicada: las code competitions exigen -v en el submit
+    # (daily_submit.ps1 lee este archivo). Sin esto el trigger diario falla con
+    # "Code competition submissions require both the output file name and the
+    # version number".
+    m = re.search(r"[Kk]ernel version (\d+)", r.stdout or "")
+    if r.returncode == 0 and m:
+        vfile = ROOT / "kernel_versions.json"
+        versions = json.loads(vfile.read_text(encoding="utf-8")) if vfile.exists() else {}
+        versions[meta["id"]] = int(m.group(1))
+        vfile.write_text(json.dumps(versions, indent=2) + "\n", encoding="utf-8")
+        print(f"kernel_versions.json: {meta['id']} -> v{m.group(1)}")
     return r.returncode
 
 

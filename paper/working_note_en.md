@@ -422,6 +422,8 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 > differentiator thesis we built in Phase 3 (action-effectiveness injection), now implemented inside
 > the strong harness. Our duck v3 enables it; tonight's slot carries it.
 
+| 2026-08-11 (night) | **Daily-trigger root cause found and fixed**: code-competition submits require `-v <kernel version>` besides `-f`; the script never passed it | — | — | the 8 pm task fired on time (exit 0) but Kaggle always rejects without `-v` — meaning the trigger has NEVER submitted successfully; every successful submission was manual. The earlier reading of that error as "daily quota exhausted" was wrong (real quota errors say "Submission limit exceeded"). Fix: `push_kernels.py` records each pushed version into `kernel_versions.json`; `daily_submit.ps1` reads it and passes `-v` (plus a `-DryRun` mode, verified). v3 (goalkeep) was submitted manually tonight: **id 55445915**, pending |
+
 **Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +
 `enable_thinking=False`.

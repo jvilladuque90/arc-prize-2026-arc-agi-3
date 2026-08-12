@@ -1,15 +1,22 @@
 # Submission diaria automatica a arc-prize-2026-arc-agi-3.
 # La ejecuta una tarea programada de Windows a las 8pm (ver scripts/register_daily_task.ps1).
-# Envia la ULTIMA version del mejor kernel (default: arc-agi3-explorer054, la replica 0.54)
-# para consumir el cupo diario (~1/dia; resetea 00:00 UTC). Lee credenciales de .env.
+# Envia la ULTIMA version del mejor kernel (default: arc-agi3-duck) para consumir el
+# cupo diario (~1/dia; resetea 00:00 UTC). Lee credenciales de .env.
 #
 # 2026-08-10: robustecido — la version anterior murio silenciosa ~2 semanas:
 #   (a) $ErrorActionPreference=Stop abortaba en la llamada a kaggle sin loguear;
 #   (b) 'kaggle' puede no estar en PATH en el contexto de la tarea programada.
+# 2026-08-11: CAUSA RAIZ del fallo persistente: las code competitions exigen
+#   -v <version del kernel> ademas de -f. Sin -v Kaggle responde "Code competition
+#   submissions require both the output file name and the version number" SIEMPRE
+#   (no es señal de cupo agotado — ese diagnostico previo era incorrecto).
+#   La version se lee de kernel_versions.json, que scripts/push_kernels.py
+#   actualiza en cada push.
 param(
   [string]$Kernel = "juliancamilovilla/arc-agi3-duck",
   [string]$Comp   = "arc-prize-2026-arc-agi-3",
-  [string]$File   = "submission.parquet"
+  [string]$File   = "submission.parquet",
+  [switch]$DryRun
 )
 
 $ErrorActionPreference = "Continue"
@@ -42,11 +49,22 @@ try {
   if (-not $kaggle) { Log "ERROR: kaggle.exe no encontrado en PATH ni candidatos"; exit 1 }
   Log "kaggle = $kaggle"
 
-  $msg = "auto-daily $([DateTime]::UtcNow.ToString('yyyy-MM-dd')) latest $Kernel"
-  Log "submitting latest version of $Kernel ..."
-  $out = & $kaggle competitions submit $Comp -k $Kernel -f $File -m $msg 2>&1
+  # Version del kernel (obligatoria en code competitions), de kernel_versions.json
+  $vfile = Join-Path $root "kernel_versions.json"
+  if (-not (Test-Path $vfile)) { Log "ERROR: no hay kernel_versions.json (correr push_kernels.py)"; exit 1 }
+  $versions = Get-Content $vfile -Raw | ConvertFrom-Json
+  $ver = $versions.$Kernel
+  if (-not $ver) { Log "ERROR: $Kernel no esta en kernel_versions.json"; exit 1 }
+  Log "kernel version = $ver (de kernel_versions.json)"
+
+  $msg = "auto-daily $([DateTime]::UtcNow.ToString('yyyy-MM-dd')) $Kernel v$ver"
+  if ($DryRun) { Log "DRY-RUN: & $kaggle competitions submit $Comp -k $Kernel -f $File -v $ver -m '$msg'"; exit 0 }
+  Log "submitting $Kernel v$ver ..."
+  $out = & $kaggle competitions submit $Comp -k $Kernel -f $File -v $ver -m $msg 2>&1
   Log ("result: " + (($out | Out-String).Trim() -replace "`r?`n", " | "))
-  if (($out | Out-String) -match "successfully") { Log "OK" } else { Log "FALLO (posible cupo diario ya usado u otro error, ver arriba)" }
+  if (($out | Out-String) -match "successfully") { Log "OK" }
+  elseif (($out | Out-String) -match "Submission limit exceeded|maximum number") { Log "CUPO DIARIO YA USADO (no es error del script)" }
+  else { Log "FALLO (ver arriba)" }
 }
 catch {
   Log ("EXCEPTION: " + $_.Exception.Message)

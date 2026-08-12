@@ -442,6 +442,8 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 > Fase 3 (inyección de action-effectiveness), ahora implementada dentro del harness fuerte. Nuestro
 > duck v3 la habilita; el slot de esta noche la lleva.
 
+| 2026-08-11 (noche) | **Causa raíz del trigger diario hallada y corregida**: el submit de code competitions exige `-v <versión del kernel>` además de `-f`; el script nunca lo pasó | — | — | la tarea de las 8pm disparó puntual (exit 0) pero Kaggle siempre rechaza sin `-v` — o sea, el trigger NUNCA había enviado con éxito; todas las submissions exitosas fueron manuales. La lectura previa de ese error como "cupo diario agotado" era incorrecta (el cupo real responde "Submission limit exceeded"). Fix: `push_kernels.py` registra cada versión publicada en `kernel_versions.json`; `daily_submit.ps1` la lee y pasa `-v` (más modo `-DryRun`, verificado). v3 (goalkeep) se envió manual esta noche: **id 55445915**, pendiente |
+
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 3.7% → **3.2%**.
 **vLLM en RTX Pro 6000:** modelo 33.7 GiB, KV cache 45 GiB; arranca con Marlin FP8 + FLASH_ATTN +

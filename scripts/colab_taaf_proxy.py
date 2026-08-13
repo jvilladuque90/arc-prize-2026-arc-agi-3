@@ -82,8 +82,7 @@ vllm_proc = subprocess.Popen(
     [sys.executable, "-m", "vllm.entrypoints.openai.api_server",
      "--model", MODEL, "--port", "1234", "--dtype", "half",
      "--max-model-len", "16384", "--gpu-memory-utilization", "0.92",
-     "--enable-auto-tool-choice", "--tool-call-parser", "hermes",
-     "--disable-log-requests"],
+     "--enable-auto-tool-choice", "--tool-call-parser", "hermes"],
     stdout=vllm_log, stderr=subprocess.STDOUT)
 deadline = time.time() + 1500
 while time.time() < deadline:

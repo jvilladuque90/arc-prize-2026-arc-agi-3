@@ -62,9 +62,15 @@ try {
   Log "submitting $Kernel v$ver ..."
   $out = & $kaggle competitions submit $Comp -k $Kernel -f $File -v $ver -m $msg 2>&1
   Log ("result: " + (($out | Out-String).Trim() -replace "`r?`n", " | "))
-  if (($out | Out-String) -match "successfully") { Log "OK" }
+  # Verificacion robusta: el CLI puede no imprimir nada en exito (visto 2026-08-13,
+  # submission creada con result vacio). La verdad esta en la lista de submissions.
+  Start-Sleep -Seconds 10
+  $rows = & $kaggle competitions submissions -c $Comp --csv 2>$null | Where-Object { $_ -match "," }
+  $newest = $rows | Select-Object -Skip 1 -First 1
+  Log ("newest submission: " + $newest)
+  if ($newest -match [regex]::Escape($msg)) { Log "OK (verificado en la lista)" }
   elseif (($out | Out-String) -match "Submission limit exceeded|maximum number") { Log "CUPO DIARIO YA USADO (no es error del script)" }
-  else { Log "FALLO (ver arriba)" }
+  else { Log "FALLO: la submission de hoy no aparece en la lista (ver arriba)" }
 }
 catch {
   Log ("EXCEPTION: " + $_.Exception.Message)

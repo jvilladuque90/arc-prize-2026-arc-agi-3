@@ -47,6 +47,13 @@ def log(m):
 log("pip install (vllm, kaggle) ...")
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "vllm", "kaggle"],
                check=True)
+# vllm sube torch a CUDA 13; el torchaudio preinstalado de Colab es CUDA 12.8 y
+# transformers lo importa (loss_rnnt) → RuntimeError de versiones. Sin torchaudio,
+# transformers salta ese import. Mismo guard para TF/torchvision vía env.
+subprocess.run([sys.executable, "-m", "pip", "uninstall", "-q", "-y", "torchaudio"],
+               check=False)
+os.environ.update({"USE_TF": "0", "TRANSFORMERS_NO_TF": "1",
+                   "TRANSFORMERS_NO_TORCHVISION": "1", "VLLM_NO_USAGE_STATS": "1"})
 
 os.makedirs("/content", exist_ok=True)
 os.chdir("/content")

@@ -161,8 +161,22 @@ def run_arm(name, flags):
 
     from datetime import datetime, timedelta
     soft_end = datetime.now() + timedelta(minutes=ARM_BACKSTOP_MIN)
-    asyncio.run(bm.run(soft_end_time=soft_end, runtime_environment=None,
-                       minimal_diagnostics=False))
+    # El CLI de colab ejecuta dentro de un kernel Jupyter (event loop ya activo):
+    # asyncio.run() directo falla. Hilo aparte = loop propio limpio.
+    import threading
+    box = {}
+    def _target():
+        try:
+            box["v"] = asyncio.run(bm.run(soft_end_time=soft_end,
+                                          runtime_environment=None,
+                                          minimal_diagnostics=False))
+        except BaseException as exc:  # noqa: BLE001 — propagar al hilo principal
+            box["err"] = exc
+    th = threading.Thread(target=_target)
+    th.start()
+    th.join()
+    if "err" in box:
+        raise box["err"]
 
     # métricas de comportamiento desde transcripts + summary
     metrics = {"games": {}, "helper_calls": 0, "own_plumbing_defs": 0,

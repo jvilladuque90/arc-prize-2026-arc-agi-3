@@ -45,6 +45,35 @@ t0 = time.time()
 def log(m):
     print(f"[temp-proxy {time.time()-t0:6.0f}s] {m}", flush=True)
 
+# Heartbeat: el kernel client del CLI aborta con "Timeout waiting for output"
+# ante silencios largos (bm.run calla ~10 min). Un print por minuto lo evita.
+import threading as _th
+def _heartbeat():
+    while True:
+        time.sleep(60)
+        print(f"[hb {time.time()-t0:6.0f}s]", flush=True)
+_th.Thread(target=_heartbeat, daemon=True).start()
+
+
+def persist_to_kaggle(payload: dict, note: str):
+    """Backstop: si el cliente CLI muere, el resultado sobrevive como dataset."""
+    try:
+        d = Path("/content/proxy_upload")
+        d.mkdir(exist_ok=True)
+        (d / "temp_proxy_result.json").write_text(json.dumps(payload, indent=2))
+        (d / "dataset-metadata.json").write_text(json.dumps({
+            "title": "arc3 temp proxy result",
+            "id": "juliancamilovilla/arc3-temp-proxy-result",
+            "licenses": [{"name": "CC0-1.0"}]}))
+        r = subprocess.run(["kaggle", "datasets", "version", "-p", str(d),
+                            "-m", note], capture_output=True, text=True)
+        if "successfully" not in (r.stdout or "").lower():
+            subprocess.run(["kaggle", "datasets", "create", "-p", str(d)],
+                           capture_output=True, text=True)
+        log(f"persistido a Kaggle ({note})")
+    except Exception as exc:  # noqa: BLE001 — backstop, nunca tumbar el run
+        log(f"persist_to_kaggle falló: {type(exc).__name__}: {exc}")
+
 log("pip install (vllm, kaggle) ...")
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "vllm", "kaggle"],
                check=True)
@@ -204,7 +233,9 @@ def run_arm(name, temperature):
 result = {"model": MODEL, "games": GAMES, "per_game_s": PER_GAME_S,
           "design": "thinking OFF ambos brazos, schema_helpers ON (config v4)"}
 result["A_temp06"] = run_arm("A", 0.6)
+persist_to_kaggle(result, "arm A done")
 result["B_temp02"] = run_arm("B", 0.2)
+persist_to_kaggle(result, "arm B done")
 
 vllm_proc.terminate()
 Path("/content/temp_proxy_result.json").write_text(json.dumps(result, indent=2))

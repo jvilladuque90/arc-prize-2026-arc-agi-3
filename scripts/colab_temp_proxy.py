@@ -160,9 +160,52 @@ def offline_games(env_dir):
             if e.game_id.split("-")[0] in GAMES]
 
 
+def ensure_vllm_alive():
+    """El server puede morir entre brazos (visto: brazo B con 0 tokens y 33
+    tracebacks contra un puerto muerto). Verificar y reiniciar si hace falta."""
+    global vllm_proc
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:1234/v1/models", timeout=10) as r:
+            if r.status == 200:
+                return
+    except Exception:
+        pass
+    log("vLLM caído; reiniciando ...")
+    try:
+        vllm_proc.kill()
+    except Exception:
+        pass
+    vllm_proc = subprocess.Popen(
+        [sys.executable, "-m", "vllm.entrypoints.openai.api_server",
+         "--model", MODEL, "--port", "1234", "--dtype", "half",
+         "--max-model-len", "16384", "--gpu-memory-utilization", "0.92",
+         "--enable-auto-tool-choice", "--tool-call-parser", "hermes"],
+        stdout=open("/content/vllm2.log", "w"), stderr=subprocess.STDOUT)
+    dl = time.time() + 1200
+    while time.time() < dl:
+        try:
+            with urllib.request.urlopen("http://127.0.0.1:1234/v1/models", timeout=5) as r:
+                if r.status == 200:
+                    log("vLLM reiniciado OK")
+                    return
+        except Exception:
+            pass
+        if vllm_proc.poll() is not None:
+            raise RuntimeError("vLLM no pudo reiniciar")
+        time.sleep(10)
+    raise RuntimeError("vLLM no respondió tras reinicio")
+
+
 def run_arm(name, temperature):
     log(f"=== brazo {name}: temp={temperature}, thinking OFF, helpers ON ===")
+    ensure_vllm_alive()
     os.environ["LOCAL_ANALYZER_TEMPERATURE"] = str(temperature)
+    # BUG confirmado: _LOCAL_ANALYZER_TEMPERATURE es global de módulo congelado
+    # al primer import (tool_agent.py:145) — la env var entre brazos NO basta.
+    # Mismo seam que el composite usa para context_window: parchear el global.
+    import inference.agent.tool_agent as _ta
+    _ta._LOCAL_ANALYZER_TEMPERATURE = float(temperature)
+    log(f"tool_agent._LOCAL_ANALYZER_TEMPERATURE = {_ta._LOCAL_ANALYZER_TEMPERATURE}")
     job = Path(f"/content/job_{name}")
     job.mkdir(exist_ok=True)
     os.environ["RECORDINGS_DIR"] = str(job / "rec")
@@ -201,12 +244,20 @@ def run_arm(name, temperature):
 
     metrics = {"temperature": temperature, "games": {}, "helper_calls": 0,
                "tracebacks": 0, "distinct_actions": 0, "repeat_runs": 0}
+    # OJO (bug del proxy #1): la nota HELPERS del prompt menciona los 4 helpers
+    # con parentesis CADA TURNO ("grid_diff(a,b)...") y los transcripts incluyen
+    # el prompt → contar "helper(" a secas infla la adopcion. Filtro: contar solo
+    # llamadas con argumentos que NO sean la firma literal de la nota.
     helpers = ("grid_diff", "connected_components", "action_effect_summary",
                "recent_history")
+    _note_sigs = ("grid_diff(a,b)", "connected_components(grid, colors=None)",
+                  "action_effect_summary(before,after)", "recent_history(n)")
     tdir = job / "transcripts"
     if tdir.is_dir():
         for t in tdir.glob("*.txt"):
             txt = t.read_text(errors="replace")
+            for sig in _note_sigs:
+                txt = txt.replace(sig, "")
             metrics["helper_calls"] += sum(
                 len(re.findall(rf"(?<!def ){h}\(", txt)) for h in helpers)
             metrics["tracebacks"] += txt.count("Traceback (most recent call")

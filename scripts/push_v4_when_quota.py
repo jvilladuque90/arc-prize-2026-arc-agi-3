@@ -48,8 +48,13 @@ def main() -> int:
         if r.returncode == 0 and "successfully pushed" in out:
             m = re.search(r"[Kk]ernel version (\d+)", out)
             new_v = int(m.group(1)) if m else None
-            log(f"push OK (v{new_v}); revierto a v2 hasta que valide")
-            set_version(2)
+            # Revertir a la version ANTERIOR (la ya validada) mientras la nueva
+            # corre su Save&Run: si el trigger de las 8pm dispara en esa ventana,
+            # envia lo ultimo probado y no una version sin validar.
+            prev = json.loads(VFILE.read_text(encoding="utf-8")).get(KERNEL)
+            prev = (new_v - 1) if (new_v and prev == new_v) else prev
+            log(f"push OK (v{new_v}); revierto a v{prev} hasta que valide")
+            set_version(int(prev))
             # esperar validación
             for _ in range(40):
                 s = subprocess.run(["kaggle", "kernels", "status", KERNEL],

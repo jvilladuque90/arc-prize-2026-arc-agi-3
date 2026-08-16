@@ -8,6 +8,28 @@ Solución para la competencia de Kaggle
 > ARC-AGI-2 (estático), aquí el agente **actúa**: RESET, ACTION1–5 y 7 (simples),
 > ACTION6 (click x,y). El score sale de los niveles completados en el set oculto.
 
+## Estado actual (2026-08-16)
+
+| | |
+|---|---|
+| **Puntaje oculto** | **1.10** (duck v4: harness TAAF + injertos `efficiency`/`retry_guard`/`shortcircuit`/`schema_helpers`) |
+| Línea base del mismo harness | media **0.98** sobre 4 muestras {1.17, 1.03, 0.76, 0.96} — misma configuración, **varianza de 0.41** |
+| Nuestro stack propio de exploración | 0.25 (techo medido en 7 envíos) |
+| Envío diario | automático a las 8pm (tarea de Windows → `scripts/daily_submit.ps1`) |
+
+**El diagnóstico que hoy gobierna la estrategia** ([DESIGN.md §8](docs/DESIGN.md)): con 195 tokens
+por segundo repartidos entre 28 juegos en paralelo, cada juego recibe ~52.000 tokens y ejecuta
+~94 acciones en 8 horas — y el primer nivel de un juego típico cuesta entre 7 y 55 acciones
+jugando perfecto. De ahí el techo de ~1 nivel por juego. Además, la auditoría del servidor de
+inferencia mostró que **se releen ~26 tokens por cada uno que se escribe** y que la caché de
+prefijos solo acierta el 44% (debería rondar el 90%): más de la mitad del trabajo de lectura es
+recálculo desperdiciado. Reducir esa relectura es la palanca principal en curso.
+
+Documentación viva: [docs/STRATEGY.md](docs/STRATEGY.md) (estado y palancas) ·
+[docs/DESIGN.md](docs/DESIGN.md) (diseño, features, tácticas, física del presupuesto) ·
+[paper/working_note_es.md](paper/working_note_es.md) / [paper/working_note_en.md](paper/working_note_en.md)
+(bitácora experimental bilingüe, con cada resultado y las lecturas honestas de los errores).
+
 ## Mecánica de la competencia
 
 | Aspecto | Detalle |
@@ -63,7 +85,24 @@ Salidas (`scripts/extract_features.py`, local, o el kernel `arc-agi3-features` e
 Estas features alimentan al agente: clasificación de juego (keyboard vs click),
 regiones interactivas y firma estructural de objetos.
 
-## Agente: GraphExplorer (`src/arc3/agent.py`)
+## Agente actual: harness duck + injertos (`scripts/build_duck_notebook.py`)
+
+Desde el 2026-08-11 competimos con una réplica del harness público de Tufa Labs (modelo
+Qwen3-27B-FP8 servido con vLLM en la RTX Pro 6000) más los injertos del fork de thtennant, que
+se instalan con una sola llamada blindada: si algo falla, cae a la configuración estándar.
+
+| Injerto | Qué hace | Estado |
+|---|---|---|
+| `efficiency`, `retry_guard`, `shortcircuit` | nota de presupuesto por turno, reintentos, recorte de sobre-exploración | activos (línea base 0.98) |
+| `schema_helpers` | precarga funciones de análisis de grillas en el entorno aislado del agente para que no las reescriba (con errores) en cada juego | **activo desde v4** — −20% de tokens; validado en CPU: 4,6 ms contra un presupuesto de 30 s |
+| `goalkeep` | retiene el modelo del mundo entre game-overs | apagado (0.81 en su única muestra, dentro del rango de la línea base → sin evidencia a favor) |
+| `banking`, `transfer`, `recovery`, `schema_notes`, `context_window` | disponibles en el paquete, sin activar por la referencia | `context_window` en experimento (ver §8 de DESIGN) |
+
+Verificaciones locales sin gastar cuota: `scripts/smoke_graft_install.py` (el injerto se instala
+y engancha el solver) y `scripts/test_schema_helpers.py` (las funciones inyectadas son correctas
+y suficientemente rápidas para el entorno aislado).
+
+## Agente propio: GraphExplorer (`src/arc3/agent.py`)
 
 Exploración de grafo de estados (síntesis de lo mejor del LB público, ver
 [docs/STRATEGY.md](docs/STRATEGY.md)): hashing de frames con máscara de borde 3px +

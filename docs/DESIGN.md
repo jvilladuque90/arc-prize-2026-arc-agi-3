@@ -1,8 +1,18 @@
 # ARC-AGI-3 — Diseño, features y estrategia (documento vivo)
 
-> **Documento vivo.** Se actualiza en cada decisión de estrategia. Ver el
-> [registro de decisiones](#5-registro-de-decisiones) y el [estado actual](#6-estado-actual-2026-07-29--resumen-ejecutivo)
-> al final. Última actualización: **2026-07-29**.
+> **Documento vivo.** Se actualiza en cada decisión de estrategia. Última actualización:
+> **2026-08-16**.
+>
+> **Empieza por aquí si buscas el estado vigente:** §8 (*la física del presupuesto*) contiene el
+> análisis que hoy gobierna las prioridades — cuántas decisiones tiene el agente por juego, dónde
+> se concentra la pérdida, y por qué la palanca principal es reducir la relectura del historial.
+> Le siguen el [registro de decisiones](#5-registro-de-decisiones) y el [estado ejecutivo](#6-estado-actual-2026-08-11--resumen-ejecutivo).
+>
+> Las secciones §1–§4 son el diseño fundacional (problema, features, arquitectura propia,
+> tácticas de entrenamiento). Su descripción del **agente propio** quedó superada por el pivote al
+> harness público (§5, 2026-08-11): hoy competimos con el harness duck + injertos, y nuestro
+> `src/arc3` aporta las features y la navegación que se re-montan sobre él. El análisis del
+> problema y de las features sigue vigente.
 
 ---
 
@@ -388,3 +398,122 @@ solo donde la exploración se agote de verdad.
 
 > **Convención:** toda decisión de estrategia nueva se añade al registro y actualiza las secciones
 > relevantes, junto con la fecha de "Última actualización".
+
+---
+
+## 8. La física del presupuesto (2026-08-16) — el análisis que reordena las prioridades
+
+> Sección nueva a raíz de dos preguntas del usuario: (a) ¿serviría tokenizar en *nibbles* para
+> gastar menos?, (b) ¿en qué nos podemos inspirar en la física cuántica? Ambas llevaron al mismo
+> sitio: **medir dónde se va de verdad el presupuesto**. Lo que sigue está medido, no estimado.
+
+### 8.1. Cuántas decisiones tiene el agente (y por qué eso explica el puntaje)
+
+Un *token* es la unidad mínima de texto que el modelo produce (aproximadamente media palabra).
+La tarjeta gráfica sirve al modelo de 27 mil millones de parámetros a **195 tokens generados por
+segundo en total**, repartidos entre los **28 juegos que corren en paralelo**. En las 8 horas del
+rerun oculto:
+
+| Cantidad | Cálculo | Resultado |
+|---|---|---|
+| Presupuesto total de generación | 195 tok/s × 28.800 s | ~5,6 millones de tokens |
+| Por juego (~110 juegos) | 5,6 M / 110 | **~52.000 tokens** |
+| Turnos de pensamiento por juego | 52.000 / (1.000–2.500 por turno, con razonamiento explícito) | **~20–40 turnos** |
+| Acciones por juego | 52.000 / 556 tokens por acción (medido) | **~94 acciones** |
+
+Y el costo de ganar, leído de los pares por nivel del propio harness (juego tu93: 19, 16, 34, 42,
+123, 80, 14, 23, 111): **el primer nivel cuesta entre 7 y 55 acciones jugando perfecto**. Con ~94
+acciones y exploración imperfecta, el techo natural es **un nivel por juego** — exactamente el
+0,98 de media que medimos. La aritmética predice nuestro puntaje sin ajustar nada.
+
+### 8.2. Dónde se concentra la pérdida
+
+En la validación, **todos los juegos reciben casi los mismos tokens (~8.000)** pero los convierten
+en cantidades de acciones radicalmente distintas, y ahí está la señal:
+
+| Juego | Acciones | Tokens por acción | ¿Nivel? |
+|---|---|---|---|
+| ka59 | 2 | 4.204 | no |
+| lp85 | 2 | 3.502 | no |
+| sb26 | 18 | 464 | **sí** |
+| su15 | 21 | 385 | **sí** |
+| tu93 | 52 | 108 | no |
+
+**Ningún juego con menos de ~18 acciones completó jamás un nivel.** En los peores casos el agente
+quemó todo el presupuesto deliberando sin actuar. El error no es uniforme: se concentra en una
+cola de juegos que entran en bucle de deliberación. Eso también explica la varianza medida
+(0,76–1,17 con código idéntico): hay muchos juegos justo en el filo.
+
+### 8.3. El hallazgo mayor: se relee 26 veces más de lo que se escribe
+
+Auditoría del registro del servidor de inferencia (gratis, ya estaba en las salidas del kernel):
+
+| Medida | Valor | Lectura en palabras claras |
+|---|---|---|
+| Tokens de entrada procesados | 1.950–5.775 por segundo | *prellenado*: releer la conversación previa |
+| Tokens de salida generados | 110–236 por segundo | lo único que produce decisiones |
+| **Relación entrada/salida** | **~26 : 1** | por cada token escrito, se releen 26 |
+| **Acierto de caché de prefijos** | **43,6–45,1%** | debería ser 85–95% en un diálogo que solo crece |
+| Memoria de atención disponible | 177.968 tokens | para 28 conversaciones de hasta 32.768 → **sobresuscrita ~5×** |
+| Decodificación especulativa | apagada | palanca disponible sin usar |
+
+La *caché de prefijos* guarda el trabajo ya hecho sobre la parte del texto que no cambió, para no
+recalcularla. Que acierte solo el 44% significa que **más de la mitad del trabajo de lectura es
+recálculo desperdiciado**, casi con seguridad por desalojo: no cabe todo en la memoria de atención.
+Y empeora con el tiempo — los historiales crecen, el desalojo aumenta, y el agente se frena justo
+cuando está más cerca de completar un nivel.
+
+### 8.4. Respuesta a la idea de los *nibbles*
+
+Un *nibble* son 4 bits, es decir 16 valores posibles — exactamente los 16 colores de ARC-AGI-3. La
+correspondencia es elegante, pero: (1) no se puede cambiar el vocabulario de un modelo ya entrenado
+sin reentrenarlo; (2) el agente **no lee la grilla cruda** — recibe objetos segmentados y una
+imagen; (3) y sobre todo, **la grilla no es donde se van los tokens**: se van en releer la
+conversación. La intuición ("comprimir la representación para gastar menos") es la correcta; el
+blanco es el historial, no el tablero. En el proyecto hermano la misma pregunta produjo la línea
+más valiosa de allá (decodificación especulativa, ×1,88 menos pasos) por exactamente este camino:
+la idea se conserva, el blanco se corrige con medición.
+
+### 8.5. Inspiración de la física cuántica: qué sí se traslada
+
+El paralelo honesto no es místico: **nuestro agente tiene ~30 mediciones por juego y cada una es
+cara y altera el sistema** — el problema clásico del diseño experimental bajo escasez.
+
+1. **Elegir la medición que más distingue, no la que parece más prometedora.** Mantener
+   explícitamente varias hipótesis sobre las reglas ("la flecha mueve al personaje" / "desplaza el
+   tablero" / "rota la pieza") y elegir la acción cuyos resultados más *difieran* entre ellas. Con
+   30 oportunidades, cada acción debería eliminar la mitad de las explicaciones vivas. Fuera de la
+   analogía se llama diseño experimental por ganancia de información, y es implementable como
+   herramienta del entorno aislado, **sin gastar tokens del modelo**.
+2. **Superposición con colapso tardío.** No casarse con un único modelo del mundo en el turno tres
+   y arrastrarlo. Nota empírica: el injerto que *añadía* memoria persistente (`goalkeep`) fue el
+   que peor puntuó — la evidencia disponible sugiere que lo que falta no es memoria sino decisiones.
+   Lo aprovechable de la metáfora es la **interferencia destructiva**: dos hipótesis que predicen
+   resultados contradictorios sobre la misma acción se cancelan al ejecutarla, y eso indica
+   exactamente qué acción vale la pena.
+3. **Suma sobre trayectorias.** Evaluar muchos caminos posibles en el modelo aprendido y quedarse
+   con el mejor, en vez de un solo plan hacia adelante. Ya lo construimos en la Fase 3 (modelo de
+   movimiento aprendido + búsqueda en anchura) y encaja con la palanca de amplificación: la
+   búsqueda ocurre en código, cuesta cero tokens del modelo, y devuelve una secuencia completa.
+4. **Advertencia (decoherencia):** mantener demasiadas hipótesis vivas consume el recurso escaso.
+   Con ~30 mediciones, el número sano es tres o cuatro, no veinte.
+
+### 8.6. Prioridades resultantes
+
+1. **Reducir la relectura** — perilla `context_window` del composite. Experimento CTX-8192 en curso
+   en kernel aparte, con umbrales pre-registrados (ver working notes). **Validable gratis**: el
+   registro del servidor imprime acierto de caché y tokens por segundo; no gasta envío diario.
+2. **Amplificación por programas** — que un turno ejecute muchas acciones. El entorno ya acepta
+   `action([...])` con listas y bucles; el modelo casi nunca lo usa. Inyectar nuestra navegación
+   por el mismo mecanismo que `schema_helpers`.
+3. **Decodificación especulativa** — hoy apagada; con n-gramas no requiere modelo extra. Acelera la
+   escritura, que es la parte menor del costo → tercera.
+
+### 8.7. Método (adoptado del proyecto hermano)
+
+- **Umbrales de decisión escritos ANTES de ver el resultado.** Nació de dos errores propios: leer
+  un 1.17 como avance (era la cola alta de una distribución con media 0,98) y un 0.81 como daño
+  (cae dentro del rango de la misma línea base).
+- **Matar hipótesis en el banco más barato disponible.** Orden: CPU local (segundos) → validación
+  en la tarjeta grande sin envío (~40 min) → envío diario (1 por día, con varianza de 0,41, así que
+  distinguir dos configuraciones cuesta 3–4 noches).

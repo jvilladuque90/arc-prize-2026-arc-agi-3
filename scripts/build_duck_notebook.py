@@ -180,12 +180,38 @@ def code_cell(src: str) -> dict:
 
 
 def main() -> int:
+    import argparse
+    ap = argparse.ArgumentParser()
+    # Experimento de prellenado (2026-08-16): la caché de prefijos acierta solo
+    # 44% porque 28 conversaciones de hasta 32768 tokens no caben en los 177.968
+    # de memoria de atención -> desalojo y recálculo. Bajar la ventana debería
+    # subir el acierto y liberar la tarjeta para GENERAR en vez de releer.
+    ap.add_argument("--context-window", type=int, default=None,
+                    help="pasa context_window al composite (default: sin tocar = 32768)")
+    ap.add_argument("--out", default=None, help="ruta del notebook generado")
+    args = ap.parse_args()
+
+    cells = list(CELLS)
+    if args.context_window:
+        for i, c in enumerate(cells):
+            if '"shortcircuit": True, "schema_helpers": True' in c:
+                cells[i] = c.replace(
+                    '"shortcircuit": True, "schema_helpers": True',
+                    f'"shortcircuit": True, "schema_helpers": True,\n'
+                    f'                              "context_window": {args.context_window}')
+                break
+        else:
+            print("ERROR: no encontré el dict de flags para inyectar context_window")
+            return 1
+
+    out = Path(args.out) if args.out else OUT
     nb = {"nbformat": 4, "nbformat_minor": 5,
           "metadata": {"kernelspec": {"display_name": "Python 3", "language": "python",
                                       "name": "python3"}},
-          "cells": [code_cell(c) for c in CELLS]}
-    OUT.write_text(json.dumps(nb, indent=1), encoding="utf-8")
-    print(f"generado {OUT}")
+          "cells": [code_cell(c) for c in cells]}
+    out.write_text(json.dumps(nb, indent=1), encoding="utf-8")
+    print(f"generado {out}" + (f" (context_window={args.context_window})"
+                               if args.context_window else ""))
     return 0
 
 

@@ -49,6 +49,15 @@ KERNELS = {
              "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
                                   "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                                   "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
+    # Kernel de EXPERIMENTO (no se envía nunca): mismo duck v4 pero con la ventana
+    # de contexto reducida. Mide en el log de vLLM si sube el acierto de la caché de
+    # prefijos (base 44%) y la generación (base ~195 tok/s). Slug aparte para no
+    # tocar la versión que envía el trigger diario.
+    "duckctx": {"notebook": "notebooks/duck_ctx.ipynb", "slug": "arc-agi3-duck-ctx",
+                "title": "arc agi3 duck ctx",
+                "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
+                                     "driessmit1/arc3-vllm-h100-wheelhouse-v3",
+                                     "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).
     # CPU puro: NO gasta cuota G4. Base probada para cerrar la brecha de exploración.
     "explorer054": {"notebook": "notebooks/explorer054.ipynb", "slug": "arc-agi3-explorer054",

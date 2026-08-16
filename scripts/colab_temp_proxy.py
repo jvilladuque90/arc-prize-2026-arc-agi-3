@@ -36,9 +36,11 @@ assert TOKEN, "pasa el KAGGLE_API_TOKEN como argv[1]"
 os.environ["KAGGLE_API_TOKEN"] = TOKEN
 os.environ["KAGGLE_USERNAME"] = "juliancamilovilla"
 
-GAMES = ("su15", "sb26", "tu93", "cd82")
-PER_GAME_S = 540
-ARM_BACKSTOP_MIN = 42
+# 3 juegos (los que mostraron actividad real con el 4B) con MÁS tiempo cada uno:
+# el proxy #2 murió de anemia (11 acciones totales). Concurrency 3 = 1 sola tanda.
+GAMES = ("su15", "sb26", "cd82")
+PER_GAME_S = 720
+ARM_BACKSTOP_MIN = 26
 MODEL = "Qwen/Qwen3-4B"
 
 t0 = time.time()
@@ -160,6 +162,23 @@ def offline_games(env_dir):
             if e.game_id.split("-")[0] in GAMES]
 
 
+# Contador de fallos del analyzer (timeouts contra vLLM): el harness los emite
+# por logging, no van a los transcripts. Sin esto no se distingue "el modelo
+# decidió poco" de "las peticiones se cayeron" — el error que invalidó el #2.
+import logging as _logging
+
+class _AnalyzerFailCounter(_logging.Handler):
+    def __init__(self):
+        super().__init__(level=_logging.WARNING)
+        self.n = 0
+    def emit(self, record):
+        if "analyzer request failed" in record.getMessage():
+            self.n += 1
+
+_fail_counter = _AnalyzerFailCounter()
+_logging.getLogger("inference.agent.tool_agent").addHandler(_fail_counter)
+
+
 def ensure_vllm_alive():
     """El server puede morir entre brazos (visto: brazo B con 0 tokens y 33
     tracebacks contra un puerto muerto). Verificar y reiniciar si hace falta."""
@@ -206,6 +225,7 @@ def run_arm(name, temperature):
     import inference.agent.tool_agent as _ta
     _ta._LOCAL_ANALYZER_TEMPERATURE = float(temperature)
     log(f"tool_agent._LOCAL_ANALYZER_TEMPERATURE = {_ta._LOCAL_ANALYZER_TEMPERATURE}")
+    _fail_counter.n = 0
     job = Path(f"/content/job_{name}")
     job.mkdir(exist_ok=True)
     os.environ["RECORDINGS_DIR"] = str(job / "rec")
@@ -215,7 +235,7 @@ def run_arm(name, temperature):
     bm.n_passes = 1
     bm.game_weights = None
     bm.solver.max_runtime_s_per_game = PER_GAME_S
-    bm.solver.concurrency = 2
+    bm.solver.concurrency = 3  # = len(GAMES): una sola tanda, sin colas
     bm.solver.model = MODEL
 
     from taaf_grafts.composite import install
@@ -243,7 +263,8 @@ def run_arm(name, temperature):
         raise box["err"]
 
     metrics = {"temperature": temperature, "games": {}, "helper_calls": 0,
-               "tracebacks": 0, "distinct_actions": 0, "repeat_runs": 0}
+               "tracebacks": 0, "distinct_actions": 0, "repeat_runs": 0,
+               "analyzer_failures": _fail_counter.n}
     # OJO (bug del proxy #1): la nota HELPERS del prompt menciona los 4 helpers
     # con parentesis CADA TURNO ("grid_diff(a,b)...") y los transcripts incluyen
     # el prompt → contar "helper(" a secas infla la adopcion. Filtro: contar solo

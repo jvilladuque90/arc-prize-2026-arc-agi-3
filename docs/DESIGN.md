@@ -1,12 +1,13 @@
 # ARC-AGI-3 — Diseño, features y estrategia (documento vivo)
 
 > **Documento vivo.** Se actualiza en cada decisión de estrategia. Última actualización:
-> **2026-08-17** (§8.8: corrección por ley de Goodhart — el experimento offline mintió porque
-> era demasiado corto para el régimen de producción).
+> **2026-08-17** (§8.9: reanálisis del cuello tras cuatro experimentos — **acciones y niveles están
+> desacoplados por encima de un piso; la frontera es semántica, no de presupuesto**).
 >
-> **Empieza por aquí si buscas el estado vigente:** §8 (*la física del presupuesto*) contiene el
-> análisis que hoy gobierna las prioridades — cuántas decisiones tiene el agente por juego, dónde
-> se concentra la pérdida, y por qué la palanca principal es reducir la relectura del historial.
+> **Empieza por aquí si buscas el estado vigente:** §8.9 (el reanálisis) y
+> [ARCHITECTURE.md](ARCHITECTURE.md) §2 (los *seams* por donde entra código nuestro, ya validados
+> en producción). §8.1–§8.7 conservan la medición del presupuesto, que sigue siendo correcta como
+> descripción aunque §8.9 corrige su lectura estratégica.
 > Le siguen el [registro de decisiones](#5-registro-de-decisiones) y el [estado ejecutivo](#6-estado-actual-2026-08-11--resumen-ejecutivo).
 >
 > Las secciones §1–§4 son el diseño fundacional (problema, features, arquitectura propia,
@@ -557,3 +558,48 @@ juego bajando la concurrencia**: con 28 conversaciones simultáneas la memoria d
 6.356 tokens por juego para contextos de 32.768; con 14 reparte el doble, sin recortar una sola
 línea del historial. Experimento en curso con ventana offline de 70 minutos y umbrales
 pre-registrados que esta vez **incluyen los niveles**, no solo las acciones.
+
+### 8.9. Reanálisis del cuello (2026-08-17, tras cuatro experimentos)
+
+Cuatro experimentos después, la hipótesis de §8.1 —"el cuello es el número de acciones"— queda
+**refutada como estaba enunciada**. La tabla completa:
+
+| Cambio | Acciones | Niveles / score | Veredicto |
+|---|---|---|---|
+| Ventana de contexto 32.768 → 16.384 | **+48%** (offline) | **0.60 oculto** (baseline 0.98) | ❌ peor |
+| Concurrencia 28 → 14 | −27% | 7 vs 9 niveles | ❌ peor |
+| Helpers de navegación en el sandbox | −18% | 9 = 9 niveles, score +25% | 🟡 neutro |
+| (referencia) ventana offline 16 min → 62 min | +333% | 3 → 9 niveles | ✅ mejor |
+
+**Lo que dicen juntos:** por encima de un piso, **las acciones y los niveles están desacoplados**.
+Se puede subir acciones un 48% y bajar el puntaje; se puede bajarlas un 18% y mantener los niveles.
+Lo único que escaló limpio fue dar más **tiempo real** — que sube acciones *y* preserva calidad.
+
+Modelo corregido:
+
+```
+niveles ≈ f(acciones × CALIDAD de cada acción)      con un PISO duro
+piso: ningún juego con < ~18 acciones completó jamás un nivel
+```
+
+- **Por debajo del piso** (juegos que se quedan en 2-10 acciones): el problema es presupuesto y se
+  arregla con throughput. En el rerun de 8 h ya estamos por encima: ~94 acciones por juego.
+- **Por encima del piso**: el problema es **semántico**. El agente no infiere la regla ni la meta,
+  y más acciones no compran comprensión. Ahí es donde vive nuestro techo de ~1 nivel por juego.
+
+**Consecuencia estratégica:** la física del presupuesto (§8.3) describe una ineficiencia **real**
+—se releen 26 tokens por cada uno escrito, la caché acierta 44%— pero **esa ineficiencia no es lo
+que capa el puntaje**. Los dos experimentos que la atacaron de frente fallaron, que es justo lo que
+se espera si el presupuesto no es la restricción activa. El 44% es el precio estructural de correr
+28 conversaciones largas en una tarjeta, y se convive con él.
+
+**Dónde queda la frontera:** en la calidad por acción, es decir, en lo semántico. Y la herramienta
+para atacarla ya está validada: los **seams de inyección** (ver [ARCHITECTURE.md](ARCHITECTURE.md)
+§2). El experimento del 17-ago probó que una sola línea de nota basta para que el modelo adopte
+código nuestro en 25 de 25 juegos. Lo que falló no fue el canal sino la carga: entregamos una
+*función que cuesta un turno llamar* en vez de un *dato que ya viene en el prompt*.
+
+**Siguiente carga, v2:** inyectar por el seam C (`_build_user_prompt`) el **modelo de movimiento
+medido y el perfil de efectividad por acción**, calculados en el anfitrión a partir del historial
+que el harness ya tiene. Coste cero en turnos, disponible en todos los juegos, y es exactamente la
+tesis de Fase 3 (§3.2) que este proyecto persigue desde julio — ahora con el canal demostrado.

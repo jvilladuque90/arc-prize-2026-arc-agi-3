@@ -3,7 +3,7 @@
 *Working Note — ARC Prize 2026 · ARC-AGI-3 (Kaggle).*
 **Author:** Julian Camilo Villa Duque.
 
-> **Living document.** Updated as results arrive. See the [decision log](#appendix-a--decision-log-and-key-measurements) and the linked design doc [`docs/DESIGN.md`](../docs/DESIGN.md). Last updated: 2026-07-23.
+> **Living document.** Updated as results arrive. See the [decision log](#appendix-a--decision-log-and-key-measurements) and the linked design doc [`docs/DESIGN.md`](../docs/DESIGN.md). Last updated: **2026-08-17**. Current state: duck harness (TAAF) + grafts at **1.10** hidden (baseline mean 0.98); the bottleneck is **semantic, not budget** (four experiments in Appendix A).
 
 ---
 
@@ -457,6 +457,19 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 | 2026-08-12 | **duck v3 (goalkeep) scored 0.81** — a −0.36 drop vs the v12 config (1.17) | 1 level/15min (boot check) | **0.81** | first hidden-set evidence on goalkeep is NEGATIVE: 0.81 sits below the entire duck-base band (1.1–1.3, ~330 teams), so this is very unlikely to be run variance. Hypothesis: retaining the world model across game-overs entrenches wrong models, and the per-turn digest spends context. Note thtennant published v18 the same day — they had no hidden-set evidence yet either. Action (zero GPU): `kernel_versions.json` reverted to duck **v2** (v12 config, already validated) so this week's daily trigger samples the known-good config; goalkeep can earn a re-test if the author's own numbers improve. Friday's `schema_helpers` test goes on top of the v12 config, NOT goalkeep |
 | 2026-08-12 | **GPU quota exhausted until Friday** (~22 min left); week plan: daily trigger accumulates v3 (goalkeep) samples — submissions don't consume our quota; Friday: duck v4 + `schema_helpers` | — | — | prompt-mining the bundle found our feature-injection thesis ALREADY implemented as an unshipped graft: `schema_helpers` preloads tested helpers (`grid_diff`, `connected_components`, `action_effect_summary`, `recent_history`) into the agent's python sandbox, because the 27B rewrites that plumbing buggily each game. TAAF's prompt already exposes `segmentation` (objects with color/hash/pixels/boundary/children + adjacency). TPU (20 h available) ruled out: the stack is CUDA-only (vLLM Marlin FP8; deploy target demands RTX Pro 6000) |
 | 2026-08-11 (night) | **Daily-trigger root cause found and fixed**: code-competition submits require `-v <kernel version>` besides `-f`; the script never passed it | — | — | the 8 pm task fired on time (exit 0) but Kaggle always rejects without `-v` — meaning the trigger has NEVER submitted successfully; every successful submission was manual. The earlier reading of that error as "daily quota exhausted" was wrong (real quota errors say "Submission limit exceeded"). Fix: `push_kernels.py` records each pushed version into `kernel_versions.json`; `daily_submit.ps1` reads it and passes `-v` (plus a `-DryRun` mode, verified). v3 (goalkeep) was submitted manually tonight: **id 55445915**, pending |
+
+> **Synthesis 2026-08-17 — what the "optimize tokenization" line produced.** The user's *nibble*
+> question was not implemented as such (you cannot change a trained model's vocabulary, and the
+> agent does not read the raw grid), but **its reframing — compress what actually costs tokens —
+> triggered everything else**: auditing the server, discovering the 26:1 read/write ratio and the
+> 44% cache hit rate, and running four experiments. Honest balance of the line: **1 major
+> diagnosis** (the budget physics, DESIGN §8), **2 branches closed with data** (context window,
+> concurrency), **1 new capability validated in production** (the injection seams: 726 calls into
+> our own code across 25/25 games) and **0 points of hidden-set improvement so far**. The most
+> valuable correction is a negative one: the token budget is **not** what caps the score, so
+> optimizing it does not pay; what caps it is understanding the game. Without the tokenization
+> line we could not have discarded that hypothesis with evidence, and we would still be spending
+> submissions on it.
 
 **Failure-rate trajectory (LLM calls that fell back):** 98.6% → 7.7% → 5.0% → 3.7% → 3.2% (v11 regresó LB; guard en v12).
 **vLLM on RTX Pro 6000:** model 33.7 GiB, KV cache 45 GiB; boots with Marlin FP8 + FLASH_ATTN +

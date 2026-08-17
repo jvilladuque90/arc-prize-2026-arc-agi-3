@@ -27,6 +27,19 @@ Leaderboard: puntero 2.52, segundo 1.86, Tufa 1.62, la masa de forks del duck en
    sin activar (`schema_helpers`, que precarga funciones de análisis de grillas en el entorno
    aislado del agente). La adoptamos en vez de reconstruirla.
 
+> **Actualización 2026-08-17 — el reanálisis que reordena todo.** Cuatro experimentos después, la
+> tesis "el cuello es el número de acciones" queda **refutada**: recortar la ventana de contexto dio
+> +48% de acciones y **0.60** en el set oculto (peor); bajar la concurrencia dio −27% de acciones y
+> menos niveles (peor); inyectar helpers de navegación dio −18% de acciones y **los mismos niveles**
+> con +25% de score. Por encima de un piso duro (~18 acciones por juego, por debajo del cual ningún
+> juego completó nunca un nivel) **las acciones y los niveles están desacoplados**. En el rerun de
+> 8 h ya estamos muy por encima de ese piso (~94 acciones por juego), así que **la restricción
+> activa no es el presupuesto sino la comprensión**: el agente no infiere la regla ni la meta, y
+> más acciones no compran entendimiento. La rama de infraestructura de memoria queda **cerrada**
+> (ver §8.9 de DESIGN). **Lo que sí ganamos hoy es un canal:** los *seams* de inyección están
+> validados en producción — una sola línea de nota bastó para que el modelo adoptara código nuestro
+> en 25 de 25 juegos (726 llamadas). El canal funciona; lo que falló fue la carga.
+
 **La aritmética que gobierna el puntaje ahora (medida, 2026-08-16):**
 
 ```
@@ -50,18 +63,25 @@ que es exactamente donde estamos.** Para llegar a 2.5 (el puntero) hacen falta ~
 | Memoria de atención | 177.968 tokens para 28 conversaciones de hasta 32.768 | **sobresuscrita ~5×** → desalojo y recálculo |
 | Decodificación especulativa | apagada | palanca sin usar |
 
-**Las tres palancas vivas, por valor esperado:**
+**Palancas, actualizadas al 2026-08-17:**
 
-1. **Reducir la relectura** (perilla `context_window` del composite): si la caché sube de 44% a
-   ~85%, se libera la mitad del trabajo de la tarjeta para generar. Experimento CTX-8192 en
-   curso en un kernel aparte, con umbrales pre-registrados. Validable **gratis** (el log
-   imprime acierto y tokens/s) — sin gastar envío.
-2. **Amplificación por programas**: que un turno de pensamiento ejecute muchas acciones. El
-   entorno ya permite `action([...])` con listas y bucles; el modelo casi nunca lo usa. Nuestra
-   navegación de la Fase 3 (modelo de movimiento aprendido + búsqueda en anchura) inyectada por
-   el mismo mecanismo de `schema_helpers` convierte un turno en una secuencia completa.
-3. **Decodificación especulativa** (hoy apagada): con n-gramas no requiere modelo extra ni
-   dataset nuevo. Acelera la escritura, que es la parte menor del costo → tercera prioridad.
+1. ~~Reducir la relectura (`context_window`)~~ → **CERRADA**: +48% de acciones offline pero
+   **0.60** en el oculto. Recortar historial compra acciones vendiendo calidad.
+2. ~~Bajar la concurrencia~~ → **CERRADA**: −27% de acciones, menos niveles. El aprovechamiento
+   del lote en vLLM pesa más que el desalojo de memoria.
+3. ~~Amplificación por programas~~ (helpers que el modelo debe **llamar**) → **NEUTRA**: adopción
+   masiva (726 llamadas, 25/25 juegos) pero −18% de acciones, porque en los juegos sin "jugador"
+   que se traslade la función devuelve vacío y cada llamada infructuosa cuesta un turno.
+4. **VIVA — inyección de INFORMACIÓN por el prompt** (seam C, `_build_user_prompt`): entregar el
+   modelo de movimiento y el perfil de efectividad por acción **ya calculados**, en vez de como
+   función que cuesta un turno llamar. Coste cero en turnos, sirve en todos los juegos. Es la
+   tesis de Fase 3 de este proyecto, ahora con el canal demostrado.
+5. **VIVA — atacar lo semántico**: el agente no infiere la meta. Ideas ordenadas en DESIGN §8.5
+   (diseño experimental por ganancia de información: elegir la acción que más discrimina entre
+   hipótesis rivales, en vez de la que parece prometedora).
+6. Decodificación especulativa (hoy apagada, sin modelo extra con n-gramas): acelera la escritura,
+   que es la parte menor del costo → baja prioridad, y menos aún ahora que sabemos que el
+   presupuesto no es la restricción activa.
 
 **Palancas cerradas con evidencia** (no reabrir sin dato nuevo): más exploración bruta (0.25
 contra ~1.0 del agente con lenguaje: la calidad por acción vale ~200× el volumen); bajar la

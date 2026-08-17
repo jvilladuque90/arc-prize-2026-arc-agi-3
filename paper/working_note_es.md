@@ -3,7 +3,7 @@
 *Working Note — ARC Prize 2026 · ARC-AGI-3 (Kaggle).*
 **Autor:** Julian Camilo Villa Duque.
 
-> **Documento vivo.** Se actualiza a medida que llegan resultados. Ver el [registro de decisiones](#apéndice-a--registro-de-decisiones-y-mediciones-clave) y el doc de diseño [`docs/DESIGN.md`](../docs/DESIGN.md). Última actualización: 2026-07-23.
+> **Documento vivo.** Se actualiza a medida que llegan resultados. Ver el [registro de decisiones](#apéndice-a--registro-de-decisiones-y-mediciones-clave) y el doc de diseño [`docs/DESIGN.md`](../docs/DESIGN.md). Última actualización: **2026-08-17**. Estado: harness duck (TAAF) + injertos en **1.10** oculto (media base 0.98); el cuello es **semántico, no de presupuesto** (cuatro experimentos en el Apéndice A).
 
 ---
 
@@ -476,6 +476,19 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 | 2026-08-12 | **duck v3 (goalkeep) marcó 0.81** — caída de −0.36 vs el config v12 (1.17) | 1 nivel/15min (chequeo de arranque) | **0.81** | la primera evidencia del set oculto sobre goalkeep es NEGATIVA: 0.81 queda por debajo de TODA la banda duck-base (1.1–1.3, ~330 equipos), así que es muy improbable que sea varianza. Hipótesis: retener el modelo del mundo a través de game-overs atrinchera modelos equivocados, y el digest por turno gasta contexto. Ojo: thtennant publicó el v18 ese mismo día — tampoco tenía evidencia del set oculto. Acción (cero GPU): `kernel_versions.json` revertido a duck **v2** (config v12, ya validado) para que el trigger diario muestree el config bueno esta semana; goalkeep puede ganarse un re-test si los números del autor mejoran. El test de `schema_helpers` del viernes va sobre el config v12, NO sobre goalkeep |
 | 2026-08-12 | **Cuota GPU agotada hasta el viernes** (~22 min restantes); plan de la semana: el trigger diario acumula muestras de v3 (goalkeep) — los submits no gastan nuestra cuota; viernes: duck v4 + `schema_helpers` | — | — | minando el bundle apareció nuestra tesis de feature injection YA implementada como graft sin habilitar: `schema_helpers` precarga helpers testeados (`grid_diff`, `connected_components`, `action_effect_summary`, `recent_history`) en el sandbox python del agente, porque el 27B reescribe esa plomería con bugs en cada juego. El prompt TAAF ya expone `segmentation` (objetos con color/hash/pixels/boundary/children + adyacencia). TPU (20 h disponibles) descartada: el stack es CUDA-only (vLLM Marlin FP8; el deploy target exige RTX Pro 6000) |
 | 2026-08-11 (noche) | **Causa raíz del trigger diario hallada y corregida**: el submit de code competitions exige `-v <versión del kernel>` además de `-f`; el script nunca lo pasó | — | — | la tarea de las 8pm disparó puntual (exit 0) pero Kaggle siempre rechaza sin `-v` — o sea, el trigger NUNCA había enviado con éxito; todas las submissions exitosas fueron manuales. La lectura previa de ese error como "cupo diario agotado" era incorrecta (el cupo real responde "Submission limit exceeded"). Fix: `push_kernels.py` registra cada versión publicada en `kernel_versions.json`; `daily_submit.ps1` la lee y pasa `-v` (más modo `-DryRun`, verificado). v3 (goalkeep) se envió manual esta noche: **id 55445915**, pendiente |
+
+> **Síntesis 2026-08-17 — qué produjo la línea de "optimizar la tokenización".** La pregunta del
+> usuario sobre *nibbles* no se implementó tal cual (no se puede cambiar el vocabulario de un
+> modelo entrenado, y el agente no lee la grilla cruda), pero **su reencuadre —comprimir lo que de
+> verdad cuesta tokens— fue el disparador de todo lo demás**: auditar el servidor, descubrir que se
+> releen 26 tokens por cada uno escrito y que la caché acierta 44%, y montar cuatro experimentos.
+> Balance honesto de la línea: **1 diagnóstico mayor** (la física del presupuesto, §8 de DESIGN),
+> **2 ramas cerradas con dato** (ventana de contexto, concurrencia), **1 capacidad nueva validada
+> en producción** (los seams de inyección: 726 llamadas a código nuestro en 25/25 juegos) y
+> **0 puntos de mejora en el set oculto hasta ahora**. La corrección más valiosa es negativa:
+> el presupuesto de tokens **no** es lo que capa el puntaje, así que optimizarlo no paga; lo que
+> capa es la comprensión del juego. Sin la línea de tokenización no habríamos podido descartar esa
+> hipótesis con evidencia, y seguiríamos gastando envíos en ella.
 
 **Trayectoria de la tasa de fallo (llamadas al LLM que cayeron al fallback):** 98.6% → 7.7% → 5.0% →
 3.7% → **3.2%**.

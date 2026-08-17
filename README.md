@@ -8,27 +8,37 @@ Solución para la competencia de Kaggle
 > ARC-AGI-2 (estático), aquí el agente **actúa**: RESET, ACTION1–5 y 7 (simples),
 > ACTION6 (click x,y). El score sale de los niveles completados en el set oculto.
 
-## Estado actual (2026-08-16)
+## Estado actual (2026-08-17)
 
 | | |
 |---|---|
-| **Puntaje oculto** | **1.10** (duck v4: harness TAAF + injertos `efficiency`/`retry_guard`/`shortcircuit`/`schema_helpers`) |
-| Línea base del mismo harness | media **0.98** sobre 4 muestras {1.17, 1.03, 0.76, 0.96} — misma configuración, **varianza de 0.41** |
+| **Configuración en producción** | duck v4: harness TAAF + injertos `efficiency`/`retry_guard`/`shortcircuit`/`schema_helpers` |
+| Puntaje oculto de v4 | **1.10** (n=1) |
+| Línea base del mismo harness | media **0.98** sobre 4 muestras {1.17, 1.03, 0.76, 0.96} — mismo código, **rango 0.41** |
+| Mejor puntaje histórico | **1.17** · leaderboard: puntero 2.52, segundo 1.86 |
 | Nuestro stack propio de exploración | 0.25 (techo medido en 7 envíos) |
-| Envío diario | automático a las 8pm (tarea de Windows → `scripts/daily_submit.ps1`) |
+| Envío diario | automático a las 20:00 (`scripts/daily_submit.ps1`, envía solo versiones validadas) |
 
-**El diagnóstico que hoy gobierna la estrategia** ([DESIGN.md §8](docs/DESIGN.md)): con 195 tokens
-por segundo repartidos entre 28 juegos en paralelo, cada juego recibe ~52.000 tokens y ejecuta
-~94 acciones en 8 horas — y el primer nivel de un juego típico cuesta entre 7 y 55 acciones
-jugando perfecto. De ahí el techo de ~1 nivel por juego. Además, la auditoría del servidor de
-inferencia mostró que **se releen ~26 tokens por cada uno que se escribe** y que la caché de
-prefijos solo acierta el 44% (debería rondar el 90%): más de la mitad del trabajo de lectura es
-recálculo desperdiciado. Reducir esa relectura es la palanca principal en curso.
+**Dónde está el cuello** ([DESIGN.md §8.9](docs/DESIGN.md)): cada juego dispone de ~52.000 tokens
+y ejecuta ~94 acciones en las 8 horas del rerun. Medimos que **se releen ~26 tokens por cada uno
+que se escribe** y que la caché de prefijos solo acierta el 44% — una ineficiencia real. Pero los
+dos experimentos que la atacaron de frente **fallaron** (recortar contexto: 0.60 en el oculto;
+bajar concurrencia: menos niveles), lo que indica que **el presupuesto no es la restricción
+activa**. Por encima de un piso de ~18 acciones por juego, acciones y niveles están desacoplados:
+la frontera es **semántica** — el agente no infiere la regla ni la meta.
 
-Documentación viva: [docs/STRATEGY.md](docs/STRATEGY.md) (estado y palancas) ·
-[docs/DESIGN.md](docs/DESIGN.md) (diseño, features, tácticas, física del presupuesto) ·
-[paper/working_note_es.md](paper/working_note_es.md) / [paper/working_note_en.md](paper/working_note_en.md)
-(bitácora experimental bilingüe, con cada resultado y las lecturas honestas de los errores).
+**Lo que sí está validado como capacidad**: los *seams* de inyección
+([ARCHITECTURE.md §2](docs/ARCHITECTURE.md)) — una sola línea de nota bastó para que el modelo
+adoptara código nuestro **726 veces en 25 de 25 juegos**. El canal funciona; el siguiente paso es
+la carga correcta: inyectar **información ya calculada** en el prompt (coste cero en turnos) en
+vez de funciones que el modelo deba llamar.
+
+Documentación viva: [docs/STRATEGY.md](docs/STRATEGY.md) (estado y palancas, con las cerradas
+marcadas) · [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) (el stack, los seams, los instrumentos de
+medición) · [docs/DESIGN.md](docs/DESIGN.md) (problema, features, física del presupuesto y su
+corrección) · [paper/working_note_es.md](paper/working_note_es.md) /
+[working_note_en.md](paper/working_note_en.md) (bitácora experimental bilingüe, con cada resultado
+y las lecturas honestas de los errores).
 
 ## Mecánica de la competencia
 

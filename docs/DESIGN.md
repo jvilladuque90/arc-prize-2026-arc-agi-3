@@ -1,7 +1,8 @@
 # ARC-AGI-3 — Diseño, features y estrategia (documento vivo)
 
 > **Documento vivo.** Se actualiza en cada decisión de estrategia. Última actualización:
-> **2026-08-16**.
+> **2026-08-17** (§8.8: corrección por ley de Goodhart — el experimento offline mintió porque
+> era demasiado corto para el régimen de producción).
 >
 > **Empieza por aquí si buscas el estado vigente:** §8 (*la física del presupuesto*) contiene el
 > análisis que hoy gobierna las prioridades — cuántas decisiones tiene el agente por juego, dónde

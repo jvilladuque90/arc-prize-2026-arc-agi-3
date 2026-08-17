@@ -65,6 +65,12 @@ KERNELS = {
                  "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
                                       "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                                       "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
+    # AMPLIFICACION: duck + helpers de navegacion propios inyectados en el sandbox.
+    "ducknav": {"notebook": "notebooks/duck_nav.ipynb", "slug": "arc-agi3-duck-nav",
+                "title": "arc agi3 duck nav",
+                "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
+                                     "driessmit1/arc3-vllm-h100-wheelhouse-v3",
+                                     "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).
     # CPU puro: NO gasta cuota G4. Base probada para cerrar la brecha de exploración.
     "explorer054": {"notebook": "notebooks/explorer054.ipynb", "slug": "arc-agi3-explorer054",

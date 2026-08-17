@@ -15,6 +15,7 @@ Basado en: notebooks pull de jeroencottaar/tufa-labs-duck-harness-june-30-milest
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -197,6 +198,10 @@ def main() -> int:
     # mientras el rerun oculto produce ~52.000 -> los experimentos cortos NO ven
     # el regimen de historial largo donde vive el problema real.
     ap.add_argument("--soft-min", type=int, default=None)
+    # AMPLIFICACION: inyecta los helpers de navegacion de src/arc3 en el mismo
+    # prelude del sandbox que usa schema_helpers, para que UN turno de pensamiento
+    # ejecute una ruta completa en vez de una accion. Ver src/arc3/sandbox_nav.py.
+    ap.add_argument("--nav", action="store_true")
     args = ap.parse_args()
 
     cells = list(CELLS)
@@ -223,6 +228,41 @@ def main() -> int:
                 break
         else:
             print("ERROR: no encontré el dict de flags para inyectar context_window")
+            return 1
+
+    if args.nav:
+        import base64
+        sys.path.insert(0, str(ROOT / "src"))
+        from arc3.sandbox_nav import NAV_PROMPT_NOTE, build_nav_prelude
+        # base64 evita todo problema de escapado: el prelude lleva comillas triples.
+        b64 = base64.b64encode(build_nav_prelude().encode("utf-8")).decode("ascii")
+        note_b64 = base64.b64encode(NAV_PROMPT_NOTE.encode("utf-8")).decode("ascii")
+        patch = f'''
+# AMPLIFICACION (nuestro diferencial): anadimos los helpers de navegacion al mismo
+# prelude que schema_helpers inyecta en el sandbox del agente. schema_helpers lee
+# SANDBOX_HELPERS_PRELUDE y HELPERS_PROMPT_NOTE en CADA llamada (no los captura al
+# importar), asi que extenderlos aqui basta. Verificado en CPU con
+# scripts/test_sandbox_nav.py (compila bajo SAFE_BUILTINS, aprende el modelo de
+# movimiento, descarta acciones erraticas, degrada a vacio sin transiciones).
+try:
+    import base64 as _b64
+    import taaf_grafts.schema_helpers as _sh
+    _nav_src = _b64.b64decode("{b64}").decode("utf-8")
+    _nav_note = _b64.b64decode("{note_b64}").decode("utf-8")
+    compile(_sh.SANDBOX_HELPERS_PRELUDE + "\\n" + _nav_src, "<check>", "exec")
+    _sh.SANDBOX_HELPERS_PRELUDE = _sh.SANDBOX_HELPERS_PRELUDE + "\\n" + _nav_src
+    _sh.HELPERS_PROMPT_NOTE = _sh.HELPERS_PROMPT_NOTE + "\\n" + _nav_note
+    print("NAV_HELPERS injected:", len(_nav_src), "chars")
+except Exception as exc:
+    print(f"[nav_helpers] injection failed, running stock: {{type(exc).__name__}}: {{exc}}")
+'''
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     patch + "\nimport arc_agi, taaf.game_api")
+                break
+        else:
+            print("ERROR: no encontre la celda del install de grafts")
             return 1
 
     out = Path(args.out) if args.out else OUT

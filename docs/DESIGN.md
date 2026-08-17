@@ -517,3 +517,42 @@ cara y altera el sistema** — el problema clásico del diseño experimental baj
 - **Matar hipótesis en el banco más barato disponible.** Orden: CPU local (segundos) → validación
   en la tarjeta grande sin envío (~40 min) → envío diario (1 por día, con varianza de 0,41, así que
   distinguir dos configuraciones cuesta 3–4 noches).
+
+### 8.8. Corrección del 2026-08-17: Goodhart, y por qué el experimento offline mintió
+
+El v5 (ventana de contexto 16.384) marcó **0.60** en el set oculto — por debajo de todo el rango
+del baseline {0.76–1.17} — pese a que offline había medido **+48% de acciones** en dos corridas
+independientes. La causa es un defecto de diseño mío que conviene dejar escrito:
+
+**La validación offline dura 16 minutos y genera ~9.500 tokens por juego; el rerun oculto genera
+~52.000.** El experimento nunca ejercitó el régimen de historial largo donde vive el problema.
+Recortar la ventana compra acciones (prompts más cortos, menos relectura) vendiendo memoria de
+trabajo — y esa venta solo se cobra cuando el historial se alarga, es decir, en el rerun.
+
+Corrección a la ecuación de §8.1:
+
+```
+puntaje ∝ acciones × CALIDAD POR ACCIÓN     (antes escribí solo "∝ acciones")
+```
+
+Mi análisis del 16-ago identificó bien el numerador y olvidó el denominador. Optimicé el proxy
+medible (acciones) y perdí el objetivo (niveles): **ley de Goodhart en carne propia**, la tercera
+vez en el proyecto que el instrumento resulta ser parte del experimento.
+
+**Regla de reversión refinada** (para no repetir ni el error de `goalkeep` ni este): con una sola
+muestra, revertir **solo si cae fuera del rango observado de la alternativa**. El 0.81 de
+`goalkeep` caía dentro de {0.76–1.17} → esperar más muestras (y en efecto el veredicto quedó en
+suspenso). El 0.60 de v5 cae fuera → revertir ya.
+
+**Regla de diseño de experimentos añadida:** un experimento offline solo es informativo si
+ejercita el **mismo régimen** que la producción. Para este harness eso significa ventanas de
+validación largas (≥60 min) cuando lo que se toca afecta al historial. Las ventanas cortas siguen
+sirviendo para verificar mecanismos (¿se instala el injerto?, ¿arranca el servidor?), no para
+decidir configuraciones.
+
+**Hacia dónde va la palanca ahora:** el desalojo de memoria sigue siendo real (44% de acierto de
+caché), pero la vía correcta no es quitarle contexto al agente sino **darle más memoria por
+juego bajando la concurrencia**: con 28 conversaciones simultáneas la memoria de atención reparte
+6.356 tokens por juego para contextos de 32.768; con 14 reparte el doble, sin recortar una sola
+línea del historial. Experimento en curso con ventana offline de 70 minutos y umbrales
+pre-registrados que esta vez **incluyen los niveles**, no solo las acciones.

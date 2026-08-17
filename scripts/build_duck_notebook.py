@@ -189,9 +189,30 @@ def main() -> int:
     ap.add_argument("--context-window", type=int, default=None,
                     help="pasa context_window al composite (default: sin tocar = 32768)")
     ap.add_argument("--out", default=None, help="ruta del notebook generado")
+    # Concurrencia: 28 juegos simultaneos saturan la memoria de atencion (177.968
+    # tokens => 6.356 por juego, con contextos de 32.768) -> desalojo y recalculo.
+    # Bajarla da mas memoria por juego SIN recortarle el historial al agente.
+    ap.add_argument("--concurrency", type=int, default=None)
+    # Ventana offline: el default de 25 min solo produce ~9.500 tokens por juego,
+    # mientras el rerun oculto produce ~52.000 -> los experimentos cortos NO ven
+    # el regimen de historial largo donde vive el problema real.
+    ap.add_argument("--soft-min", type=int, default=None)
     args = ap.parse_args()
 
     cells = list(CELLS)
+    if args.soft_min:
+        cells = [c.replace('TAAF_OFFLINE_SOFT_MIN", "25"',
+                           f'TAAF_OFFLINE_SOFT_MIN", "{args.soft_min}"') for c in cells]
+    if args.concurrency:
+        for i, c in enumerate(cells):
+            if 'bm.job_dir = WORKING' in c:
+                cells[i] = c.replace(
+                    'bm.job_dir = WORKING',
+                    f'bm.solver.concurrency = {args.concurrency}\nbm.job_dir = WORKING')
+                break
+        else:
+            print("ERROR: no encontre donde inyectar concurrency")
+            return 1
     if args.context_window:
         for i, c in enumerate(cells):
             if '"shortcircuit": True, "schema_helpers": True' in c:

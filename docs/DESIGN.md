@@ -670,3 +670,40 @@ y el modelo la copiaba tal cual. Un hueco copiable se copia.)
 35 acciones inertes, incluidos **5 juegos donde ninguna acción simple hace nada** pero el tablero sí
 responde a clics (medido: s5i5 y vc33, 12/12). Ahí el agente puede quemar la partida entera pulsando
 botones muertos, así que la nota lo dice explícitamente en vez de dejarlo deducir.
+
+### 8.11. Primer resultado del banco micro (2026-08-19) — la carga del seam C queda justificada
+
+Corrida en T4 sobre el banco corregido (176 items), dos tamaños para poder distinguir un efecto
+**estructural del prompt** de un ruido de un modelo concreto. Contraste **pareado** sobre los
+discordantes (los items que un brazo acierta y el otro falla), no dos porcentajes sueltos.
+
+| | Qwen3-1.7B | Qwen3-4B | base trivial |
+|---|---|---|---|
+| A.V0 recortes crudos | 38.9% | **70.4%** | 37% |
+| A.V1 + objetos del recorte | 38.9% | 68.5% | 37% |
+| **A pareado** | 0 vs 0 · p=1.0 | 3 vs 2 · **p=1.0** | |
+| B.V0 sin tabla | 14.7% | 44.0% | 38% |
+| B.V2 + tabla de efectos medida | 5.5% | **66.1%** | 38% |
+| **B pareado** | 15 vs 5 · p=0.041 (**perjudica**) | **0 vs 24 · p≈0** (**ayuda**) | |
+
+**Lectura 1 — la tabla de efectos medida funciona, y el resultado es unánime.** A 4B, inyectar el
+modelo de movimiento sube la planificación de 44.0% a 66.1%, y de los 24 items discordantes
+**los 24 van a favor de la tabla, ninguno en contra**. Es la evidencia directa que faltaba para la
+carga del seam C: el dato ya calculado, entregado como texto, cambia la decisión del modelo.
+
+**Lectura 2 — las features objetuales no aportan (negativo limpio).** A 4B, 70.4% vs 68.5% con
+3 vs 2 discordantes: indistinguible. Y esta vez la comparación es válida — la versión anterior
+adjuntaba objetos del tablero completo en coordenadas absolutas mientras mostraba un recorte, o
+sea que medía «¿ayuda una lista irrelevante?». Con features **del recorte y en coordenadas del
+recorte**, el efecto sigue siendo nulo. La tesis de Fase 3, en esta forma, no paga: lo que el
+modelo necesita no es que le describan lo que ya ve, sino **lo que no puede ver** (la dinámica).
+
+**Lectura 3 (metodológica, la más importante) — el efecto SE INVIERTE con el tamaño.** A 1.7B la
+misma tabla **perjudica** (15 vs 5 discordantes, p=0.041); a 4B ayuda de forma unánime. Es un
+umbral de capacidad: un modelo que no sabe usar información estructurada se distrae con ella.
+**Consecuencia operativa: el modelo más pequeño posible NO es un proxy válido por sí solo.** Si
+esta corrida se hubiera hecho sólo con el pequeño —que era el plan— la conclusión habría sido
+«la tabla perjudica» y se habría matado la carga del seam C que acaba de demostrarse buena.
+Regla adoptada: **toda comparación de formato de prompt se corre a dos tamaños como mínimo**, y
+sólo se cree la dirección si se sostiene en el mayor (el de producción es de 27B, por encima de
+ambos).

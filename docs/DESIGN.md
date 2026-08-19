@@ -707,3 +707,42 @@ esta corrida se hubiera hecho sólo con el pequeño —que era el plan— la con
 Regla adoptada: **toda comparación de formato de prompt se corre a dos tamaños como mínimo**, y
 sólo se cree la dirección si se sostiene en el mayor (el de producción es de 27B, por encima de
 ambos).
+
+### 8.12. El formato del dato importa tanto como el dato (2026-08-19)
+
+Tras confirmar que la tabla de efectos ayuda (§8.11), se analizó **dónde seguía fallando** el 4B
+con ella (37 fallos de 109). El patrón no era aleatorio:
+
+| condición | acierto con tabla vectorial |
+|---|---|
+| meta en eje puro | 81.1% |
+| **meta en diagonal** | **51.8%** |
+| una sola acción alcanza la meta | 80.0% |
+| **hay que componer varias** | **64.6%** |
+| con 4 acciones disponibles | 100% |
+| **con sólo 2 disponibles** | **58.4%** |
+
+El cuello está en **componer**: cuando ninguna acción apunta a la meta, hay que comparar
+reducciones de distancia. Se probaron dos reformulaciones, ambas **computables en producción**
+(precalcular la distancia a la meta habría subido el número, pero en producción no hay meta
+explícita — sería optimizar un proxy inexistente, el mismo Goodhart que costó el v5):
+
+| variante (Qwen3-4B, 109 items) | acierto | pareado vs vectorial |
+|---|---|---|
+| sin tabla | 44.0% | — |
+| V2 vectorial `move 0 -3` | 66.1% | — |
+| **V3 palabras** `mueve 3 a la izquierda` | **86.2%** | **24 vs 2** · p≈0 |
+| V4 mapa inverso `para ir IZQUIERDA: ACTION3` | 85.3% | 35 vs 14 · p=0.0038 |
+
+**Sólo cambiar el vector por palabras vale +20 puntos** — más que la ganancia de añadir la tabla
+entera (+22). Interpretar `move 0 -3` consume razonamiento que el modelo necesita para la tarea;
+nombrar la dirección se lo devuelve. Es la misma lección que el §8.9 en otra escala: **el cuello
+no es el presupuesto ni la disponibilidad del dato, sino cuánto trabajo cuesta usarlo**.
+
+A diferencia del efecto tabla-vs-nada (que **se invierte** a 1.7B, §8.11), el formato en palabras
+gana en **ambos** tamaños (1.7B: 15.6% vs 5.5%; 4B: 86.2% vs 66.1%). Una dirección consistente a
+través de la escala es lo que autoriza a extrapolar hacia el 27B de producción; una que se
+invierte, no.
+
+**Carga desplegada** (`render_effects_note`, flag `--effects`): formato V3. Se eligió sobre V4
+por ser más corto a igualdad estadística (86.2% vs 85.3%).

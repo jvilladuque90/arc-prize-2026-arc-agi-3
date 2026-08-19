@@ -26,7 +26,11 @@ import time
 import urllib.request
 
 RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/main"
-MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-1.7B,Qwen/Qwen3-4B").split(",")
+# Solo el 4B: es el unico de los dos que supera el suelo util (el 1.7B queda
+# por debajo de la base trivial en planificacion). Cargar los dos seguidos
+# agoto la VM gratis a mitad del segundo. Los numeros del 1.7B ya estan en
+# docs/DESIGN.md 8.11 y no hace falta repetirlos.
+MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B").split(",")
 BATCH = int(os.environ.get("MICRO_BATCH", "16"))
 MAX_NEW = 12
 

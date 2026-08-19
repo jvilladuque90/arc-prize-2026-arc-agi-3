@@ -61,6 +61,46 @@ def prompt_which(item, _unused: bool = False) -> str:
                       "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"])
 
 
+def dir_words(sr: int, sc: int) -> str:
+    """(0,+1) -> '1 a la derecha'. Nombrar la direccion evita que el modelo tenga
+    que interpretar un vector antes de razonar con el."""
+    parts = []
+    if sr < 0:
+        parts.append(f"{-sr} arriba")
+    if sr > 0:
+        parts.append(f"{sr} abajo")
+    if sc < 0:
+        parts.append(f"{-sc} a la izquierda")
+    if sc > 0:
+        parts.append(f"{sc} a la derecha")
+    return " y ".join(parts) if parts else "nada"
+
+
+def _parse_shift(v: str) -> tuple[int, int]:
+    a, b = v.replace("move", "").split()
+    return int(a), int(b)
+
+
+def inverse_map(effects: dict) -> str:
+    """Mapa DIRECCION -> ACCION, en vez de ACCION -> vector.
+
+    Medido: con la tabla vectorial el 4B acierta 81.1% cuando la meta esta en un
+    eje puro pero solo 51.8% en diagonal, y 58.4% cuando solo hay 2 acciones
+    disponibles (ninguna apunta a la meta, hay que comparar reducciones de
+    distancia). El mapa inverso quita el paso de inversion mental: el modelo
+    pregunta 'quiero ir a la derecha' y lee la accion.
+    """
+    cardinales = (("ARRIBA", (-1, 0)), ("ABAJO", (1, 0)),
+                  ("IZQUIERDA", (0, -1)), ("DERECHA", (0, 1)))
+    out = []
+    for nombre, vec in cardinales:
+        hits = [a for a, v in effects.items()
+                if sum(x * y for x, y in zip(_parse_shift(v), vec)) > 0]
+        if hits:
+            out.append(f"    para ir {nombre}: {', '.join(sorted(hits))}")
+    return "\n".join(out)
+
+
 def prompt_plan(item, with_table: bool) -> str:
     p = ["Un objeto debe llegar a una casilla objetivo en una rejilla.",
          f"Posicion actual del objeto (fila, columna): {item['player']}",
@@ -91,16 +131,52 @@ def normalize(text: str, kind: str) -> str:
 
 
 # (nombre, tipo de item, constructor)  -- los pares A y B comparten items
+def prompt_plan_words(item) -> str:
+    """V3: la misma tabla pero con las direcciones NOMBRADAS."""
+    tab = "\n".join(f"  {a}: mueve {dir_words(*_parse_shift(v))}"
+                    for a, v in item["effects_table"].items())
+    return "\n".join([
+        "Un objeto debe llegar a una casilla objetivo en una rejilla.",
+        f"Posicion actual del objeto (fila, columna): {item['player']}",
+        f"Posicion objetivo (fila, columna): {item['target']}", "",
+        "Efecto MEDIDO de cada accion:", tab, "",
+        "Que accion acerca mas el objeto al objetivo?",
+        "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"])
+
+
+def prompt_plan_inverse(item) -> str:
+    """V4: tabla vectorial + mapa inverso direccion -> accion."""
+    tab = "\n".join(f"  {a}: {v}" for a, v in item["effects_table"].items())
+    return "\n".join([
+        "Un objeto debe llegar a una casilla objetivo en una rejilla.",
+        f"Posicion actual del objeto (fila, columna): {item['player']}",
+        f"Posicion objetivo (fila, columna): {item['target']}", "",
+        "Efecto MEDIDO de cada accion (filas, columnas):", tab, "",
+        "Resumen por direccion:", inverse_map(item["effects_table"]), "",
+        # La pista tiene que ser CIERTA: algunas acciones combinan los dos ejes y
+        # si llegan solas. Afirmar lo contrario seria meter un hecho falso, que es
+        # el mismo error que ya cazamos en el detector.
+        "Si el objetivo esta en diagonal, mira si alguna accion mueve en los dos "
+        "ejes a la vez; si ninguna lo hace, elige la que reduzca mas la distancia "
+        "total.", "",
+        "Que accion acerca mas el objeto al objetivo?",
+        "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"])
+
+
 VARIANTS = [
     ("A.V0_crudo",     "effect_of_action", lambda it: prompt_effect(it, False)),
     ("A.V1_objetos",   "effect_of_action", lambda it: prompt_effect(it, True)),
     ("B.V0_sin_tabla", "plan_action",      lambda it: prompt_plan(it, False)),
     ("B.V2_con_tabla", "plan_action",      lambda it: prompt_plan(it, True)),
+    ("B.V3_palabras",  "plan_action",      prompt_plan_words),
+    ("B.V4_inverso",   "plan_action",      prompt_plan_inverse),
     ("C.lookup",       "which_action",     lambda it: prompt_which(it)),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),
-         ("B tabla", "B.V0_sin_tabla", "B.V2_con_tabla")]
+         ("B tabla", "B.V0_sin_tabla", "B.V2_con_tabla"),
+         ("B palabras vs vector", "B.V2_con_tabla", "B.V3_palabras"),
+         ("B inverso vs vector", "B.V2_con_tabla", "B.V4_inverso")]
 
 
 def trivial_baselines(items) -> dict:

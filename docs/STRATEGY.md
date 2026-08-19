@@ -27,6 +27,23 @@ Leaderboard: puntero 2.52, segundo 1.86, Tufa 1.62, la masa de forks del duck en
    sin activar (`schema_helpers`, que precarga funciones de análisis de grillas en el entorno
    aislado del agente). La adoptamos en vez de reconstruirla.
 
+> **Actualización 2026-08-19 — un instrumento nuevo, y un error de medición propio.** Se construyó
+> un **banco micro**: preguntas sobre la mecánica con respuesta derivada del propio environment,
+> cientos por minuto en CPU (el envío diario daba *un dato por noche* con varianza 0.41). Lo primero
+> que midió fue **un fallo nuestro**: el detector de movimiento (`sandbox_nav._nav_shift`) alineaba
+> *todo* el conjunto de celdas no-fondo y, sobre tableros densos (630–855 celdas de 4096), ajustaba
+> ruido — llegaba a dar el **mismo desplazamiento para cuatro acciones distintas**, con 100% de
+> *consistencia*. **La consistencia no valida nada**; sólo la **predicción fuera de muestra** lo hace.
+> Corregido (huellas por color, sólo celdas cambiadas) sube a **96.6%** (141/146) con filtro de
+> confianza ≥0.6. El banco de 201 items, cuya verdad salía del detector roto, quedó invalidado y se
+> reconstruyó a 176. **Lección permanente añadida a las tres de abajo: un instrumento se valida
+> prediciendo lo que no vio, nunca repitiéndose a sí mismo.**
+>
+> Estado de la palanca semántica: la carga del seam C ya produce nota **no vacía en 25/25 juegos**
+> (la v1 era vacía justo en los juegos sin movimiento) y detecta **5 juegos donde ninguna acción
+> simple hace nada** pero los clics sí responden — ahí el agente puede quemar la partida entera
+> pulsando botones muertos.
+
 > **Actualización 2026-08-17 — el reanálisis que reordena todo.** Cuatro experimentos después, la
 > tesis "el cuello es el número de acciones" queda **refutada**: recortar la ventana de contexto dio
 > +48% de acciones y **0.60** en el set oculto (peor); bajar la concurrencia dio −27% de acciones y

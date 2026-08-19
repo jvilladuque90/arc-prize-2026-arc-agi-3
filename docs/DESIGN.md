@@ -603,3 +603,70 @@ código nuestro en 25 de 25 juegos. Lo que falló no fue el canal sino la carga:
 medido y el perfil de efectividad por acción**, calculados en el anfitrión a partir del historial
 que el harness ya tiene. Coste cero en turnos, disponible en todos los juegos, y es exactamente la
 tesis de Fase 3 (§3.2) que este proyecto persigue desde julio — ahora con el canal demostrado.
+
+### 8.10. El instrumento micro y un error de medición propio (2026-08-19)
+
+**Por qué se construyó.** El único instrumento fiable era el envío diario: un dato por noche, con
+varianza 0.41 entre repeticiones de la *misma* configuración. Con eso hacen falta 3–4 días para
+distinguir dos variantes, y cuatro experimentos seguidos no produjeron dirección. El banco micro
+mide otra cosa, mucho más barata y mucho más cerca del cuello identificado en §8.9: **si el agente
+infiere la mecánica**. Preguntas con respuesta derivada del propio environment (sin juez humano ni
+modelo evaluador), cientos por minuto.
+
+**Hallazgo operativo:** no hacía falta GPU. Los prompts son cortos (~330 tokens los de rejilla, ~86
+los demás) → ~93k tokens de prefill para el banco entero, que un modelo de 0.6B despacha en CPU.
+Se pedía T4 por inercia. Además, **vLLM no sirve en la T4 gratis**: sus workers agotan la RAM del
+anfitrión (~12.7 GB) y matan el kernel de Jupyter (`Timeout waiting for output`); `transformers`
+con batching sobra para generaciones cortas y greedy.
+
+**El hallazgo que justifica todo el ejercicio: nuestro detector de movimiento fabricaba datos.**
+`sandbox_nav._nav_shift` busca el desplazamiento que mejor alinea *todo* el conjunto de celdas
+no-fondo. Los tableros reales son densos (medido: 630–855 celdas no-fondo de 4096), así que ese
+criterio ajusta ruido: sobre una textura densa siempre hay algún offset que alinea muchas celdas
+por casualidad. Consecuencias medidas:
+
+- reportaba el **mismo desplazamiento para cuatro acciones distintas** (tu93);
+- **contradecía a un segundo detector en casi todos los pares** — ninguno de los dos era fiable;
+- y lo hacía con 100% de *consistencia*, repitiendo el mismo error: **la consistencia no valida nada**.
+
+La causa se ve en una transición real de tu93: `(15,15..17) 9→0` y `(15,21..23) 0→9` es una barra
+de 3 celdas que se traslada +6 columnas, pero como el 0 no es el fondo (es el 5), las celdas
+vaciadas caían en el conjunto «destino» y las nuevas en el «origen». Ambos contaminados, y el test
+de mayoría tumbaba una traslación limpia.
+
+**Corrección** (`src/arc3/effects_model.py`): emparejar huellas **por color** y **solo sobre las
+celdas que cambiaron**. Un objeto que se mueve vacía unas pocas celdas y llena otras pocas; las
+600+ restantes no cambian. Desempate por rareza global del color (el objeto es lo raro, el campo
+lo abundante).
+
+**Validación por predicción fuera de muestra** — se ajusta la tabla con la primera mitad del
+historial y se predice la segunda. Es lo único que un detector no puede fingir:
+
+| detector | aciertos fuera de muestra | juegos degenerados |
+|---|---|---|
+| anterior (`_nav_shift`) | 131/146 = 89.7% | varios (tu93 con 4 acciones iguales) |
+| corregido, sin filtro | 188/221 = 85.1% | 1/25 |
+| **corregido, conf ≥ 0.6** | **141/146 = 96.6%** | 1/25 |
+
+La confianza declarada resultó ser un filtro limpio (0.6 → 96.6%; 0.5 → 88.1%; sin filtro → 85.1%),
+de ahí `MIN_CONF = 0.6`. Por debajo, la nota **degrada a incertidumbre honesta** en vez de afirmar
+un vector falso: meter un hecho inventado en el prompt es peor que callar.
+
+**Consecuencia sobre el banco:** su primera versión (201 items) derivaba la verdad del detector
+roto — las respuestas `move DR DC` estaban inventadas. Reconstruido sobre verdad válida quedan 176
+items; al corregir apareció que `change` se llevaba el 60.8% de `effect_of_action`, así que se topan
+las clases (20/clase) para que el brazo A pueda distinguir algo. Bases triviales: 37.0% / 38.5% /
+30.8%.
+
+**Sobre el modelo pequeño como instrumento.** Qwen3-0.6B quedó **por debajo del suelo útil**: en la
+variante de control `C.lookup` —donde la respuesta está literalmente escrita en el enunciado— sacó
+53.8%. Un modelo que no lee de forma fiable no puede informar sobre formatos de prompt aguas abajo.
+La variante de control hizo exactamente su trabajo: declarar inválido el resto de la corrida.
+(El brazo A dio 0/54 por un defecto **nuestro**: el prompt ofrecía la plantilla literal `move DR DC`
+y el modelo la copiaba tal cual. Un hueco copiable se copia.)
+
+**Estado de la carga del seam C.** `effects_model.render_effects_note()` produce nota **no vacía en
+25/25 juegos** — justo donde falló la v1, que era vacía en los juegos sin movimiento. Detecta además
+35 acciones inertes, incluidos **5 juegos donde ninguna acción simple hace nada** pero el tablero sí
+responde a clics (medido: s5i5 y vc33, 12/12). Ahí el agente puede quemar la partida entera pulsando
+botones muertos, así que la nota lo dice explícitamente en vez de dejarlo deducir.

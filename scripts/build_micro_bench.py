@@ -220,8 +220,16 @@ def main() -> int:
                     center = (len(t["before"]) // 2, len(t["before"][0]) // 2)
                 cb, org = crop(t["before"], center[0], center[1])
                 ca, _ = crop(t["after"], center[0], center[1])
+                # Objetos DEL RECORTE Y EN COORDENADAS DEL RECORTE.
+                # Antes se adjuntaba la lista de objetos del tablero COMPLETO y del
+                # frame inicial, con centros en coordenadas absolutas ([31,31],
+                # [63,31]) mientras el enunciado mostraba un recorte de 13x13 de OTRA
+                # transicion. Las features describian una vista distinta de la que se
+                # veia, asi que el brazo A no medía "ayudan las features objetuales"
+                # sino "ayuda una lista irrelevante" — y eso da que no por definicion.
                 shots.append({"before": ascii_grid(cb), "after": ascii_grid(ca),
-                              "origin": list(org), "moved": list(s) if s else None})
+                              "origin": list(org), "moved": list(s) if s else None,
+                              "objects": objects_of(cb, background_of(cb))[:6]})
             answer = (truth["kind"] if truth["kind"] != "move"
                       else f"move {truth['shift'][0]} {truth['shift'][1]}")
             items.append({

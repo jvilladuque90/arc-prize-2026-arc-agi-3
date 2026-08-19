@@ -28,11 +28,16 @@ def prompt_effect(item, with_objects: bool) -> str:
     p = ["Estas analizando un juego de rejilla. Cada ejemplo muestra el tablero ANTES y "
          "DESPUES de ejecutar la misma accion.", LEGEND, ""]
     for i, s in enumerate(item["shots"], 1):
-        p += [f"Ejemplo {i} - ANTES:", s["before"], f"Ejemplo {i} - DESPUES:", s["after"], ""]
-    if with_objects and item.get("objects"):
-        objs = ", ".join(f"color {o['color']} tam {o['size']} centro {o['center']}"
-                         for o in item["objects"][:6])
-        p += [f"Objetos detectados en el tablero: {objs}", ""]
+        p += [f"Ejemplo {i} - ANTES:", s["before"]]
+        # Las features van PEGADAS a su ejemplo y en coordenadas del recorte que se
+        # esta mostrando. Una lista de objetos del tablero completo, en coordenadas
+        # absolutas, describe una vista que el modelo no tiene delante: no es la
+        # tesis de Fase 3, es ruido con formato de dato.
+        if with_objects and s.get("objects"):
+            objs = ", ".join(f"color {o['color']} tam {o['size']} centro {o['center']}"
+                             for o in s["objects"])
+            p += [f"  (objetos en este recorte, fila/columna dentro del recorte: {objs})"]
+        p += [f"Ejemplo {i} - DESPUES:", s["after"], ""]
     # OJO CON EL FORMATO: la primera version ofrecia la plantilla literal
     # "move DR DC" y el modelo de 0.6B la copiaba tal cual en el 100% de los items
     # (0/54 en ambos brazos). Un hueco copiable se copia: aqui solo se muestran

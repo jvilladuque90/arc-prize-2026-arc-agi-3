@@ -202,6 +202,11 @@ def main() -> int:
     # prelude del sandbox que usa schema_helpers, para que UN turno de pensamiento
     # ejecute una ruta completa en vez de una accion. Ver src/arc3/sandbox_nav.py.
     ap.add_argument("--nav", action="store_true")
+    # CARGA v2 (seam C): inyecta la tabla de efectos MEDIDA como texto en el
+    # prompt, calculada del historial que el harness ya tiene. Cero turnos.
+    # Justificada por el banco micro: 44.0% -> 66.1% en planificacion a 4B,
+    # con 24 de 24 discordantes a favor. Ver docs/DESIGN.md 8.11.
+    ap.add_argument("--effects", action="store_true")
     args = ap.parse_args()
 
     cells = list(CELLS)
@@ -255,6 +260,58 @@ try:
     print("NAV_HELPERS injected:", len(_nav_src), "chars")
 except Exception as exc:
     print(f"[nav_helpers] injection failed, running stock: {{type(exc).__name__}}: {{exc}}")
+'''
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     patch + "\nimport arc_agi, taaf.game_api")
+                break
+        else:
+            print("ERROR: no encontre la celda del install de grafts")
+            return 1
+
+    if args.effects:
+        import base64
+        sys.path.insert(0, str(ROOT / "src"))
+        src = (ROOT / "src" / "arc3" / "effects_model.py").read_text(encoding="utf-8")
+        b64 = base64.b64encode(src.encode("utf-8")).decode("ascii")
+        patch = f'''
+# CARGA DEL SEAM C (v2 de la amplificacion). La v1 inyectaba una FUNCION en el
+# sandbox: se adoptaba (726 llamadas en 25/25 juegos) pero costaba un turno
+# llamarla y devolvia vacio en los juegos sin movimiento. Esta v2 entrega el DATO
+# YA CALCULADO como texto en el prompt: cero turnos, cero llamadas al sandbox, y
+# nota no vacia en 25/25 juegos locales.
+#
+# Evidencia (banco micro, T4, 2026-08-19): con la tabla de efectos medida la
+# planificacion sube de 44.0% a 66.1% en Qwen3-4B y de 24 items discordantes los
+# 24 van a favor de la tabla, ninguno en contra (p aprox 0). OJO: a 1.7B el mismo
+# dato PERJUDICA (15 vs 5, p=0.041) — hay un umbral de capacidad, y el modelo de
+# produccion (27B) esta por encima de ambos.
+#
+# El detector esta validado por prediccion fuera de muestra sobre los 25 juegos
+# locales: 96.6% (141/146) con confianza >= 0.6. Por debajo de ese umbral la nota
+# NO afirma un desplazamiento, degrada a incertidumbre honesta.
+try:
+    import base64 as _b64
+    import taaf_grafts.schema_helpers as _sh
+    _ns = {{}}
+    exec(compile(_b64.b64decode("{b64}").decode("utf-8"), "effects_model.py", "exec"), _ns)
+    _effects_from_history = _ns["effects_from_history"]
+    _render_effects_note = _ns["render_effects_note"]
+    _orig_bup = _sh.SchemaHelpersToolAgent._build_user_prompt
+
+    def _bup_with_effects(self, action_num, **kw):
+        base = _orig_bup(self, action_num, **kw)
+        try:
+            note = _render_effects_note(_effects_from_history(kw.get("history_entries") or []))
+        except Exception:
+            return base          # cualquier fallo => prompt del padre, intacto
+        return f"{{base}}\\n{{note}}" if note else base
+
+    _sh.SchemaHelpersToolAgent._build_user_prompt = _bup_with_effects
+    print("EFFECTS_NOTE injected on seam C:", len(_ns), "symbols")
+except Exception as exc:
+    print(f"[effects_note] injection failed, running stock: {{type(exc).__name__}}: {{exc}}")
 '''
         for i, c in enumerate(cells):
             if "taaf_grafts.composite import install" in c:

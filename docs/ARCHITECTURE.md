@@ -49,7 +49,7 @@ Esta es la parte que importa para competir, y está **verificada en producción*
 |---|---|---|---|
 | **A. Prelude del sandbox** | `schema_helpers.SANDBOX_HELPERS_PRELUDE` se lee **en cada llamada**, no se captura al importar → basta extenderlo por monkeypatch | el modelo debe **gastar un turno** llamando a la función | **Validado**: 726 llamadas a `plan_moves` en 25/25 juegos (2026-08-17) |
 | **B. Nota del prompt** | `schema_helpers.HELPERS_PROMPT_NOTE`, mismo mecanismo | una línea de texto por turno | **Validado**: una sola línea bastó para que el modelo adoptara los helpers |
-| **C. Prompt del usuario** | subclase de `ToolAgent._build_user_prompt` (lo hacen `goalkeep` y `efficiency`) | **cero llamadas**: el dato llega ya calculado | **Próximo** — es el rediseño v2 de la amplificación |
+| **C. Prompt del usuario** | subclase de `ToolAgent._build_user_prompt` (lo hacen `goalkeep` y `efficiency`) | **cero llamadas**: el dato llega ya calculado | **IMPLEMENTADO** (`--effects`, 2026-08-19). Inyecta la tabla de efectos medida del historial. Probado extrayendo el parche del notebook generado (`scripts/test_seam_c.py`): nota no vacía 4/4 juegos, degrada al prompt del padre sin historial y con historial corrupto. Justificado por el banco micro: planificación 44.0% → 66.1% a 4B, 24 de 24 discordantes a favor (DESIGN §8.11) |
 | **D. Cadena de analizadores** | `composite.register_chain_layer(flag, loader)` envuelve el ToolAgent | según la capa | disponible, sin usar |
 | **E. Solver** | `from_solver` reemplaza la clase del solver (lo hacen `banking`/`transfer`) | según el caso | disponible, sin usar |
 

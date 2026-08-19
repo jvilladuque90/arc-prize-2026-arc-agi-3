@@ -41,6 +41,7 @@ def main() -> int:
     ap.add_argument("--limit", type=int, default=0, help="max items por variante (0=todos)")
     ap.add_argument("--batch", type=int, default=8)
     ap.add_argument("--max-new", type=int, default=12)
+    ap.add_argument("--dtype", choices=["bf16","f32"], default="bf16")
     ap.add_argument("--out", default="")
     args = ap.parse_args()
 
@@ -58,11 +59,17 @@ def main() -> int:
     from transformers import AutoModelForCausalLM, AutoTokenizer
     torch.set_num_threads(max(1, (__import__('os').cpu_count() or 4)))
 
-    log(f"cargando {args.model} en CPU ...")
+    # bfloat16 por defecto: en float32 un 1.7B ocupa ~6.9 GB solo de pesos y la
+    # maquina tenia 7.7 GB libres -> el proceso moria en la carga sin mensaje.
+    # bfloat16 lo deja en ~3.4 GB y la CPU lo multiplica de forma nativa.
+    dtype = {"bf16": torch.bfloat16, "f32": torch.float32}[args.dtype]
+    import psutil
+    libre = psutil.virtual_memory().available / 2**30
+    log(f"cargando {args.model} en CPU ({args.dtype}, {libre:.1f} GB libres) ...")
     tok = AutoTokenizer.from_pretrained(args.model, padding_side="left")
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
-    model = AutoModelForCausalLM.from_pretrained(args.model, dtype=torch.float32)
+    model = AutoModelForCausalLM.from_pretrained(args.model, dtype=dtype)
     model.eval()
     log("modelo listo")
 

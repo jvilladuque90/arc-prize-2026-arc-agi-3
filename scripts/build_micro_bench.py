@@ -281,8 +281,15 @@ def main() -> int:
 
         # --- pregunta 2: qué acción mueve en cada dirección
         for label, vec in DIRECTIONS.items():
-            hits = [a for a, s in moves.items()
-                    if (s[0] > 0) - (s[0] < 0) == vec[0] and (s[1] > 0) - (s[1] < 0) == vec[1]]
+            # DESAMBIGUACION (2026-08-19): antes se exigia coincidencia EXACTA de
+            # signos en los dos ejes, lo que dejaba pasar items imposibles. Ejemplo
+            # real: ACTION2=[3,0] y ACTION3=[3,-3], se preguntaba "cual baja?" y se
+            # esperaba ACTION2 — pero ACTION3 tambien baja. Dos modelos de tamanos
+            # distintos fallaban exactamente los mismos items: la culpa era de la
+            # pregunta, no del modelo.
+            # Ahora "mueve hacia D" = tiene componente positiva en D, y el item solo
+            # se conserva si EXACTAMENTE UNA accion la tiene.
+            hits = [a for a, s in moves.items() if s[0] * vec[0] + s[1] * vec[1] > 0]
             if len(hits) == 1:
                 ts = [t for a in moves for t in by_action[a][:2]]
                 shots = []

@@ -33,11 +33,17 @@ def prompt_effect(item, with_objects: bool) -> str:
         objs = ", ".join(f"color {o['color']} tam {o['size']} centro {o['center']}"
                          for o in item["objects"][:6])
         p += [f"Objetos detectados en el tablero: {objs}", ""]
+    # OJO CON EL FORMATO: la primera version ofrecia la plantilla literal
+    # "move DR DC" y el modelo de 0.6B la copiaba tal cual en el 100% de los items
+    # (0/54 en ambos brazos). Un hueco copiable se copia: aqui solo se muestran
+    # respuestas ya concretas, para que no haya nada que parrotear.
     p += [f"Que hace la accion {item['action']}?",
-          "Responde EXACTAMENTE una de estas formas, sin explicar:",
-          "  none                (no cambia nada)",
-          "  change              (cambia el tablero sin trasladar un objeto)",
-          "  move DR DC          (traslada un objeto DR filas y DC columnas; ej: move -1 0)",
+          "Responde con UNA sola linea, sin explicar. Ejemplos de respuestas validas:",
+          "  none        <- si el tablero queda igual",
+          "  change      <- si cambia pero nada se traslada",
+          "  move -1 0   <- si algo se traslada 1 fila hacia arriba",
+          "  move 0 3    <- si algo se traslada 3 columnas hacia la derecha",
+          "  move 2 -5   <- si algo baja 2 filas y va 5 columnas a la izquierda",
           "Respuesta:"]
     return "\n".join(p)
 

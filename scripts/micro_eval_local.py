@@ -103,11 +103,22 @@ def main() -> int:
                 examples.append({"game": it["game"], "esperado": it["answer"], "obtenido": got,
                                  "crudo": (raw or "").strip()[:60]})
         acc = hits / len(subset)
+        # DIAGNOSTICO DE DEGENERACION: un modelo que contesta siempre lo mismo saca
+        # ~la base trivial y parece "casi competente". Sin esta cifra no se
+        # distingue de uno que razona mal pero razona.
+        from collections import Counter
+        dist = Counter(normalize(r, kind) for r in raws)
+        top_ans, top_n = dist.most_common(1)[0]
         res[name] = {"n": len(subset), "aciertos": hits, "precision": round(acc, 3),
-                     "por_item": per_item, "ejemplos": examples}
+                     "por_item": per_item, "ejemplos": examples,
+                     "respuestas_distintas": len(dist),
+                     "moda": {"respuesta": top_ans, "frac": round(top_n / len(subset), 3)}}
         base = baselines.get(kind, {}).get("precision", 0)
         flag = "" if acc > base else "   <- NO supera la base trivial"
-        log(f"  {name:16} {hits:3}/{len(subset):3} = {acc:5.1%}  (base {base:.0%}){flag}")
+        deg = ("   [DEGENERADO: contesta '%s' el %.0f%% de las veces]"
+               % (top_ans, 100 * top_n / len(subset))) if top_n / len(subset) > 0.7 else ""
+        log(f"  {name:16} {hits:3}/{len(subset):3} = {acc:5.1%}  (base {base:.0%})"
+            f" | {len(dist)} respuestas distintas{flag}{deg}")
 
     pares = paired_contrast(res)
     for label, d in pares.items():

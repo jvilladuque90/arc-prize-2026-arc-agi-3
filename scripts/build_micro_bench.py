@@ -35,12 +35,30 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
+from arc3.effects_model import shift_between as _nav_shift  # noqa: E402
+from arc3.effects_model import MIN_CONF  # noqa: E402
 from arc3.env import LocalGame, discover_environments  # noqa: E402
-from arc3.sandbox_nav import _nav_shift  # noqa: E402  (mismo detector que inyectamos)
+
+# NOTA (2026-08-19): la primera version del banco derivo su verdad con
+# arc3.sandbox_nav._nav_shift, que alinea TODO el conjunto de celdas no-fondo.
+# Sobre tableros densos (630-855 celdas no-fondo de 4096) eso ajusta ruido: llego a
+# reportar el MISMO desplazamiento para cuatro acciones distintas. El banco quedaba
+# con respuestas "move DR DC" inventadas. Ahora la verdad sale de
+# arc3.effects_model.shift_between, que empareja huellas POR COLOR sobre las celdas
+# que cambiaron y esta validado por prediccion fuera de muestra (96.6% con conf>=0.6,
+# ver scripts/validate_effects_model.py).
 
 SIMPLE_ACTIONS = ["ACTION1", "ACTION2", "ACTION3", "ACTION4", "ACTION5"]
-REPEATS = 4          # veces que se prueba cada acción desde el estado inicial
+REPEATS = 8          # veces que se prueba cada acción (4 daba una confianza muy
+                     # ruidosa: con n=4 un solo desplazamiento espurio ya es 25%)
 DIRECTIONS = {"arriba": (-1, 0), "abajo": (1, 0), "izquierda": (0, -1), "derecha": (0, 1)}
+
+# Metas para las preguntas de planificacion: ejes puros y diagonales a varias
+# distancias, para que el brazo B no dependa de un puñado de casos.
+PLAN_OFFSETS = [(dr, dc)
+                for d in (3, 5, 7, 9, 12)
+                for dr, dc in ((-d, 0), (d, 0), (0, -d), (0, d),
+                               (-d, d), (d, -d), (-d, -d), (d, d))]
 
 
 def grid_of(frame) -> list[list[int]]:
@@ -147,7 +165,11 @@ def truth_for_action(trans_of_action) -> dict:
         return {"kind": "none"}
     if shifts:
         best = max(shifts, key=shifts.get)
-        if shifts[best] * 2 >= sum(shifts.values()):
+        # Umbral de confianza sobre TODAS las observaciones (no solo las que
+        # dieron desplazamiento). Es el mismo 0.6 validado por prediccion fuera
+        # de muestra: por debajo, la traslacion no se sostiene y la respuesta
+        # correcta es "change", no un vector inventado.
+        if shifts[best] / n >= MIN_CONF:
             return {"kind": "move", "shift": [best[0], best[1]]}
     return {"kind": "change"}
 
@@ -156,6 +178,8 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--games", nargs="+", default=["ls20", "tu93", "sc25", "cd82"])
     ap.add_argument("--out", default="micro_bench.jsonl")
+    ap.add_argument("--cap-per-class", type=int, default=20,
+                    help="tope de items por clase de respuesta en effect_of_action (0=sin tope)")
     args = ap.parse_args()
 
     infos = {i.game_id.split("-")[0]: i for i in discover_environments(ROOT / "environment_files")}
@@ -227,7 +251,12 @@ def main() -> int:
                 if player:
                     break
             if player:
-                for dr, dc in ((-7, 0), (7, 0), (0, -7), (0, 7), (-5, 5), (6, -4)):
+                # Rejilla amplia de metas: cada (dr,dc) es un problema de
+                # planificacion distinto sobre la MISMA tabla medida. Con 6 offsets
+                # el brazo B se quedaba en 18 items — demasiado poco para decidir
+                # nada, que es justo el error de muestra pequena que venimos
+                # arrastrando. Se filtran despues por ganador unico y estricto.
+                for dr, dc in PLAN_OFFSETS:
                     target = (player[0] + dr, player[1] + dc)
                     dist0 = abs(dr) + abs(dc)
                     gains = {}
@@ -266,6 +295,28 @@ def main() -> int:
                     "effects_table": {a: f"move {s[0]} {s[1]}" for a, s in moves.items()},
                     "answer": hits[0],
                 })
+
+    # --- equilibrado de clases en effect_of_action
+    # Con la verdad corregida, "change" se lleva 76 de 125: responder siempre
+    # "change" acertaria el 60.8% y el brazo A no podria distinguir nada. Se topa
+    # cada clase para que ninguna domine; no se inventa ni se altera ninguna
+    # respuesta, solo se recorta el exceso de las mayoritarias.
+    if args.cap_per_class:
+        seen: dict[str, int] = {}
+        kept = []
+        for i in items:
+            if i["type"] != "effect_of_action":
+                kept.append(i)
+                continue
+            k = i["answer"]
+            seen[k] = seen.get(k, 0) + 1
+            if seen[k] <= args.cap_per_class:
+                kept.append(i)
+        drop = len(items) - len(kept)
+        if drop:
+            print(f"  equilibrado: {drop} items de effect_of_action recortados "
+                  f"(tope {args.cap_per_class}/clase)")
+        items = kept
 
     out = ROOT / args.out
     out.write_text("\n".join(json.dumps(i, ensure_ascii=False) for i in items), encoding="utf-8")

@@ -1,0 +1,280 @@
+"""Construye el BANCO MICRO: preguntas con respuesta verificable sobre la mecánica.
+
+POR QUE. Nuestro único instrumento fiable era el envío diario: **un dato por noche**,
+con varianza 0.41. Con eso hacen falta 3-4 días para distinguir dos configuraciones,
+y llevamos cuatro experimentos sin norte. El banco micro cambia la escala: mide
+**directamente lo que nos falta** — que el agente infiera la mecánica del juego — con
+cientos de preguntas por minuto y respuestas objetivamente verificables.
+
+QUE MIDE. No niveles completados (eso exige un modelo grande y horas). Mide el paso
+anterior, que es donde está el cuello segun docs/DESIGN.md §8.9:
+
+  1. effect_of_action  — visto un puñado de transiciones, ¿qué hace ACTION_N?
+     respuesta verificada: "nada" | "mueve (dr,dc)" | "cambia el tablero"
+  2. which_action      — ¿qué acción mueve al objeto hacia arriba/abajo/izq/der?
+  3. predict_position  — dada la posición del objeto y una acción, ¿dónde queda?
+
+Las tres se puntúan por coincidencia exacta contra la verdad calculada del propio
+environment, así que no hace falta juez humano ni modelo evaluador.
+
+PARA QUE SIRVE. Permite comparar ESTRATEGIAS DE PROMPT (con/sin lista de objetos,
+con/sin tabla de efectos medidos) en minutos y con decenas de items, en vez de gastar
+una noche por variante. La variante ganadora es la carga del seam C.
+
+Uso:
+  python scripts/build_micro_bench.py --games ls20 tu93 sc25 cd82 --out micro_bench.jsonl
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+from arc3.env import LocalGame, discover_environments  # noqa: E402
+from arc3.sandbox_nav import _nav_shift  # noqa: E402  (mismo detector que inyectamos)
+
+SIMPLE_ACTIONS = ["ACTION1", "ACTION2", "ACTION3", "ACTION4", "ACTION5"]
+REPEATS = 4          # veces que se prueba cada acción desde el estado inicial
+DIRECTIONS = {"arriba": (-1, 0), "abajo": (1, 0), "izquierda": (0, -1), "derecha": (0, 1)}
+
+
+def grid_of(frame) -> list[list[int]]:
+    """Ultima capa del frame como lista de listas de int (llega como numpy)."""
+    if frame is None:
+        return []
+    f = getattr(frame, "frame", None)
+    if f is None or len(f) == 0:
+        return []
+    return [[int(v) for v in row] for row in f[-1]]
+
+
+def ascii_grid(grid, legend="WwgGcBMPRbSYOrNp") -> str:
+    return "\n".join("".join(legend[v] if 0 <= v < len(legend) else "?" for v in row)
+                     for row in grid)
+
+
+def crop(grid, r, c, radius=6):
+    """Recorte alrededor de (r,c): el tablero completo son 4096 celdas y no cabe."""
+    r0, r1 = max(0, r - radius), min(len(grid), r + radius + 1)
+    c0, c1 = max(0, c - radius), min(len(grid[0]), c + radius + 1)
+    return [row[c0:c1] for row in grid[r0:r1]], (r0, c0)
+
+
+def objects_of(grid, background):
+    """Componentes conexas 4-conectadas distintas del fondo (para la variante con features)."""
+    seen = [[False] * len(row) for row in grid]
+    out = []
+    for r in range(len(grid)):
+        for c in range(len(grid[r])):
+            if seen[r][c] or grid[r][c] == background:
+                continue
+            color = grid[r][c]
+            stack = [(r, c)]
+            seen[r][c] = True
+            cells = []
+            while stack:
+                cr, cc = stack.pop()
+                cells.append((cr, cc))
+                for dr, dc in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                    nr, nc = cr + dr, cc + dc
+                    if (0 <= nr < len(grid) and 0 <= nc < len(grid[nr])
+                            and not seen[nr][nc] and grid[nr][nc] == color):
+                        seen[nr][nc] = True
+                        stack.append((nr, nc))
+            rs = [p[0] for p in cells]
+            cs = [p[1] for p in cells]
+            out.append({"color": color, "size": len(cells),
+                        "center": [round(sum(rs) / len(rs)), round(sum(cs) / len(cs))]})
+    out.sort(key=lambda o: -o["size"])
+    return out[:12]
+
+
+def background_of(grid):
+    freq = {}
+    for row in grid:
+        for v in row:
+            freq[v] = freq.get(v, 0) + 1
+    return max(freq, key=freq.get) if freq else 0
+
+
+def probe_game(info) -> dict:
+    """Sondea un juego: cada acción simple varias veces desde el estado inicial."""
+    from arcengine import GameAction
+
+    game = LocalGame(info)
+    frame = game.reset()
+    if frame is None:
+        return {}
+    base_grid = grid_of(frame)
+    transitions = []
+    for name in SIMPLE_ACTIONS:
+        try:
+            act = getattr(GameAction, name)
+        except AttributeError:
+            continue
+        game.reset()
+        prev = grid_of(game.env.latest_frame) if hasattr(game.env, "latest_frame") else base_grid
+        for _ in range(REPEATS):
+            nxt_frame = game.step(act)
+            if nxt_frame is None:
+                break
+            nxt = grid_of(nxt_frame)
+            if prev and nxt:
+                transitions.append({"action": name, "before": prev, "after": nxt})
+            prev = nxt
+    return {"game": info.game_id.split("-")[0], "base": base_grid, "transitions": transitions}
+
+
+def truth_for_action(trans_of_action) -> dict:
+    """Verdad del efecto de una acción: nada / traslación consistente / otro cambio."""
+    changed = 0
+    shifts = {}
+    for t in trans_of_action:
+        if t["before"] != t["after"]:
+            changed += 1
+        s = _nav_shift(t["before"], t["after"])
+        if s is not None:
+            shifts[s] = shifts.get(s, 0) + 1
+    n = len(trans_of_action)
+    if n == 0:
+        return {"kind": "unknown"}
+    if changed == 0:
+        return {"kind": "none"}
+    if shifts:
+        best = max(shifts, key=shifts.get)
+        if shifts[best] * 2 >= sum(shifts.values()):
+            return {"kind": "move", "shift": [best[0], best[1]]}
+    return {"kind": "change"}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--games", nargs="+", default=["ls20", "tu93", "sc25", "cd82"])
+    ap.add_argument("--out", default="micro_bench.jsonl")
+    args = ap.parse_args()
+
+    infos = {i.game_id.split("-")[0]: i for i in discover_environments(ROOT / "environment_files")}
+    items = []
+    for gname in args.games:
+        if gname not in infos:
+            print(f"  {gname}: no encontrado"); continue
+        probe = probe_game(infos[gname])
+        if not probe or not probe["transitions"]:
+            print(f"  {gname}: sin transiciones"); continue
+
+        by_action = {}
+        for t in probe["transitions"]:
+            by_action.setdefault(t["action"], []).append(t)
+        truths = {a: truth_for_action(ts) for a, ts in by_action.items()}
+        moves = {a: v["shift"] for a, v in truths.items() if v["kind"] == "move"}
+        bg = background_of(probe["base"])
+        print(f"  {gname}: {len(probe['transitions'])} transiciones, "
+              f"efectos {[(a, v['kind']) for a, v in truths.items()]}")
+
+        # --- pregunta 1: efecto de cada acción (una por acción con verdad conocida)
+        for action, truth in truths.items():
+            if truth["kind"] == "unknown":
+                continue
+            ts = by_action[action][:3]
+            shots = []
+            for t in ts:
+                center = None
+                s = _nav_shift(t["before"], t["after"])
+                for r in range(len(t["before"])):
+                    for c in range(len(t["before"][r])):
+                        if t["before"][r][c] != t["after"][r][c]:
+                            center = (r, c)
+                            break
+                    if center:
+                        break
+                if center is None:
+                    center = (len(t["before"]) // 2, len(t["before"][0]) // 2)
+                cb, org = crop(t["before"], center[0], center[1])
+                ca, _ = crop(t["after"], center[0], center[1])
+                shots.append({"before": ascii_grid(cb), "after": ascii_grid(ca),
+                              "origin": list(org), "moved": list(s) if s else None})
+            answer = (truth["kind"] if truth["kind"] != "move"
+                      else f"move {truth['shift'][0]} {truth['shift'][1]}")
+            items.append({
+                "game": probe["game"], "type": "effect_of_action", "action": action,
+                "shots": shots, "objects": objects_of(probe["base"], bg),
+                "effects_table": {a: (v["kind"] if v["kind"] != "move"
+                                      else f"move {v['shift'][0]} {v['shift'][1]}")
+                                  for a, v in truths.items()},
+                "answer": answer,
+            })
+
+        # --- pregunta 3: PLANIFICAR con la tabla de efectos (la que prueba el seam C)
+        # Aquí la tabla NO filtra la respuesta: da las primitivas, pero el modelo debe
+        # componerlas contra una meta. Es exactamente lo que queremos que mejore.
+        if len(moves) >= 2:
+            player = None
+            for t in probe["transitions"]:
+                s = _nav_shift(t["before"], t["after"])
+                if s is not None:
+                    for r in range(len(t["after"])):
+                        for c in range(len(t["after"][r])):
+                            if t["before"][r][c] != t["after"][r][c] and t["after"][r][c] != bg:
+                                player = (r, c)
+                                break
+                        if player:
+                            break
+                if player:
+                    break
+            if player:
+                for dr, dc in ((-7, 0), (7, 0), (0, -7), (0, 7), (-5, 5), (6, -4)):
+                    target = (player[0] + dr, player[1] + dc)
+                    dist0 = abs(dr) + abs(dc)
+                    gains = {}
+                    for a, s in moves.items():
+                        nd = abs(dr - s[0]) + abs(dc - s[1])
+                        gains[a] = dist0 - nd
+                    best = max(gains, key=gains.get)
+                    # solo items con ganador ÚNICO y estrictamente positivo
+                    if gains[best] <= 0:
+                        continue
+                    if sum(1 for a in gains if gains[a] == gains[best]) != 1:
+                        continue
+                    items.append({
+                        "game": probe["game"], "type": "plan_action",
+                        "player": list(player), "target": list(target),
+                        "shots": [{"action": a, "moved": list(by_action_shift)}
+                                  for a, by_action_shift in moves.items()],
+                        "objects": objects_of(probe["base"], bg),
+                        "effects_table": {a: f"move {s[0]} {s[1]}" for a, s in moves.items()},
+                        "answer": best,
+                    })
+
+        # --- pregunta 2: qué acción mueve en cada dirección
+        for label, vec in DIRECTIONS.items():
+            hits = [a for a, s in moves.items()
+                    if (s[0] > 0) - (s[0] < 0) == vec[0] and (s[1] > 0) - (s[1] < 0) == vec[1]]
+            if len(hits) == 1:
+                ts = [t for a in moves for t in by_action[a][:2]]
+                shots = []
+                for t in ts[:6]:
+                    s = _nav_shift(t["before"], t["after"])
+                    shots.append({"action": t["action"], "moved": list(s) if s else None})
+                items.append({
+                    "game": probe["game"], "type": "which_action", "direction": label,
+                    "shots": shots, "objects": objects_of(probe["base"], bg),
+                    "effects_table": {a: f"move {s[0]} {s[1]}" for a, s in moves.items()},
+                    "answer": hits[0],
+                })
+
+    out = ROOT / args.out
+    out.write_text("\n".join(json.dumps(i, ensure_ascii=False) for i in items), encoding="utf-8")
+    kinds = {}
+    for i in items:
+        kinds[i["type"]] = kinds.get(i["type"], 0) + 1
+    print(f"\n{len(items)} items -> {out}  {kinds}")
+    return 0 if items else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

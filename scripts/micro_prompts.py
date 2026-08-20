@@ -117,7 +117,12 @@ def prompt_plan(item, with_table: bool) -> str:
 
 def normalize(text: str, kind: str) -> str:
     t = (text or "").strip().lower().replace("**", "")
-    if kind in ("which_action", "plan_action"):
+    # OJO: todo tipo cuya respuesta sea un nombre de accion tiene que estar aqui.
+    # avoid_inert falto al anadirlo y sus dos brazos dieron 0/31 IDENTICO — no era
+    # un resultado, era que las respuestas caian a la rama de effect_of_action y
+    # nunca podian casar. Mismo sintoma que ya delato otros dos fallos: dos
+    # condiciones que deberian diferir dando exactamente el mismo numero.
+    if kind in ("which_action", "plan_action", "avoid_inert"):
         m = re.search(r"action\s*([1-7])", t)
         return f"ACTION{m.group(1)}" if m else t[:20]
     if "none" in t:

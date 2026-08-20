@@ -48,7 +48,9 @@ log("preparando entorno ...")
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-U",
                 "transformers>=4.51", "accelerate", "bitsandbytes"], check=False)
 os.environ.update({"USE_TF": "0", "TRANSFORMERS_NO_TF": "1",
-                   "TRANSFORMERS_NO_TORCHVISION": "1", "TOKENIZERS_PARALLELISM": "false"})
+                   "TRANSFORMERS_NO_TORCHVISION": "1", "TOKENIZERS_PARALLELISM": "false",
+                   # el 8B en 4 bits cabe, pero la fragmentacion del cache KV lo tumbaba
+                   "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"})
 
 log("descargando banco y prompts del repo publico ...")
 with urllib.request.urlopen(f"{RAW}/micro_bench.jsonl", timeout=60) as r:
@@ -69,6 +71,7 @@ log(f"linea base trivial: {json.dumps(BASELINES, ensure_ascii=False)}")
 
 
 def run_model(model_id):
+    batch = BATCH
     log(f"cargando {model_id} ...")
     tok = AutoTokenizer.from_pretrained(model_id, padding_side="left")
     if tok.pad_token is None:
@@ -84,13 +87,14 @@ def run_model(model_id):
             load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16,
             bnb_4bit_quant_type="nf4")}
         log(f"{model_id}: cargando en 4 bits (no cabe en fp16 en T4)")
+        batch = 4   # con lote 16 el cache KV del 8B agota los 14.5 GiB de la T4
     model = AutoModelForCausalLM.from_pretrained(model_id, **kw)
     model.eval()
 
     def generate(prompts):
         outs = []
-        for i in range(0, len(prompts), BATCH):
-            chunk = prompts[i:i + BATCH]
+        for i in range(0, len(prompts), batch):
+            chunk = prompts[i:i + batch]
             texts = [tok.apply_chat_template([{"role": "user", "content": p}], tokenize=False,
                                              add_generation_prompt=True, enable_thinking=False)
                      for p in chunk]

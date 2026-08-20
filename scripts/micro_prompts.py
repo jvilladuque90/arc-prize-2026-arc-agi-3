@@ -163,6 +163,29 @@ def prompt_plan_inverse(item) -> str:
         "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"])
 
 
+def prompt_inert(item, marcar: bool) -> str:
+    """D: ¿vale la pena DECIR que una accion es inerte, o basta con omitirla?
+
+    En los dos brazos las acciones inertes estan DISPONIBLES para elegir (si no,
+    no serian distractores y la pregunta no mediria nada). Lo que cambia es si la
+    nota las declara muertas o simplemente no habla de ellas.
+    """
+    todas = sorted(set(item["effects_table"]) | set(item["inert_actions"]))
+    p = ["Un objeto debe llegar a una casilla objetivo en una rejilla.",
+         f"Posicion actual del objeto (fila, columna): {item['player']}",
+         f"Posicion objetivo (fila, columna): {item['target']}", "",
+         "Acciones disponibles: " + ", ".join(todas), "",
+         "Efecto MEDIDO de cada accion:"]
+    for a in todas:
+        if a in item["effects_table"]:
+            p.append(f"  {a}: mueve {dir_words(*_parse_shift(item['effects_table'][a]))}")
+        elif marcar:
+            p.append(f"  {a}: SIN EFECTO, no cambia nada — no gastes turnos en ella")
+    p += ["", "Que accion acerca mas el objeto al objetivo?",
+          "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"]
+    return "\n".join(p)
+
+
 VARIANTS = [
     ("A.V0_crudo",     "effect_of_action", lambda it: prompt_effect(it, False)),
     ("A.V1_objetos",   "effect_of_action", lambda it: prompt_effect(it, True)),
@@ -171,12 +194,15 @@ VARIANTS = [
     ("B.V3_palabras",  "plan_action",      prompt_plan_words),
     ("B.V4_inverso",   "plan_action",      prompt_plan_inverse),
     ("C.lookup",       "which_action",     lambda it: prompt_which(it)),
+    ("D.V0_omitir",    "avoid_inert",      lambda it: prompt_inert(it, False)),
+    ("D.V1_marcar",    "avoid_inert",      lambda it: prompt_inert(it, True)),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),
          ("B tabla", "B.V0_sin_tabla", "B.V2_con_tabla"),
          ("B palabras vs vector", "B.V2_con_tabla", "B.V3_palabras"),
-         ("B inverso vs vector", "B.V2_con_tabla", "B.V4_inverso")]
+         ("B inverso vs vector", "B.V2_con_tabla", "B.V4_inverso"),
+         ("D marcar inertes", "D.V0_omitir", "D.V1_marcar")]
 
 
 def trivial_baselines(items) -> dict:

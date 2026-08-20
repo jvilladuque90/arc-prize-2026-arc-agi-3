@@ -30,7 +30,7 @@ RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/
 # por debajo de la base trivial en planificacion). Cargar los dos seguidos
 # agoto la VM gratis a mitad del segundo. Los numeros del 1.7B ya estan en
 # docs/DESIGN.md 8.11 y no hace falta repetirlos.
-MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B").split(",")
+MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B,Qwen/Qwen3-8B").split(",")
 BATCH = int(os.environ.get("MICRO_BATCH", "16"))
 MAX_NEW = 12
 
@@ -46,7 +46,7 @@ threading.Thread(target=_hb, daemon=True).start()
 
 log("preparando entorno ...")
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-U",
-                "transformers>=4.51", "accelerate"], check=False)
+                "transformers>=4.51", "accelerate", "bitsandbytes"], check=False)
 os.environ.update({"USE_TF": "0", "TRANSFORMERS_NO_TF": "1",
                    "TRANSFORMERS_NO_TORCHVISION": "1", "TOKENIZERS_PARALLELISM": "false"})
 
@@ -73,8 +73,18 @@ def run_model(model_id):
     tok = AutoTokenizer.from_pretrained(model_id, padding_side="left")
     if tok.pad_token is None:
         tok.pad_token = tok.eos_token
-    model = AutoModelForCausalLM.from_pretrained(model_id, dtype=torch.float16,
-                                                 device_map="cuda")
+    # Los >4B no caben en fp16 en una T4 de 16 GB (un 8B son ~16 GB solo de pesos),
+    # asi que van en 4 bits. La cuantizacion afecta a los DOS brazos por igual, y lo
+    # que se compara aqui son formatos de prompt dentro del mismo modelo, no modelos
+    # entre si.
+    kw = {"dtype": torch.float16, "device_map": "cuda"}
+    if any(t in model_id for t in ("8B", "7B", "14B")):
+        from transformers import BitsAndBytesConfig
+        kw = {"device_map": "cuda", "quantization_config": BitsAndBytesConfig(
+            load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16,
+            bnb_4bit_quant_type="nf4")}
+        log(f"{model_id}: cargando en 4 bits (no cabe en fp16 en T4)")
+    model = AutoModelForCausalLM.from_pretrained(model_id, **kw)
     model.eval()
 
     def generate(prompts):

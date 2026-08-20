@@ -61,6 +61,17 @@ PLAN_OFFSETS = [(dr, dc)
                                (-d, d), (d, -d), (-d, -d), (d, d))]
 
 
+def dentro(grid, r: int, c: int) -> bool:
+    """La meta tiene que caber en el tablero.
+
+    Sin esto el 9% de los items de planificacion pedian llegar a casillas
+    inexistentes (p.ej. columna 66 en una rejilla de 0..63). Un enunciado
+    imposible no mide planificacion: mide como reacciona el modelo a un dato
+    incoherente, que es otra cosa.
+    """
+    return 0 <= r < len(grid) and 0 <= c < len(grid[0])
+
+
 def grid_of(frame) -> list[list[int]]:
     """Ultima capa del frame como lista de listas de int (llega como numpy)."""
     if frame is None:
@@ -266,6 +277,8 @@ def main() -> int:
                 # arrastrando. Se filtran despues por ganador unico y estricto.
                 for dr, dc in PLAN_OFFSETS:
                     target = (player[0] + dr, player[1] + dc)
+                    if not dentro(probe["base"], *target):
+                        continue
                     dist0 = abs(dr) + abs(dc)
                     gains = {}
                     for a, s in moves.items():
@@ -286,6 +299,34 @@ def main() -> int:
                         "effects_table": {a: f"move {s[0]} {s[1]}" for a, s in moves.items()},
                         "answer": best,
                     })
+
+        # --- pregunta 4: EVITAR ACCIONES INERTES (la otra mitad de la carga)
+        # La nota que inyectamos tiene dos mitades y solo una estaba medida. Esta
+        # es la segunda: marcar las acciones que NO hacen nada. Importa porque en
+        # 5 de los 25 juegos locales NINGUNA accion simple tiene efecto, y ahi el
+        # agente puede gastar la partida entera pulsando botones muertos.
+        # La pregunta desplegable no es "¿ayuda saberlo?" (trivialmente si) sino
+        # "¿vale sus tokens DECIRLO, o basta con omitir esas acciones?".
+        inertes = [a for a, v in truths.items() if v["kind"] == "none"]
+        if moves and inertes and player:
+            for dr, dc in PLAN_OFFSETS:
+                target = (player[0] + dr, player[1] + dc)
+                if not dentro(probe["base"], *target):
+                    continue
+                dist0 = abs(dr) + abs(dc)
+                gains = {a: dist0 - (abs(dr - s[0]) + abs(dc - s[1]))
+                         for a, s in moves.items()}
+                best = max(gains, key=gains.get)
+                if gains[best] <= 0 or sum(1 for a in gains
+                                           if gains[a] == gains[best]) != 1:
+                    continue
+                items.append({
+                    "game": probe["game"], "type": "avoid_inert",
+                    "player": list(player), "target": list(target),
+                    "effects_table": {a: f"move {s[0]} {s[1]}" for a, s in moves.items()},
+                    "inert_actions": sorted(inertes),
+                    "answer": best,
+                })
 
         # --- pregunta 2: qué acción mueve en cada dirección
         for label, vec in DIRECTIONS.items():

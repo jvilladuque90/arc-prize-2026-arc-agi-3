@@ -746,3 +746,48 @@ invierte, no.
 
 **Carga desplegada** (`render_effects_note`, flag `--effects`): formato V3. Se eligió sobre V4
 por ser más corto a igualdad estadística (86.2% vs 85.3%).
+
+### 8.13. Confirmación a tres tamaños y la segunda mitad de la carga (2026-08-20)
+
+Banco corregido (197 items, metas todas dentro del tablero). Se añade un tercer tamaño para
+apoyar la extrapolación al 27B de producción, y una pregunta nueva (`avoid_inert`) que mide la
+**otra mitad** de la nota: marcar las acciones sin efecto.
+
+**Formato de la tabla — la dirección se sostiene en los tres tamaños:**
+
+| plan_action (99 items) | 1.7B | 4B | 8B (4 bits) |
+|---|---|---|---|
+| sin tabla | 14.7% | 45.5% | 45.5% |
+| V2 vectorial `move 0 -3` | 5.5% | 69.7% | 52.5% |
+| **V3 palabras** `mueve 3 a la izquierda` | 15.6% | **90.9%** | **76.8%** |
+| V4 mapa inverso | 12.8% | 85.9% | 57.6% |
+| **pareado V3 vs V2** | a favor de V3 | **23 vs 2** · p≈0 | **24 vs 0** · p≈0 |
+
+En el 8B el contraste es **unánime**: de 24 items discordantes, los 24 favorecen las palabras y
+**ninguno** el vector. Tres tamaños con la misma dirección, y el más grande con el resultado más
+limpio, es lo que autoriza a extrapolar. (V4 queda descartado: a 8B cae a 57.6%.)
+
+**Segunda mitad de la carga — marcar las inertes sí vale sus tokens:**
+
+| avoid_inert (31 items, base 35.5%) | 4B | 8B |
+|---|---|---|
+| D.V0 omitir las inertes | 71.0% | 64.5% |
+| **D.V1 marcarlas "SIN EFECTO"** | **90.3%** | **71.0%** |
+| pareado | **6 vs 0** · p=0.031 | 2 vs 0 · p=0.5 |
+
+En los dos tamaños **ningún** item discordante favorece omitirlas. A 4B es significativo y unánime;
+a 8B la dirección es la misma pero con n insuficiente. Decisión: la nota mantiene la línea de
+acciones inertes. Importa sobre todo en los **5 de 25 juegos donde ninguna acción simple hace
+nada** y el agente puede gastar la partida entera en botones muertos.
+
+**Features objetuales: negativo estable.** 4B 3 vs 2 (p=1.0), 8B 3 vs 6 (p=0.51). Nulo en ambos.
+
+**Dos defectos de instrumento más, cazados por el mismo síntoma.** (a) El 9% de los items de
+planificación pedía llegar a casillas inexistentes (columna 66 en una rejilla 0..63); filtrarlos
+subió al ganador de 86.2% a 90.9% — el ruido no era inocuo. (b) `avoid_inert` dio **0/31 en ambos
+brazos**: `normalize()` no lo incluía en la rama del regex de acciones, así que ninguna respuesta
+podía casar. Cero por construcción, no por incapacidad.
+
+> **Regla de diagnóstico adoptada.** Tres fallos distintos de hoy se delataron igual: **dos
+> condiciones que deberían diferir dando exactamente el mismo número**. Ante esa coincidencia,
+> sospechar del instrumento antes que del modelo.

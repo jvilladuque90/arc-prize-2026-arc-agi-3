@@ -34,6 +34,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 VFILE = ROOT / "kernel_versions.json"
 KERNEL = "juliancamilovilla/arc-agi3-duck"
+SENTINEL = ROOT / ".effects_deployed"
 
 
 def log(m: str) -> None:
@@ -55,7 +56,18 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--horas", type=float, default=2.0)
     ap.add_argument("--intentos", type=int, default=36)
+    ap.add_argument("--once", action="store_true",
+                    help="un solo intento sin dormir (para la tarea programada)")
     args = ap.parse_args()
+    if args.once:
+        args.intentos = 1
+
+    # CENTINELA: la tarea programada reintenta cada 2 h indefinidamente. Sin esto,
+    # el intento siguiente al despliegue exitoso publicaria OTRA version encima —
+    # gastando cuota de G4 y, peor, dejando sin validar la que el trigger envia.
+    if SENTINEL.exists():
+        log(f"ya desplegado ({SENTINEL.read_text(encoding='utf-8').strip()}); nada que hacer")
+        return 0
 
     for line in (ROOT / ".env").read_text(encoding="utf-8").splitlines():
         if "=" in line and not line.strip().startswith("#"):
@@ -74,6 +86,8 @@ def main() -> int:
         if "quota" in out.lower():
             log(f"intento {intento}/{args.intentos}: cuota aun agotada; "
                 f"reintento en {args.horas} h")
+            if args.once:
+                return 1          # la tarea programada vuelve a intentarlo sola
             time.sleep(args.horas * 3600)
             continue
         if r.returncode != 0 or "successfully pushed" not in out:
@@ -95,6 +109,8 @@ def main() -> int:
             if "COMPLETE" in st:
                 if nueva:
                     set_version(nueva)
+                SENTINEL.write_text(f"duck v{nueva} con --effects, validado "
+                                    f"{time.strftime('%Y-%m-%d %H:%M')}", encoding="utf-8")
                 log("VALIDADO: el trigger diario ya envia la version con --effects")
                 return 0
             if "ERROR" in st or "CANCEL" in st:

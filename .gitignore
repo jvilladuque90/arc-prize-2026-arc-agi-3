@@ -39,3 +39,5 @@ models/
 .vscode/
 .idea/
 daily_submit.log
+.effects_deployed
+effects_deploy.log

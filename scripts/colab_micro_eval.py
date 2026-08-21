@@ -30,9 +30,14 @@ RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/
 # por debajo de la base trivial en planificacion). Cargar los dos seguidos
 # agoto la VM gratis a mitad del segundo. Los numeros del 1.7B ya estan en
 # docs/DESIGN.md 8.11 y no hace falta repetirlos.
-MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B,Qwen/Qwen3-8B").split(",")
+MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B").split(",")
 BATCH = int(os.environ.get("MICRO_BATCH", "16"))
-MAX_NEW = 12
+# 12 tokens bastaban en espanol (el modelo contesta "ACTION3" y para) pero NO en
+# ingles: ahi arranca con "To determine which action brings the object closest to
+# the t..." y el corte llegaba antes de la respuesta. El brazo ingles marcaba 1/99,
+# que no era un efecto de idioma sino truncamiento. Con margen suficiente los dos
+# idiomas pueden responder y la comparacion mide lo que dice medir.
+MAX_NEW = 64
 
 t0 = time.time()
 def log(m):

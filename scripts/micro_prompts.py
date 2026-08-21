@@ -191,6 +191,99 @@ def prompt_inert(item, marcar: bool) -> str:
     return "\n".join(p)
 
 
+def dir_words_en(sr: int, sc: int) -> str:
+    parts = []
+    if sr < 0:
+        parts.append(f"{-sr} up")
+    if sr > 0:
+        parts.append(f"{sr} down")
+    if sc < 0:
+        parts.append(f"{-sc} left")
+    if sc > 0:
+        parts.append(f"{sc} right")
+    return " and ".join(parts) if parts else "nothing"
+
+
+def prompt_plan_lang(item, idioma: str) -> str:
+    """E: ¿en que IDIOMA conviene inyectar la nota?
+
+    DESAJUSTE QUE EL BANCO NO ESTABA PROBANDO. El prompt del harness esta en
+    ingles ("You are a coding agent solving a grid-based puzzle game") y nuestra
+    nota se inyecta en espanol. Todas las medidas anteriores usaron prompt espanol
+    + nota espanola, un regimen que en produccion NO ocurre. Aqui se comparan:
+      en    : marco y nota en ingles (lo que haria un harness coherente)
+      mixto : marco en ingles + nota en espanol (lo que hariamos hoy al desplegar)
+      es    : todo en espanol (el regimen del banco hasta ahora, de control)
+    """
+    if idioma == "es":
+        tab = "\n".join(f"  {a}: mueve {dir_words(*_parse_shift(v))}"
+                        for a, v in item["effects_table"].items())
+        return "\n".join([
+            "Un objeto debe llegar a una casilla objetivo en una rejilla.",
+            f"Posicion actual del objeto (fila, columna): {item['player']}",
+            f"Posicion objetivo (fila, columna): {item['target']}", "",
+            "Efecto MEDIDO de cada accion:", tab, "",
+            "Que accion acerca mas el objeto al objetivo?",
+            "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"])
+
+    # marco en ingles; la nota cambia de idioma segun la variante
+    if idioma == "en":
+        tab = "\n".join(f"  {a}: moves {dir_words_en(*_parse_shift(v))}"
+                        for a, v in item["effects_table"].items())
+        cab = "MEASURED effect of each action:"
+    else:  # mixto: nota en espanol dentro de un prompt en ingles
+        tab = "\n".join(f"  {a}: mueve {dir_words(*_parse_shift(v))}"
+                        for a, v in item["effects_table"].items())
+        cab = "Efecto MEDIDO de cada accion:"
+    return "\n".join([
+        "An object must reach a target cell on a grid.",
+        f"Current object position (row, column): {item['player']}",
+        f"Target position (row, column): {item['target']}", "",
+        cab, tab, "",
+        "Which action brings the object closest to the target?",
+        "Answer with the action name only (e.g. ACTION1). Answer:"])
+
+
+def _fake_action(item) -> str:
+    usadas = {int(a.replace("ACTION", "")) for a in item["effects_table"]}
+    for i in (1, 2, 3, 4, 5):
+        if i not in usadas:
+            return f"ACTION{i}"
+    return "ACTION5"
+
+
+def prompt_wrong_entry(item, marcar_dudosa: bool) -> str:
+    """F: ¿la marca de incertidumbre nos protege de NUESTROS PROPIOS errores?
+
+    El detector acierta 96.6% con confianza >= 0.6, asi que ~1 de cada 30
+    afirmaciones inyectadas es FALSA. Aqui se simula ese caso peor: se anade una
+    entrada inventada que, de ser cierta, llevaria exactamente al objetivo — o sea
+    que parece la mejor opcion con diferencia. La respuesta correcta sigue siendo
+    la mejor accion REAL.
+      V0: la entrada falsa se presenta como cualquier otra
+      V1: se presenta con la degradacion honesta que usa render_effects_note
+    Si la marca sirve, V1 cae menos en la trampa.
+    """
+    pr, pc = item["player"]
+    tr, tc = item["target"]
+    falsa = _fake_action(item)
+    lineas = [f"  {a}: mueve {dir_words(*_parse_shift(v))}"
+              for a, v in item["effects_table"].items()]
+    cebo = f"mueve {dir_words(tr - pr, tc - pc)}"
+    if marcar_dudosa:
+        lineas.append(f"  {falsa}: {cebo}, pero su efecto NO es constante "
+                      f"(33% de 6 obs) — verifica antes de fiarte")
+    else:
+        lineas.append(f"  {falsa}: {cebo}")
+    return "\n".join([
+        "Un objeto debe llegar a una casilla objetivo en una rejilla.",
+        f"Posicion actual del objeto (fila, columna): {item['player']}",
+        f"Posicion objetivo (fila, columna): {item['target']}", "",
+        "Efecto MEDIDO de cada accion:", "\n".join(lineas), "",
+        "Que accion acerca mas el objeto al objetivo, de forma FIABLE?",
+        "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"])
+
+
 VARIANTS = [
     ("A.V0_crudo",     "effect_of_action", lambda it: prompt_effect(it, False)),
     ("A.V1_objetos",   "effect_of_action", lambda it: prompt_effect(it, True)),
@@ -201,13 +294,21 @@ VARIANTS = [
     ("C.lookup",       "which_action",     lambda it: prompt_which(it)),
     ("D.V0_omitir",    "avoid_inert",      lambda it: prompt_inert(it, False)),
     ("D.V1_marcar",    "avoid_inert",      lambda it: prompt_inert(it, True)),
+    ("E.es_en_es",     "plan_action",      lambda it: prompt_plan_lang(it, "es")),
+    ("E.mixto_en_es",  "plan_action",      lambda it: prompt_plan_lang(it, "mixto")),
+    ("E.en_en_en",     "plan_action",      lambda it: prompt_plan_lang(it, "en")),
+    ("F.V0_sin_marca", "plan_action",      lambda it: prompt_wrong_entry(it, False)),
+    ("F.V1_con_marca", "plan_action",      lambda it: prompt_wrong_entry(it, True)),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),
          ("B tabla", "B.V0_sin_tabla", "B.V2_con_tabla"),
          ("B palabras vs vector", "B.V2_con_tabla", "B.V3_palabras"),
          ("B inverso vs vector", "B.V2_con_tabla", "B.V4_inverso"),
-         ("D marcar inertes", "D.V0_omitir", "D.V1_marcar")]
+         ("D marcar inertes", "D.V0_omitir", "D.V1_marcar"),
+         ("E nota es vs en (marco ingles)", "E.mixto_en_es", "E.en_en_en"),
+         ("E marco es vs marco en", "E.es_en_es", "E.en_en_en"),
+         ("F marca de incertidumbre", "F.V0_sin_marca", "F.V1_con_marca")]
 
 
 def trivial_baselines(items) -> dict:

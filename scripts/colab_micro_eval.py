@@ -27,8 +27,8 @@ import urllib.request
 
 # Los env del host NO llegan a la VM de Colab: lo que se quiera cambiar por
 # corrida se fija aqui antes de leerlo.
-os.environ["MICRO_ONLY"] = "E."      # solo el experimento de idioma
-os.environ["MICRO_MAX_NEW"] = "400"  # el ingles necesita ~300 para concluir
+os.environ.setdefault("MICRO_ONLY", "")      # p.ej. "E." para un subconjunto
+os.environ.setdefault("MICRO_MAX_NEW", "400")  # el ingles necesita ~300 para concluir
 
 RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/main"
 # Solo el 4B: es el unico de los dos que supera el suelo util (el 1.7B queda

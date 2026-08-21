@@ -791,3 +791,54 @@ podía casar. Cero por construcción, no por incapacidad.
 > **Regla de diagnóstico adoptada.** Tres fallos distintos de hoy se delataron igual: **dos
 > condiciones que deberían diferir dando exactamente el mismo número**. Ante esa coincidencia,
 > sospechar del instrumento antes que del modelo.
+
+### 8.14. Idioma de la nota y robustez a nuestros propios errores (2026-08-21)
+
+**F — la marca de incertidumbre contiene el daño de nuestro 3.4% de error.** El detector acierta
+96.6% con `conf ≥ 0.6`, así que aproximadamente **1 de cada 30 afirmaciones inyectadas es falsa**.
+Se simuló el caso peor: una entrada inventada que, de ser cierta, llegaría *exacta* al objetivo —
+o sea la que más atrae. La respuesta correcta sigue siendo la mejor acción real.
+
+| plan_action con cebo falso (99 items) | 4B | 8B |
+|---|---|---|
+| cebo sin marcar | 52.5% | 45.5% |
+| **cebo marcado "no es constante — verifica"** | **68.7%** | **81.8%** |
+| pareado | 23 vs 7 · p=0.005 | **41 vs 5** · p≈0 |
+
+La degradación honesta se había adoptado por principio («meter un hecho falso es peor que
+callar»); ahora está **medida**: recupera entre 16 y 36 puntos cuando nuestro detector se
+equivoca. No es cosmética, es la garantía que limita el coste de nuestros propios fallos.
+
+**E — el idioma de la nota no cambia el acierto, pero sí la verbosidad (×40).** El prompt del
+harness está en inglés y la nota se inyecta en español: un régimen que el banco **nunca había
+probado** (todas las medidas previas eran marco español + nota española). Con presupuesto de
+tokens suficiente:
+
+| plan_action (99 items, 4B) | acierto | longitud de salida |
+|---|---|---|
+| marco es + nota es | 90.9% | 7 caracteres |
+| **marco EN + nota es** (lo que desplegamos) | 89.9% | **7 caracteres** |
+| marco en + nota en | 86.9% | **≥300 caracteres** |
+
+Pareado nota-es vs nota-en bajo marco inglés: 10 vs 7, **p=0.63** → indistinguible en acierto.
+Pero la variante con la nota en inglés genera salidas **~40× más largas**. Y el factor no es el
+marco (el brazo mixto también tiene marco inglés): es **la lengua de la tabla**. Una nota en
+español parece suprimir el hábito de razonar en voz alta antes de responder.
+
+**Decisión: la nota se queda en español.** Mismo acierto y salidas mucho más cortas, lo que en
+producción importa (556 tokens por acción, ~52.000 por partida). *Cautela:* la verbosidad se midió
+sobre el prompt del banco, donde se pide un nombre de acción; en producción el modelo escribe
+código Python, así que el factor ×40 no se traslada tal cual — lo que sí se traslada es que la
+nota en español **no perjudica**.
+
+**Tres defectos más del instrumento, todos en la misma pregunta.** El brazo inglés dio 1.0%, luego
+39.4%, luego 38.4% antes de dar 86.9%. Las causas, en orden: (a) `max_new_tokens=12` cortaba antes
+de la respuesta; (b) `normalize()` tomaba la **primera** mención de acción, que en un texto con
+razonamiento es la primera opción enumerada y no la conclusión; (c) 64 tokens **seguían** sin
+bastar — el modelo necesita ~300 para concluir en inglés. Los brazos en español nunca sufrieron
+nada de esto porque responden en 7 caracteres, así que **el sesgo caía entero sobre el brazo
+verboso**.
+
+> **Lección de método.** Guardar sólo 60 caracteres de salida cruda costó tres corridas de
+> diagnóstico: con ese recorte no se distinguía «cortado» de «equivocado». Ahora se guardan 300.
+> Instrumentar la observación es más barato que repetir el experimento.

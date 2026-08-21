@@ -126,7 +126,7 @@ def run_model(model_id):
             per_item.append(1 if ok else 0)
             if len(examples) < 3:
                 examples.append({"game": it["game"], "esperado": it["answer"], "obtenido": got,
-                                 "crudo": (raw or "").strip()[:60]})
+                                 "crudo": (raw or "").strip()[:300]})
         acc = hits / len(subset)
         res[name] = {"n": len(subset), "aciertos": hits, "precision": round(acc, 3),
                      "por_item": per_item, "ejemplos": examples}

@@ -123,8 +123,14 @@ def normalize(text: str, kind: str) -> str:
     # nunca podian casar. Mismo sintoma que ya delato otros dos fallos: dos
     # condiciones que deberian diferir dando exactamente el mismo numero.
     if kind in ("which_action", "plan_action", "avoid_inert"):
-        m = re.search(r"action\s*([1-7])", t)
-        return f"ACTION{m.group(1)}" if m else t[:20]
+        # LA ULTIMA mencion, no la primera. Con respuestas escuetas ("ACTION3")
+        # da igual, pero cuando el modelo razona antes de concluir, la PRIMERA
+        # mencion es la primera opcion que enumera, no su respuesta. Ese sesgo
+        # hundia el brazo ingles a 39.4% —exactamente la base trivial— porque
+        # devolvia siempre la primera accion de la tabla. Medía el parser, no el
+        # idioma.
+        ms = re.findall(r"action\s*([1-7])", t)
+        return f"ACTION{ms[-1]}" if ms else t[:20]
     if "none" in t:
         return "none"
     m = re.search(r"move\s*(-?\d+)\s*[, ]\s*(-?\d+)", t)

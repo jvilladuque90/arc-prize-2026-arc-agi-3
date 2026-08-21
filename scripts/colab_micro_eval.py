@@ -25,6 +25,10 @@ import threading
 import time
 import urllib.request
 
+# Los env del host NO llegan a la VM de Colab: lo que se quiera cambiar por
+# corrida se fija aqui antes de leerlo.
+os.environ.setdefault("MICRO_ONLY", os.environ.get("MICRO_ONLY", ""))
+
 RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/main"
 # Solo el 4B: es el unico de los dos que supera el suelo util (el 1.7B queda
 # por debajo de la base trivial en planificacion). Cargar los dos seguidos
@@ -37,7 +41,7 @@ BATCH = int(os.environ.get("MICRO_BATCH", "16"))
 # the t..." y el corte llegaba antes de la respuesta. El brazo ingles marcaba 1/99,
 # que no era un efecto de idioma sino truncamiento. Con margen suficiente los dos
 # idiomas pueden responder y la comparacion mide lo que dice medir.
-MAX_NEW = 64
+MAX_NEW = int(os.environ.get("MICRO_MAX_NEW", "64"))
 
 t0 = time.time()
 def log(m):
@@ -112,8 +116,11 @@ def run_model(model_id):
                      for j in range(len(chunk))]
         return outs
 
+    solo = os.environ.get("MICRO_ONLY", "")
     res = {}
     for name, kind, builder in VARIANTS:
+        if solo and not name.startswith(tuple(solo.split(","))):
+            continue
         subset = [i for i in ITEMS if i["type"] == kind]
         if not subset:
             continue

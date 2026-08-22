@@ -185,6 +185,90 @@ def truth_for_action(trans_of_action) -> dict:
     return {"kind": "change"}
 
 
+def probe_clicks(info, per_color: int = 3) -> dict:
+    """Sondea ACTION6 por COLOR: clica celdas de cada color y mira si el tablero cambia.
+
+    POR QUE POR COLOR. El historial de produccion registra los clics con
+    coordenadas (solver.py: "MOUSE(row=R, col=C)"), asi que el anfitrion puede
+    agregar 'los clics en celdas de color X cambiaron el tablero N/M veces' —
+    la misma receta que la tabla de movimiento, aplicada a la otra mitad de los
+    juegos: los 5 de 25 donde ninguna accion simple hace nada y toda la partida
+    pasa por ACTION6.
+
+    Se resetea entre clics para que la atribucion sea limpia (mismo criterio que
+    el sondeo de acciones simples).
+    """
+    import random as _rd
+
+    from arcengine import GameAction
+
+    game = LocalGame(info)
+    base = grid_of(game.reset())
+    if not base:
+        return {}
+    bg = background_of(base)
+    cells_by_color: dict[int, list[tuple[int, int]]] = {}
+    for r in range(len(base)):
+        for c in range(len(base[r])):
+            cells_by_color.setdefault(base[r][c], []).append((r, c))
+    rng = _rd.Random(1)
+    obs = []
+    for color, cells in sorted(cells_by_color.items()):
+        for (r, c) in rng.sample(cells, min(per_color, len(cells))):
+            game.reset()
+            act = GameAction.ACTION6
+            act.set_data({"x": c, "y": r})
+            nxt = grid_of(game.step(act))
+            if nxt is None:
+                continue
+            obs.append({"row": r, "col": c, "color": color, "changed": base != nxt})
+    return {"game": info.game_id.split("-")[0], "base": base, "bg": bg,
+            "obs": obs, "cells_by_color": cells_by_color}
+
+
+def click_items_for(probe_c: dict, rng_seed: int = 7) -> list[dict]:
+    """Items click_target: candidatas NUNCA clicadas, verdad derivada por color.
+
+    Las candidatas son celdas que NO estan en el historial de clics: si
+    estuvieran, la pregunta seria un lookup. Asi mide la generalizacion POR COLOR,
+    que es exactamente lo que el resumen agregado pretende habilitar.
+    """
+    import random as _rd
+
+    if not probe_c or not probe_c["obs"]:
+        return []
+    by_color: dict[int, list[bool]] = {}
+    for o in probe_c["obs"]:
+        by_color.setdefault(o["color"], []).append(o["changed"])
+    resp = [c for c, v in by_color.items() if len(v) >= 2 and all(v)]
+    dead = [c for c, v in by_color.items() if len(v) >= 2 and not any(v)]
+    if not resp or len(dead) < 2:
+        return []
+    rng = _rd.Random(rng_seed)
+    clicked = {(o["row"], o["col"]) for o in probe_c["obs"]}
+    items = []
+    for rc in resp:
+        for _ in range(3):
+            cands = []
+            for color in ([rc] + rng.sample(dead, 2)):
+                libres = [p for p in probe_c["cells_by_color"][color]
+                          if p not in clicked]
+                if not libres:
+                    break
+                cands.append({"cell": list(rng.choice(libres)), "color": color})
+            if len(cands) != 3:
+                continue
+            rng.shuffle(cands)
+            ganadora = next(c for c in cands if c["color"] == rc)
+            items.append({
+                "game": probe_c["game"], "type": "click_target",
+                "obs": probe_c["obs"], "bg": probe_c["bg"],
+                "candidates": cands,
+                "answer": f"{ganadora['cell'][0]} {ganadora['cell'][1]}",
+            })
+    return items
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--games", nargs="+", default=["ls20", "tu93", "sc25", "cd82"])
@@ -377,6 +461,19 @@ def main() -> int:
             print(f"  equilibrado: {drop} items de effect_of_action recortados "
                   f"(tope {args.cap_per_class}/clase)")
         items = kept
+
+    # --- pregunta 5: click_target (la carga siguiente, juegos de ACTION6)
+    for gname in args.games:
+        if gname not in infos:
+            continue
+        try:
+            citems = click_items_for(probe_clicks(infos[gname]))
+        except Exception as exc:
+            print(f"  {gname}: sondeo de clics fallo ({type(exc).__name__})")
+            continue
+        if citems:
+            print(f"  {gname}: {len(citems)} items click_target")
+            items.extend(citems)
 
     out = ROOT / args.out
     out.write_text("\n".join(json.dumps(i, ensure_ascii=False) for i in items), encoding="utf-8")

@@ -122,6 +122,11 @@ def normalize(text: str, kind: str) -> str:
     # un resultado, era que las respuestas caian a la rama de effect_of_action y
     # nunca podian casar. Mismo sintoma que ya delato otros dos fallos: dos
     # condiciones que deberian diferir dando exactamente el mismo numero.
+    if kind == "click_target":
+        # ultima pareja de enteros: la celda elegida (misma logica ultima-mencion
+        # que ya nos costo aprender con las acciones)
+        ms = re.findall(r"(\d+)\s*[,; ]\s*(\d+)", t)
+        return f"{int(ms[-1][0])} {int(ms[-1][1])}" if ms else t[:20]
     if kind in ("which_action", "plan_action", "avoid_inert"):
         # LA ULTIMA mencion, no la primera. Con respuestas escuetas ("ACTION3")
         # da igual, pero cuando el modelo razona antes de concluir, la PRIMERA
@@ -335,6 +340,38 @@ def prompt_plan_ctx(item, modo: str) -> str:
     return "\n".join(cuerpo) + "\n\n" + nota + "\n" + cierre
 
 
+def prompt_click(item, con_resumen: bool) -> str:
+    """H: ¿el resumen de clics POR COLOR aporta sobre el historial crudo?
+
+    En produccion el modelo ya tiene el historial crudo de clics (MOUSE(row,col)
+    por entrada); la carga anadiria el AGREGADO por color. Eso es lo que se mide:
+    V0 = solo historial crudo, V1 = historial + resumen. Las candidatas son celdas
+    nunca clicadas, asi que acertar exige generalizar por color, no recordar.
+    """
+    lineas = [f"  clic en [{o['row']}, {o['col']}] (celda de color {o['color']}): "
+              + ("cambio el tablero" if o["changed"] else "SIN cambio")
+              for o in item["obs"]]
+    p = ["Estas jugando un juego de rejilla que se controla con clics (ACTION6).",
+         "Historial MEDIDO de clics:", *lineas, ""]
+    if con_resumen:
+        stats: dict[int, list[int]] = {}
+        for o in item["obs"]:
+            s = stats.setdefault(o["color"], [0, 0])
+            s[0] += o["changed"]
+            s[1] += 1
+        resumen = "; ".join(f"color {c}: {h}/{n}"
+                            for c, (h, n) in sorted(stats.items()))
+        fondo = item.get("bg")
+        p += [f"Resumen por color (clics que cambiaron el tablero): {resumen}"
+              + (f". El color {fondo} es el fondo." if fondo is not None else ""), ""]
+    cands = ", ".join(f"[{c['cell'][0]}, {c['cell'][1]}] (color {c['color']})"
+                      for c in item["candidates"])
+    p += [f"Celdas candidatas (ninguna clicada aun): {cands}",
+          "En cual de las candidatas un clic cambiara el tablero?",
+          "Responde solo la celda, fila y columna (ej: 20 33). Respuesta:"]
+    return "\n".join(p)
+
+
 VARIANTS = [
     ("A.V0_crudo",     "effect_of_action", lambda it: prompt_effect(it, False)),
     ("A.V1_objetos",   "effect_of_action", lambda it: prompt_effect(it, True)),
@@ -354,6 +391,8 @@ VARIANTS = [
     ("G.sin_nota",     "plan_action",      lambda it: prompt_plan_ctx(it, "sin")),
     ("G.nota_inicio",  "plan_action",      lambda it: prompt_plan_ctx(it, "inicio")),
     ("G.nota_fin",     "plan_action",      lambda it: prompt_plan_ctx(it, "fin")),
+    ("H.V0_crudo",     "click_target",     lambda it: prompt_click(it, False)),
+    ("H.V1_resumen",   "click_target",     lambda it: prompt_click(it, True)),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),
@@ -366,7 +405,8 @@ PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),
          ("F marca de incertidumbre", "F.V0_sin_marca", "F.V1_con_marca"),
          ("G nota en prompt largo", "G.sin_nota", "G.nota_fin"),
          ("G posicion inicio vs fin", "G.nota_inicio", "G.nota_fin"),
-         ("G largo vs corto", "G.corto", "G.nota_fin")]
+         ("G largo vs corto", "G.corto", "G.nota_fin"),
+         ("H resumen de clics", "H.V0_crudo", "H.V1_resumen")]
 
 
 def trivial_baselines(items) -> dict:

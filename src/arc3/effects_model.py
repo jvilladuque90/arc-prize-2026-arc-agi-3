@@ -145,6 +145,15 @@ def effects_from_history(entries: list[Any], window: int = 40) -> dict[str, dict
         if grid is None:
             continue
         if prev is not None and action:
+            # Los clics llegan como "MOUSE(row=R, col=C)": cada uno unico, asi que
+            # sin canonicalizar cada clic seria una "accion" con n=1 y el filtro
+            # min_obs los descartaria todos — el historial de clics quedaria mudo.
+            # Se agregan bajo ACTION6. (Sondeado en los 25 juegos locales: la
+            # respuesta a clics es todo-o-nada por estado, nunca por color, asi
+            # que el agregado binario es el resumen correcto — un desglose por
+            # color no discriminaria nada.)
+            if action.startswith("MOUSE("):
+                action = "ACTION6"
             b, a = _rows(prev), _rows(grid)
             if b and a:
                 changed.setdefault(action, []).append(b != a)
@@ -229,12 +238,27 @@ def render_effects_note(table: dict[str, dict], min_obs: int = 2) -> str:
     note = ("Efecto MEDIDO de cada accion en ESTA partida (calculado de tu propio "
             "historial, no lo recalcules):\n" + "\n".join(lines))
 
-    # Caso medido en 5 de 25 juegos locales: NINGUNA accion simple hace nada, pero
-    # el tablero si responde a clics (s5i5 y vc33: 12/12 clics cambian el tablero).
-    # Ahi el agente puede quemar la partida entera pulsando botones muertos, asi
-    # que la conclusion se dice explicitamente en vez de dejarla deducir.
+    # Caso medido en 5 de 25 juegos locales: NINGUNA accion simple hace nada. Ahi
+    # el agente puede quemar la partida entera pulsando botones muertos, asi que
+    # la conclusion se dice explicitamente en vez de dejarla deducir.
+    #
+    # PERO la recomendacion de ACTION6 es condicional a la evidencia (sondeado en
+    # los 25 juegos): en s5i5/vc33/tn36 los clics cambian el tablero siempre; en
+    # lp85/su15 NI los clics probados hacen nada en ese estado. Recomendar clics
+    # sin evidencia seria afirmar un hecho no verificado — y la variante F midio
+    # que la incertidumbre honesta protege (41 vs 5 discordantes a favor).
     simples = [a for a in table if a in SIMPLE_ACTIONS]
     if simples and all(table[a]["kind"] == "sin efecto" for a in simples):
-        note += ("\n  => NINGUNA accion simple hace nada aqui: este juego se controla "
-                 "por coordenadas (ACTION6). Deja de gastar turnos en ACTION1-5.")
+        note += "\n  => NINGUNA accion simple hace nada aqui. No gastes turnos en ACTION1-5."
+        clicks = table.get("ACTION6")
+        if clicks and clicks["n"] >= min_obs and clicks["kind"] != "sin efecto":
+            note += (" Los clics SI cambian el tablero: este juego se controla "
+                     "por coordenadas (ACTION6).")
+        elif clicks and clicks["n"] >= min_obs:
+            note += (f" Los clics probados ({clicks['n']}) TAMPOCO cambiaron nada: "
+                     "en este estado nada de lo intentado responde — busca otro "
+                     "mecanismo (celdas concretas, esperar, RESET).")
+        else:
+            note += (" Los clics (ACTION6) aun no se han probado lo suficiente: "
+                     "pruebalos, pero verifica que cambian algo antes de insistir.")
     return note

@@ -28,7 +28,8 @@ import urllib.request
 # Los env del host NO llegan a la VM de Colab: lo que se quiera cambiar por
 # corrida se fija aqui antes de leerlo.
 os.environ.setdefault("MICRO_ONLY", "G.")      # esta corrida: solo regimen largo
-os.environ.setdefault("MICRO_MAX_NEW", "400")  # el ingles necesita ~300 para concluir
+# 64 basta aqui: el regimen mixto (marco EN + nota ES) responde escueto — medido
+os.environ.setdefault("MICRO_MAX_NEW", "64")
 
 RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/main"
 # Solo el 4B: es el unico de los dos que supera el suelo util (el 1.7B queda
@@ -38,7 +39,9 @@ RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/
 MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B").split(",")
 # lote 4: los prompts del regimen largo rondan 2.000-2.500 tokens y con 16
 # el cache KV se come la T4 (leccion del OOM del 8B)
-BATCH = int(os.environ.get("MICRO_BATCH", "4"))
+# lote 2: con prompts de ~2.500 tokens (tablero 64x64) el lote 4 dio OOM en
+# la T4 aun con expandable_segments
+BATCH = int(os.environ.get("MICRO_BATCH", "2"))
 # 12 tokens bastaban en espanol (el modelo contesta "ACTION3" y para) pero NO en
 # ingles: ahi arranca con "To determine which action brings the object closest to
 # the t..." y el corte llegaba antes de la respuesta. El brazo ingles marcaba 1/99,

@@ -292,6 +292,10 @@ def main() -> int:
                         continue
                     items.append({
                         "game": probe["game"], "type": "plan_action",
+                        # tablero COMPLETO en ASCII: permite recrear el regimen de
+                        # produccion (prompt largo con la rejilla entera) en el
+                        # experimento G, en vez de la pregunta desnuda de ~86 tokens
+                        "board": ascii_grid(probe["base"]),
                         "player": list(player), "target": list(target),
                         "shots": [{"action": a, "moved": list(by_action_shift)}
                                   for a, by_action_shift in moves.items()],

@@ -290,6 +290,51 @@ def prompt_wrong_entry(item, marcar_dudosa: bool) -> str:
         "Responde solo el nombre de la accion (ej: ACTION1). Respuesta:"])
 
 
+HARNESS_FRAME = (
+    "You are a coding agent solving a grid-based puzzle game.\n"
+    "Game overview:\n"
+    "- You are solving a multi-level grid puzzle game.\n"
+    "- Each level presents a 64x64 grid of colored cells.\n"
+    "- You interact by choosing one action per turn among the available actions.\n"
+    "- Your goal is to infer the mechanics from observations and complete the level.")
+
+
+def _nota_desplegada(item) -> str:
+    """La nota EXACTA que inyecta v6: cabecera + tabla en palabras, en espanol."""
+    return ("Efecto MEDIDO de cada accion en ESTA partida (calculado de tu propio "
+            "historial, no lo recalcules):\n" +
+            "\n".join(f"  {a}: mueve {dir_words(*_parse_shift(v))}"
+                      for a, v in item["effects_table"].items()))
+
+
+def prompt_plan_ctx(item, modo: str) -> str:
+    """G: el regimen que el banco no habia pisado — PROMPTS LARGOS.
+
+    Todo lo medido hasta ahora uso preguntas desnudas (~86 tokens). En produccion
+    la nota viaja dentro de un prompt con el tablero 64x64 en ASCII (~4.100 chars),
+    reglas e historial: si el modelo la pierde ahi ("lost in the middle"), los
+    resultados del banco no transfieren. Ademas hay una decision YA DESPLEGADA que
+    nunca se midio: v6 ANEXA la nota al final del prompt del padre. Modos:
+      sin    : prompt largo sin nota (piso)
+      inicio : nota al PRINCIPIO, antes del tablero (lejos de la pregunta)
+      fin    : nota tras la pregunta, pegada a la generacion (= como v6)
+    El marco va en ingles (produccion) y la nota en espanol (v6): el regimen real.
+    """
+    nota = _nota_desplegada(item)
+    cuerpo = [HARNESS_FRAME, "",
+              "Level: 1", "Step: 42", "Grid shape: 64 x 64",
+              "Grid contents:", item.get("board", ""), "",
+              f"Current object position (row, column): {item['player']}",
+              f"Target position (row, column): {item['target']}", "",
+              "Which action brings the object closest to the target?"]
+    cierre = "Answer with the action name only (e.g. ACTION1). Answer:"
+    if modo == "sin":
+        return "\n".join(cuerpo + [cierre])
+    if modo == "inicio":
+        return nota + "\n\n" + "\n".join(cuerpo + [cierre])
+    return "\n".join(cuerpo) + "\n\n" + nota + "\n" + cierre
+
+
 VARIANTS = [
     ("A.V0_crudo",     "effect_of_action", lambda it: prompt_effect(it, False)),
     ("A.V1_objetos",   "effect_of_action", lambda it: prompt_effect(it, True)),
@@ -305,6 +350,10 @@ VARIANTS = [
     ("E.en_en_en",     "plan_action",      lambda it: prompt_plan_lang(it, "en")),
     ("F.V0_sin_marca", "plan_action",      lambda it: prompt_wrong_entry(it, False)),
     ("F.V1_con_marca", "plan_action",      lambda it: prompt_wrong_entry(it, True)),
+    ("G.corto",        "plan_action",      prompt_plan_words),
+    ("G.sin_nota",     "plan_action",      lambda it: prompt_plan_ctx(it, "sin")),
+    ("G.nota_inicio",  "plan_action",      lambda it: prompt_plan_ctx(it, "inicio")),
+    ("G.nota_fin",     "plan_action",      lambda it: prompt_plan_ctx(it, "fin")),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),
@@ -314,7 +363,10 @@ PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),
          ("D marcar inertes", "D.V0_omitir", "D.V1_marcar"),
          ("E nota es vs en (marco ingles)", "E.mixto_en_es", "E.en_en_en"),
          ("E marco es vs marco en", "E.es_en_es", "E.en_en_en"),
-         ("F marca de incertidumbre", "F.V0_sin_marca", "F.V1_con_marca")]
+         ("F marca de incertidumbre", "F.V0_sin_marca", "F.V1_con_marca"),
+         ("G nota en prompt largo", "G.sin_nota", "G.nota_fin"),
+         ("G posicion inicio vs fin", "G.nota_inicio", "G.nota_fin"),
+         ("G largo vs corto", "G.corto", "G.nota_fin")]
 
 
 def trivial_baselines(items) -> dict:

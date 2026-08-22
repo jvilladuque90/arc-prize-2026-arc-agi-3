@@ -27,7 +27,7 @@ import urllib.request
 
 # Los env del host NO llegan a la VM de Colab: lo que se quiera cambiar por
 # corrida se fija aqui antes de leerlo.
-os.environ.setdefault("MICRO_ONLY", "")      # p.ej. "E." para un subconjunto
+os.environ.setdefault("MICRO_ONLY", "G.")      # esta corrida: solo regimen largo
 os.environ.setdefault("MICRO_MAX_NEW", "400")  # el ingles necesita ~300 para concluir
 
 RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/main"
@@ -36,7 +36,9 @@ RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/
 # agoto la VM gratis a mitad del segundo. Los numeros del 1.7B ya estan en
 # docs/DESIGN.md 8.11 y no hace falta repetirlos.
 MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B").split(",")
-BATCH = int(os.environ.get("MICRO_BATCH", "16"))
+# lote 4: los prompts del regimen largo rondan 2.000-2.500 tokens y con 16
+# el cache KV se come la T4 (leccion del OOM del 8B)
+BATCH = int(os.environ.get("MICRO_BATCH", "4"))
 # 12 tokens bastaban en espanol (el modelo contesta "ACTION3" y para) pero NO en
 # ingles: ahi arranca con "To determine which action brings the object closest to
 # the t..." y el corte llegaba antes de la respuesta. El brazo ingles marcaba 1/99,
@@ -109,7 +111,7 @@ def run_model(model_id):
                                              add_generation_prompt=True, enable_thinking=False)
                      for p in chunk]
             enc = tok(texts, return_tensors="pt", padding=True,
-                      truncation=True, max_length=4096).to("cuda")
+                      truncation=True, max_length=8192).to("cuda")
             with torch.no_grad():
                 gen = model.generate(**enc, max_new_tokens=MAX_NEW, do_sample=False,
                                      pad_token_id=tok.pad_token_id)

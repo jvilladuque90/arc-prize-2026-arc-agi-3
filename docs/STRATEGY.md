@@ -208,3 +208,47 @@ Ruta económica (no quemar cuota G4 a ciegas):
 Local (25 juegos públicos) con `arcade.get_scorecard()`: score, niveles, acciones por juego.
 Los `baseline_actions` de cada metadata.json dan la referencia de acciones "razonables".
 Save & Run offline en Kaggle = misma vara antes de cada submit (1 submit/día).
+
+## §9. Transferencias del proyecto hermano AG2 (revisión sistemática, 2026-08-22)
+
+AG2 terminó con un mapa de palancas medido a golpe de submission (28.47→30.14% y cuatro
+negativos limpios). Revisión de qué transfiere a AG3, ahora que tenemos banco e inyección:
+
+**1. LA PALANCA QUE NO HEMOS PROBADO: asignación de presupuesto.** La mayor ganancia única de
+AG2 fue *cheap-first* (+1.67): reordenar la cola para que el presupuesto rinda cobertura. Su
+lección estructural: `score = cobertura × calidad` — idéntica a nuestro `niveles ≈ acciones ×
+calidad` (§8.9). En AG3 los injertos de asignación **existen y están sin usar** en el fork:
+- `banking` (win-then-replay): tras ganar, RESET + replay podado del trace ganador en una play
+  nueva de la misma card (score = MAX sobre plays) → llegar rápido al estado ganado y seguir
+  **más hondo**. No depende de clones: candidato real.
+- `transfer` (replay entre clones): depende de que el set oculto sean clones de los 25 públicos.
+  Tras la rotación del set (nuestra réplica 0.54→0.22), probablemente degrada a no-op declarado.
+Advertencia de AG2 en la misma línea: la asignación mal hecha REGRESA (−2.08 con presupuesto
+adaptativo; ambas direcciones desde su óptimo empeoraron). Probar `banking` exige el régimen
+real (2h offline G4) — **candidato al gasto de Kaggle de la próxima semana, tras leer v6**.
+
+**2. RELECTURA DEL "GAP" CON thtennant (1.28 vs nuestra media 0.97).** AG2 corrió un pipeline
+byte-idéntico al notebook público 33.89 y midió 28.47/30.14/29.72/29.31: el spread de 3-4 pts
+era varianza de cobertura run-to-run, y perseguirlo fue declarado pozo sin fondo. Nuestro caso
+es análogo: corremos la config v12 de thtennant, nuestro máximo muestral fue 1.17, y su 1.28
+puede ser un sorteo afortunado de la MISMA distribución (n=1 suyo vs nuestra media de 4).
+**Consecuencia: no gastar envíos persiguiendo ese 0.3; el climbing real es nuestra línea
+semántica (seam C), no la caza del fork.**
+
+**3. PUERTA CERRADA: ensembles / segundo modelo.** Dos negativos medidos de AG2 (2B: break-even;
+TRM: −2.92) con diagnóstico airtight: *un worker fuerte y limitado por cobertura quiere TODO el
+cómputo; cualquier cómputo cedido a un partner más débil es neto-negativo*. En AG3: *nunca*
+partir el throughput del 27B con un modelo auxiliar "para acciones fáciles" — las 28
+conversaciones ya saturan la tarjeta. Idea vetada sin gastar un envío.
+
+**4. PUERTA CERRADA: SFT sobre tareas sintéticas mecánicas.** Dos negativos medidos (v1 estilo,
+v2 interferencia: exec rate a la mitad, 0 aciertos): *la distribución sintética ≠ real; componer
+mecánicamente enseña la forma y desplaza el prior*. Para AG3: la idea pendiente de juegos
+sintéticos vale como **held-out de evaluación**, no como data de entrenamiento; y nuestro banco
+está en el lado correcto de esa línea (preguntas derivadas de juegos REALES con verdad del
+environment, no tareas inventadas).
+
+**Convergencias ya aprendidas por cuenta propia** (llegamos a lo mismo por caminos distintos,
+lo que refuerza ambas): su smoke contaminado = nuestro v5 (offline miente fuera de régimen); su
+truncación de MAX_NEW midiendo al evaluador = nuestro brazo inglés; su disciplina de poder
+estadístico = nuestro contraste pareado con p de signo.

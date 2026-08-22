@@ -842,3 +842,37 @@ verboso**.
 > **Lección de método.** Guardar sólo 60 caracteres de salida cruda costó tres corridas de
 > diagnóstico: con ese recorte no se distinguía «cortado» de «equivocado». Ahora se guardan 300.
 > Instrumentar la observación es más barato que repetir el experimento.
+
+### 8.15. La nota sobrevive al régimen largo, y la posición desplegada es la correcta (2026-08-21)
+
+Última pregunta de régimen pendiente: todo el banco había medido con preguntas desnudas (~86
+tokens), pero en producción la nota viaja dentro de un prompt con el tablero 64×64 en ASCII
+(~2.500 tokens), reglas e historial. Si el modelo la perdiera ahí ("lost in the middle"), nada
+del banco transferiría — la lección del v5 otra vez. Además había una decisión **ya desplegada y
+nunca medida**: v6 anexa la nota al **final** del prompt del padre.
+
+Cuatro brazos, mismos 99 items, marco inglés + nota española (el régimen real de v6), tablero
+real de cada juego como contexto:
+
+| brazo (Qwen3-4B) | acierto | pareado |
+|---|---|---|
+| corto (control) | 90.9% | — |
+| largo sin nota | 14.1% | (piso; ver caveat) |
+| largo, nota al INICIO (antes del tablero) | 65.7% | **0 vs 33** contra `fin` |
+| **largo, nota al FINAL (= v6)** | **99.0%** (98/99) | gana todos los pareados |
+
+**Tres lecturas:**
+
+1. **La posición desplegada es la correcta, unánime.** Nota al final vs al inicio: 33 items
+   discordantes, los 33 a favor del final (p≈0). El "lost in the middle" es real y cuesta 33
+   puntos; el `f"{base}\n{note}"` de v6 los evita. Sin cambios para v7.
+2. **El contexto largo no degrada la nota — la mejora.** Largo+final 99.0% vs corto 90.9%,
+   pareado 8 vs 0 (p=0.008). Con el tablero delante el modelo puede verificar posiciones.
+   El miedo a la transferencia banco→producción queda resuelto a favor.
+3. *Caveat del piso:* el brazo sin nota (14.1%) no lista las acciones disponibles (en este
+   diseño esa lista viajaba dentro de la nota), así que exagera el margen nota-vs-sin-nota;
+   en producción el prompt del padre sí enumera las acciones. Las comparaciones limpias son
+   las otras dos (mismo contenido, distinta posición/longitud).
+
+El control `G.corto` replicó 90.9% exacto entre dos corridas independientes — la estabilidad
+que se le pide a un control.

@@ -27,7 +27,7 @@ import urllib.request
 
 # Los env del host NO llegan a la VM de Colab: lo que se quiera cambiar por
 # corrida se fija aqui antes de leerlo.
-os.environ.setdefault("MICRO_ONLY", "G.")      # esta corrida: solo regimen largo
+os.environ.setdefault("MICRO_ONLY", "")      # p.ej. "G." para un subconjunto
 # 64 basta aqui: el regimen mixto (marco EN + nota ES) responde escueto — medido
 os.environ.setdefault("MICRO_MAX_NEW", "64")
 

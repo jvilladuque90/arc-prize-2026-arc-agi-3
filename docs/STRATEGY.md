@@ -7,9 +7,11 @@
 
 ## §0. Estado vigente (2026-08-16)
 
-**Dónde estamos:** puntaje oculto con el harness duck (Tufa Labs) + injerto `schema_helpers`:
-**1.10** en su primera muestra; línea base del mismo harness sin ese injerto = **0.98 de media**
-sobre 4 muestras {1.17, 1.03, 0.76, 0.96}. Nuestro stack propio de exploración topaba en 0.25.
+**Dónde estamos (actualizado 2026-08-22):** v4 (duck + `schema_helpers`) cerró con **5 muestras
+{1.10, 0.95, 0.87, 0.93, 1.04} = media 0.978**, indistinguible de la línea base v2 {1.17, 1.03,
+0.76, 0.96} = 0.98 — las nueve muestras juntas dan **0.98 de media, rango 0.76–1.17**, y esa es
+la referencia contra la que se lee v6 (desplegado 2026-08-21, primera muestra en camino).
+Nuestro stack propio de exploración topaba en 0.25.
 Leaderboard: puntero 2.52, segundo 1.86, Tufa 1.62, la masa de forks del duck entre 1.1 y 1.3.
 
 **Las tres correcciones que la medición impuso al plan original:**

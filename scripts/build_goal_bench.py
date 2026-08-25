@@ -153,6 +153,30 @@ def items_from_event(game, event, rng):
     return items
 
 
+def goal_signature(event):
+    """Firma de la meta de un nivel GANADO: (tipo, color de la celda objetivo).
+
+    Para clics, el color de la celda clicada; para movimiento, el color que habia
+    BAJO la posicion final del objeto en el tablero inicial del nivel (el marcador
+    que el objeto fue a cubrir). Medido en las trazas: la firma es 100% consistente
+    entre niveles en los 4 juegos multinivel de la primera cosecha (12 subidas,
+    cero excepciones) — por eso es inyectable: lo ganado en el nivel k ensena el
+    objetivo del k+1.
+    """
+    m = re.match(r"MOUSE\((\d+),\s*(\d+)\)", event.get("trigger", ""))
+    if m:
+        r, c = int(m.group(1)), int(m.group(2))
+        return ("clic", event["pre_grid"][r][c])
+    pos = object_at_levelup(event)
+    if pos is None:
+        return None
+    r, c = pos[0], pos[1]
+    g = event["start_grid"]
+    if not (0 <= r < len(g) and 0 <= c < len(g[0])):
+        return None
+    return ("mov", g[r][c])
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--traces", nargs="+",
@@ -168,9 +192,24 @@ def main() -> int:
             print(f"  (no existe {tf}, lo salto)")
             continue
         for rec in json.loads(path.read_text(encoding="utf-8")):
-            for ev in rec.get("events", []):
+            events = rec.get("events", [])
+            for k, ev in enumerate(events):
                 got = items_from_event(rec["game"], ev, rng)
                 items.extend(got)
+                # brazo FIRMA: la pista del nivel ANTERIOR ganado (k>=1), que es
+                # exactamente lo que el anfitrion puede inyectar en produccion
+                if k >= 1:
+                    firma = goal_signature(events[k - 1])
+                    if firma:
+                        verbo = ("clicando una celda" if firma[0] == "clic"
+                                 else "llevando el objeto hasta una celda")
+                        for it in items_from_event(rec["game"], ev, rng):
+                            if it["type"] != "goal_inicio":
+                                continue
+                            it2 = dict(it, type="goal_firma",
+                                       firma=f"El nivel anterior de este juego se "
+                                             f"completo {verbo} de color {firma[1]}.")
+                            items.append(it2)
 
     stats = Counter((i["kind"], i["type"]) for i in items)
     resp = Counter(i["answer"] for i in items)

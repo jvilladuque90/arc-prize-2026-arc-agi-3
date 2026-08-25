@@ -396,6 +396,11 @@ def prompt_goal(item) -> str:
          LEGEND, "", grid_ascii(item["board"]), ""]
     if item.get("trail"):
         p += [f"Trayecto observado: {item['trail']}", ""]
+    if item.get("firma"):
+        # la pista de transferencia entre niveles: computable en produccion desde
+        # el historial (los frames llevan el nivel), y medida como 100% consistente
+        # en los juegos multinivel de las trazas
+        p += [item["firma"], ""]
     p += [f"Para completar el nivel hay que llegar a UNA de estas celdas — {item['goal_desc']}.",
           f"Candidatas (fila, columna): {cands}",
           "Cual es la celda objetivo?",
@@ -426,6 +431,7 @@ VARIANTS = [
     ("H.V1_resumen",   "click_target",     lambda it: prompt_click(it, True)),
     ("I.V0_inicio",    "goal_inicio",      prompt_goal),
     ("I.V2_trayecto",  "goal_trayecto",    prompt_goal),
+    ("I.V3_firma",     "goal_firma",       prompt_goal),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),

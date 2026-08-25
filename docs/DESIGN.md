@@ -876,3 +876,33 @@ real de cada juego como contexto:
 
 El control `G.corto` replicó 90.9% exacto entre dos corridas independientes — la estabilidad
 que se le pide a un control.
+
+### 8.16. La meta no se infiere — se transfiere (2026-08-25)
+
+Banco de inferencia de meta (variantes I), construido sobre **partidas ganadas de verdad** por el
+GraphExplorer en los 25 juegos locales (la celda meta = donde acabó el objeto o dónde se clicó al
+completar el nivel; elección múltiple entre componentes reales del tablero).
+
+**Hallazgo 1 — el modelo NO infiere la meta del tablero.** Qwen3-4B con 4 candidatas (azar 25%):
+15.0% desde el tablero inicial, 10.0% con el trayecto a mitad de intento. Filtrando los items
+injustos (6/30 metas caen sobre color de fondo, invisibles a priori): 2/15 y 1/9 — **al nivel del
+azar**. La carga ingenua "inyectar candidatas de meta" queda refutada antes de construirse: ni
+dándole las candidatas acierta cuál es.
+
+**Hallazgo 2 — pero la meta SE REPITE entre niveles (propiedad de los juegos, sin modelo).** En
+los 4 juegos multinivel de la primera cosecha, la firma de la meta es **100% consistente**:
+
+| juego | niveles ganados | firma constante |
+|---|---|---|
+| tu93 | 5 | el objeto siempre acaba sobre color 0 |
+| sc25 | 3 | color 2 |
+| cd82 | 2 | color 5 |
+| vc33 | 2 (clics) | siempre se clica color 9 |
+
+12 subidas de nivel, cero excepciones. **La implicación es la carga correcta**: la meta no se
+puede *deducir*, pero sí *transferir* — tras la primera subida, el anfitrión puede computar la
+firma del nivel ganado (los `Frame` del historial llevan `level`) e inyectar "el nivel anterior
+se completó llevando el objeto a una celda de color X". Ataca directamente el techo de ~1
+nivel/juego: completar el nivel 1 ocurre; lo que no ocurre es reutilizar lo aprendido en el 2.
+Brazo `I.V3_firma` en el banco para medir si el modelo la usa; si sí, es candidata fuerte
+(mecanismo plausible ≥ +0.15, el listón de §10) para v7.

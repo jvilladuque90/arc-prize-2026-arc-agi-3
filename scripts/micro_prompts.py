@@ -122,7 +122,7 @@ def normalize(text: str, kind: str) -> str:
     # un resultado, era que las respuestas caian a la rama de effect_of_action y
     # nunca podian casar. Mismo sintoma que ya delato otros dos fallos: dos
     # condiciones que deberian diferir dando exactamente el mismo numero.
-    if kind == "click_target":
+    if kind == "click_target" or kind.startswith("goal_"):
         # ultima pareja de enteros: la celda elegida (misma logica ultima-mencion
         # que ya nos costo aprender con las acciones)
         ms = re.findall(r"(\d+)\s*[,; ]\s*(\d+)", t)
@@ -372,6 +372,37 @@ def prompt_click(item, con_resumen: bool) -> str:
     return "\n".join(p)
 
 
+GRID_LEGEND = "WwgGcBMPRbSYOrNp"
+
+
+def grid_ascii(grid) -> str:
+    return "\n".join("".join(GRID_LEGEND[v] if 0 <= v < len(GRID_LEGEND) else "?"
+                             for v in row) for row in grid)
+
+
+def prompt_goal(item) -> str:
+    """I: INFERENCIA DE META — ¿sabe el modelo HACIA DONDE, no solo como moverse?
+
+    La verdad viene de partidas GANADAS por el explorador: la celda meta es donde
+    acabo el objeto (o donde se clico) justo al completar el nivel. Eleccion
+    multiple entre centros de componentes reales del tablero, para no medir el
+    formato de la respuesta (leccion del parser).
+      goal_inicio   : tablero inicial del nivel, sin mas ayuda
+      goal_trayecto : tablero a mitad de intento + resumen del recorrido
+                      (la unica pista computable en produccion sin haber ganado)
+    """
+    cands = ", ".join(f"[{c[0]}, {c[1]}]" for c in item["candidates"])
+    p = ["Estas jugando un juego de rejilla. Este es el tablero:",
+         LEGEND, "", grid_ascii(item["board"]), ""]
+    if item.get("trail"):
+        p += [f"Trayecto observado: {item['trail']}", ""]
+    p += [f"Para completar el nivel hay que llegar a UNA de estas celdas — {item['goal_desc']}.",
+          f"Candidatas (fila, columna): {cands}",
+          "Cual es la celda objetivo?",
+          "Responde solo la celda, fila y columna (ej: 20 33). Respuesta:"]
+    return "\n".join(p)
+
+
 VARIANTS = [
     ("A.V0_crudo",     "effect_of_action", lambda it: prompt_effect(it, False)),
     ("A.V1_objetos",   "effect_of_action", lambda it: prompt_effect(it, True)),
@@ -393,6 +424,8 @@ VARIANTS = [
     ("G.nota_fin",     "plan_action",      lambda it: prompt_plan_ctx(it, "fin")),
     ("H.V0_crudo",     "click_target",     lambda it: prompt_click(it, False)),
     ("H.V1_resumen",   "click_target",     lambda it: prompt_click(it, True)),
+    ("I.V0_inicio",    "goal_inicio",      prompt_goal),
+    ("I.V2_trayecto",  "goal_trayecto",    prompt_goal),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),

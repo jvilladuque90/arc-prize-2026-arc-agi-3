@@ -27,7 +27,7 @@ import urllib.request
 
 # Los env del host NO llegan a la VM de Colab: lo que se quiera cambiar por
 # corrida se fija aqui antes de leerlo.
-os.environ.setdefault("MICRO_ONLY", "")      # p.ej. "G." para un subconjunto
+os.environ.setdefault("MICRO_ONLY", "I.")      # esta corrida: inferencia de meta
 # 64 basta aqui: el regimen mixto (marco EN + nota ES) responde escueto — medido
 os.environ.setdefault("MICRO_MAX_NEW", "64")
 
@@ -68,8 +68,13 @@ os.environ.update({"USE_TF": "0", "TRANSFORMERS_NO_TF": "1",
                    "PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"})
 
 log("descargando banco y prompts del repo publico ...")
-with urllib.request.urlopen(f"{RAW}/micro_bench.jsonl", timeout=60) as r:
-    ITEMS = [json.loads(l) for l in r.read().decode("utf-8").splitlines() if l.strip()]
+ITEMS = []
+for fname in ("micro_bench.jsonl", "goal_bench.jsonl"):
+    try:
+        with urllib.request.urlopen(f"{RAW}/{fname}", timeout=60) as r:
+            ITEMS += [json.loads(l) for l in r.read().decode("utf-8").splitlines() if l.strip()]
+    except Exception as exc:
+        log(f"{fname}: no disponible ({type(exc).__name__}) — sigo sin el")
 with urllib.request.urlopen(f"{RAW}/scripts/micro_prompts.py", timeout=60) as r:
     _mp = {}
     exec(compile(r.read().decode("utf-8"), "micro_prompts.py", "exec"), _mp)

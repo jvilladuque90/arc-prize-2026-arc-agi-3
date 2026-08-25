@@ -408,6 +408,32 @@ def prompt_goal(item) -> str:
     return "\n".join(p)
 
 
+def prompt_goal_cols(item, con_firma: bool) -> str:
+    """I.V4/V5: candidatas ANOTADAS con su color — el anfitrion indexa por el modelo.
+
+    Medido en I.V3: la firma sola no ayuda (1/8) pero el fallo es de INDEXACION,
+    no de uso — en cd82 la firma decia 'color 5', solo la candidata correcta tiene
+    color 5, y el modelo eligio otra: aplicar la pista exigia contar filas y
+    columnas en un ASCII de 64x64, que es justo lo que un LLM hace mal. Anotar el
+    color de cada candidata es computable por el anfitrion en produccion.
+      V4 = colores + firma   (la carga completa propuesta)
+      V5 = colores sin firma (control: cuanto filtra el color solo)
+    """
+    g = item["board"]
+    cands = ", ".join(
+        f"[{c[0]}, {c[1]}] (celda de color {g[c[0]][c[1]]})"
+        for c in item["candidates"])
+    p = ["Estas jugando un juego de rejilla. Este es el tablero:",
+         LEGEND, "", grid_ascii(g), ""]
+    if con_firma and item.get("firma"):
+        p += [item["firma"], ""]
+    p += [f"Para completar el nivel hay que llegar a UNA de estas celdas — {item['goal_desc']}.",
+          f"Candidatas (fila, columna): {cands}",
+          "Cual es la celda objetivo?",
+          "Responde solo la celda, fila y columna (ej: 20 33). Respuesta:"]
+    return "\n".join(p)
+
+
 VARIANTS = [
     ("A.V0_crudo",     "effect_of_action", lambda it: prompt_effect(it, False)),
     ("A.V1_objetos",   "effect_of_action", lambda it: prompt_effect(it, True)),
@@ -432,6 +458,8 @@ VARIANTS = [
     ("I.V0_inicio",    "goal_inicio",      prompt_goal),
     ("I.V2_trayecto",  "goal_trayecto",    prompt_goal),
     ("I.V3_firma",     "goal_firma",       prompt_goal),
+    ("I.V4_firma_col", "goal_firma",       lambda it: prompt_goal_cols(it, True)),
+    ("I.V5_col",       "goal_firma",       lambda it: prompt_goal_cols(it, False)),
 ]
 
 PAIRS = [("A objetos", "A.V0_crudo", "A.V1_objetos"),

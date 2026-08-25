@@ -255,3 +255,33 @@ environment, no tareas inventadas).
 lo que refuerza ambas): su smoke contaminado = nuestro v5 (offline miente fuera de régimen); su
 truncación de MAX_NEW midiendo al evaluador = nuestro brazo inglés; su disciplina de poder
 estadístico = nuestro contraste pareado con p de signo.
+
+## §10. Regla de portafolio: solo cambios que cubran la varianza (2026-08-25, del usuario)
+
+La desviación típica del harness es **σ ≈ 0.12** (10 muestras de referencia). Con un envío por
+noche, el efecto mínimo detectable a 2σ es **±0.14 con 4 noches** — y bajar de ahí escala fatal:
+±0.10 exige ~14 noches. Quedan ~10 semanas de competencia → hay presupuesto para **~10-15
+lecturas más en total**. Consecuencia directa (planteada por el usuario): *buscar cambios fuertes
+de score que tengan cubierta la variación*.
+
+**Reglas adoptadas:**
+1. **Listón de candidato**: una lectura dedicada (3-4 noches) solo se gasta en cambios con un
+   mecanismo que haga plausible **≥ +0.15**; preferible ≥ +0.3 (legible en 2 noches).
+2. **Los cambios pequeños-pero-honestos no compran lectura propia**: se acumulan en un paquete
+   y viajan con el siguiente candidato fuerte (v7-clics es el primero de ese paquete).
+3. **Criterio de corte pre-registrado**: si tras 4 muestras la media de la serie queda a ±0.10
+   de la referencia → se declara neutro y se pasa al siguiente candidato. No se extiende la
+   serie persiguiendo significancia de efectos chicos.
+4. **Los candidatos fuertes se pre-filtran barato**: banco micro (mecanismo) y/o corrida offline
+   de 2h en régimen (efecto grande visible incluso con n=1 offline). El envío confirma, no explora.
+
+**Cola de candidatos fuertes, por prioridad:**
+- **`banking`** (win-then-replay, injerto sin usar): estructural — toca la mecánica del score
+  (MAX sobre plays; cada victoria compra un segundo intento más hondo). Análogo del cheap-first
+  de AG2 (+1.67, su mayor palanca única).
+- **Carga de inferencia de META** (el eslabón encima de la mecánica): el banco mostró que el
+  modelo ya planifica bien con la tabla (90.9%); si v6 sale neutro, la hipótesis pasa a que el
+  cuello es saber *qué* perseguir, no *cómo* moverse. Necesita diseño de banco primero.
+- El gap del líder (2.52 vs 0.97) = **12σ**: quien está ahí tiene algo estructuralmente
+  distinto. Los ajustes finos no cruzan ese océano; las dos líneas de arriba al menos apuntan
+  a la categoría correcta de cambio.

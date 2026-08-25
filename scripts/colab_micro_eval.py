@@ -36,7 +36,7 @@ RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/
 # por debajo de la base trivial en planificacion). Cargar los dos seguidos
 # agoto la VM gratis a mitad del segundo. Los numeros del 1.7B ya estan en
 # docs/DESIGN.md 8.11 y no hace falta repetirlos.
-MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-4B").split(",")
+MODELS = os.environ.get("MICRO_MODELS", "Qwen/Qwen3-8B").split(",")
 # lote 4: los prompts del regimen largo rondan 2.000-2.500 tokens y con 16
 # el cache KV se come la T4 (leccion del OOM del 8B)
 # lote 2: con prompts de ~2.500 tokens (tablero 64x64) el lote 4 dio OOM en

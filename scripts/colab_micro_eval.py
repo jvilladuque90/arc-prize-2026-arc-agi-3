@@ -71,11 +71,13 @@ log("descargando banco y prompts del repo publico ...")
 ITEMS = []
 for fname in ("micro_bench.jsonl", "goal_bench.jsonl"):
     try:
-        with urllib.request.urlopen(f"{RAW}/{fname}", timeout=60) as r:
+        # cb= rompe la cache del CDN de raw.githubusercontent: la corrida anterior
+        # la cebo con la version vieja de micro_prompts y el brazo I.V3 no corrio
+        with urllib.request.urlopen(f"{RAW}/{fname}?cb={int(time.time())}", timeout=60) as r:
             ITEMS += [json.loads(l) for l in r.read().decode("utf-8").splitlines() if l.strip()]
     except Exception as exc:
         log(f"{fname}: no disponible ({type(exc).__name__}) — sigo sin el")
-with urllib.request.urlopen(f"{RAW}/scripts/micro_prompts.py", timeout=60) as r:
+with urllib.request.urlopen(f"{RAW}/scripts/micro_prompts.py?cb={int(time.time())}", timeout=60) as r:
     _mp = {}
     exec(compile(r.read().decode("utf-8"), "micro_prompts.py", "exec"), _mp)
 VARIANTS, normalize = _mp["VARIANTS"], _mp["normalize"]

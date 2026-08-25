@@ -1,0 +1,296 @@
+{
+  "n_items": 279,
+  "linea_base": {
+    "avoid_inert": {
+      "clase": "ACTION3",
+      "precision": 0.355,
+      "n": 31
+    },
+    "effect_of_action": {
+      "clase": "change",
+      "precision": 0.37,
+      "n": 54
+    },
+    "goal_firma": {
+      "clase": "48 40",
+      "precision": 0.125,
+      "n": 16
+    },
+    "goal_inicio": {
+      "clase": "48 40",
+      "precision": 0.067,
+      "n": 45
+    },
+    "goal_trayecto": {
+      "clase": "49 32",
+      "precision": 0.095,
+      "n": 21
+    },
+    "plan_action": {
+      "clase": "ACTION4",
+      "precision": 0.394,
+      "n": 99
+    },
+    "which_action": {
+      "clase": "ACTION3",
+      "precision": 0.308,
+      "n": 13
+    }
+  },
+  "modelos": {
+    "Qwen/Qwen3-4B": {
+      "variantes": {
+        "I.V0_inicio": {
+          "n": 45,
+          "aciertos": 9,
+          "precision": 0.2,
+          "por_item": [
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1
+          ],
+          "ejemplos": [
+            {
+              "game": "cd82",
+              "esperado": "49 32",
+              "obtenido": "7 43",
+              "crudo": "7 43"
+            },
+            {
+              "game": "cd82",
+              "esperado": "48 40",
+              "obtenido": "48 40",
+              "crudo": "48 40"
+            },
+            {
+              "game": "lf52",
+              "esperado": "42 42",
+              "obtenido": "32 48",
+              "crudo": "32 48"
+            }
+          ]
+        },
+        "I.V2_trayecto": {
+          "n": 21,
+          "aciertos": 7,
+          "precision": 0.333,
+          "por_item": [
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0,
+            0,
+            0,
+            1
+          ],
+          "ejemplos": [
+            {
+              "game": "cd82",
+              "esperado": "49 32",
+              "obtenido": "7 43",
+              "crudo": "7 43"
+            },
+            {
+              "game": "ls20",
+              "esperado": "18 36",
+              "obtenido": "62 62",
+              "crudo": "62 62"
+            },
+            {
+              "game": "sc25",
+              "esperado": "20 17",
+              "obtenido": "20 30",
+              "crudo": "20 30"
+            }
+          ]
+        },
+        "I.V3_firma": {
+          "n": 16,
+          "aciertos": 1,
+          "precision": 0.062,
+          "por_item": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          "ejemplos": [
+            {
+              "game": "cd82",
+              "esperado": "48 40",
+              "obtenido": "4 40",
+              "crudo": "4 40"
+            },
+            {
+              "game": "sc25",
+              "esperado": "16 36",
+              "obtenido": "60 30",
+              "crudo": "60 30"
+            },
+            {
+              "game": "sc25",
+              "esperado": "40 28",
+              "obtenido": "60 25",
+              "crudo": "60 25"
+            }
+          ]
+        },
+        "I.V4_firma_col": {
+          "n": 16,
+          "aciertos": 5,
+          "precision": 0.312,
+          "por_item": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            1,
+            1,
+            1,
+            0,
+            0,
+            0,
+            1,
+            0,
+            1,
+            0,
+            0
+          ],
+          "ejemplos": [
+            {
+              "game": "cd82",
+              "esperado": "48 40",
+              "obtenido": "4 46",
+              "crudo": "4 46"
+            },
+            {
+              "game": "sc25",
+              "esperado": "16 36",
+              "obtenido": "60 30",
+              "crudo": "60 30"
+            },
+            {
+              "game": "sc25",
+              "esperado": "40 28",
+              "obtenido": "60 25",
+              "crudo": "60 25"
+            }
+          ]
+        },
+        "I.V5_col": {
+          "n": 16,
+          "aciertos": 0,
+          "precision": 0.0,
+          "por_item": [
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          "ejemplos": [
+            {
+              "game": "cd82",
+              "esperado": "48 40",
+              "obtenido": "4 46",
+              "crudo": "4 46"
+            },
+            {
+              "game": "sc25",
+              "esperado": "16 36",
+              "obtenido": "60 30",
+              "crudo": "60 30"
+            },
+            {
+              "game": "sc25",
+              "esperado": "40 28",
+              "obtenido": "24 36",
+              "crudo": "24 36"
+            }
+          ]
+        }
+      },
+      "pareado": {}
+    }
+  }
+}

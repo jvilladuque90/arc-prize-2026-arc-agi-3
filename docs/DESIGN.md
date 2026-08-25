@@ -906,3 +906,32 @@ se completó llevando el objeto a una celda de color X". Ataca directamente el t
 nivel/juego: completar el nivel 1 ocurre; lo que no ocurre es reutilizar lo aprendido en el 2.
 Brazo `I.V3_firma` en el banco para medir si el modelo la usa; si sí, es candidata fuerte
 (mecanismo plausible ≥ +0.15, el listón de §10) para v7.
+
+### 8.17. Cierre del ciclo de metas: la transferencia por prompt NO funciona (2026-08-25)
+
+Corrida definitiva (82 items, redacción desambiguada, dos tamaños):
+
+| brazo | 4B | 8B (4 bits) | azar |
+|---|---|---|---|
+| V0 tablero inicial (45) | 20.0% | 13.3% | 25% |
+| V2 + trayecto (21) | 33.3% | 23.8% | 25% |
+| V3 + firma del nivel ganado (16) | 6.2% | 6.2% | 25% |
+| V4 firma + colores anotados (16) | 31.2% | 18.8% | 25% |
+| V5 colores solos, control (16) | 0.0% | 6.2% | 25% |
+
+**Conclusión negativa, en tres pasos honestos:** (a) el 50% de V4 en la primera pasada (4/8) era
+ruido de n pequeño — con el doble de items y la redacción limpia cayó a 31.2%; (b) el 8B no
+muestra gradiente de escala — queda *bajo* el azar; (c) sin señal positiva en ningún tamaño
+medible, no hay base para extrapolar al 27B (el caso de la tabla tenía dirección consistente en
+tres tamaños; este no la tiene en ninguno). **La transferencia de meta VÍA PROMPT queda
+descartada.** Costo total del ciclo completo (5 corridas, 2 tamaños, 3 cosechas de trazas):
+~2 horas de T4 gratis y CPU local. Costo de haberlo aprendido por envíos: 4+ noches contra σ=0.12.
+
+**Lo que SIGUE siendo cierto y queda en inventario:** la consistencia de la firma entre niveles
+(12/12, propiedad de los juegos) es real. Si algún día se explota, la vía no es el prompt sino el
+**harness**: un injerto que, tras la primera subida, sesgue algorítmicamente la exploración hacia
+celdas del color-firma (p. ej. vía `plan_moves` hacia esas coordenadas) — sin pedirle comprensión
+al modelo. Es más invasivo (toca comportamiento, no texto) y queda anotado, no construido.
+
+**Candidato fuerte vigente: `banking`** — no depende de que el modelo entienda nada (mecánica
+del harness: score = MAX sobre plays), y es el análogo directo de la mayor palanca única de AG2.

@@ -124,7 +124,11 @@ def items_from_event(game, event, rng):
         if pos is None:
             return []
         goal = (pos[0], pos[1])
-        kind, obj_desc = "move", f"la celda a la que debe llegar el objeto (color {pos[2]})"
+        # redaccion sin ambiguedad: con dos colores en juego (objeto y firma), el
+        # "(color N)" pegado a "celda" hizo que el 4B eligiera la candidata del
+        # color del OBJETO en vez de la de la firma
+        kind, obj_desc = "move", (f"la celda a la que debe llegar el objeto movil "
+                                  f"— el objeto es de color {pos[2]}, la celda destino NO")
 
     grid0 = event["start_grid"]
     bg = background_of(grid0)

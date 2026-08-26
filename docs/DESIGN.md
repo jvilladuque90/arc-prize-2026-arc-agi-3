@@ -935,3 +935,46 @@ al modelo. Es más invasivo (toca comportamiento, no texto) y queda anotado, no 
 
 **Candidato fuerte vigente: `banking`** — no depende de que el modelo entienda nada (mecánica
 del harness: score = MAX sobre plays), y es el análogo directo de la mayor palanca única de AG2.
+
+### 8.18. Banco de niveles, eficiencia por acción y la aritmética de cobertura (2026-08-25)
+
+**Banco nuevo (CPU, gratis): niveles ganados a presupuesto fijo.** Mide el objetivo mismo, no un
+proxy — mismo juego, misma semilla, mismo presupuesto de acciones, y solo cambia el injerto.
+Complementa al banco micro (que mide comprensión) y al envío diario (que mide niveles pero cuesta
+una noche con σ=0.12). Advertencia de alcance: el explorador **no** es el agente de producción; lo
+que responde es si un MECANISMO tiene valor sobre los juegos reales.
+
+**Curva de eficiencia por acción** (explorador ciego, derivada de los `action_index` de las trazas):
+
+| presupuesto | niveles (25 juegos) | por juego |
+|---|---|---|
+| 100 ≈ el de producción | 3 | 0.12 |
+| 1.000 | 11 | 0.44 |
+| 10.000 | 24 | 0.96 |
+| 40.000 | 25 | 1.00 |
+
+Producción da ~94 acciones/juego y saca ~1 nivel/juego: **el agente con LLM es ~100× más eficiente
+por acción que la búsqueda ciega**. Esto (a) entierra "más throughput" como palanca, (b) explica
+el techo 0.25 de nuestro stack de exploración, y (c) refuerza que el valor está en la calidad por
+acción — aunque las tres cargas de calidad que probamos hayan salido neutras.
+
+**Primer injerto en el banco nuevo: sesgo por firma (algorítmico, no por prompt).** Reordena los
+candidatos de clic por el color que ganó el nivel anterior. Detecta la firma correctamente
+(vc33 → color 9, coincide con las trazas) y da **18 vs 18 niveles, cero juegos con diferencia**.
+*Pero el test está mal potenciado y hay que decirlo:* la firma solo se aprende tras el primer
+nivel, y de 25 juegos solo **4 llegan a 2+ niveles** con el explorador — de ellos uno solo es de
+clics. n≈1 juego informativo. El mecanismo no queda refutado; queda **no resoluble con este banco**.
+
+**Aritmética de cobertura (de la config desplegada, `solver.pkl`).** `concurrency=28`,
+`max_runtime_s_per_game=7920` (132 min). Con 110 juegos ocultos: 110/28 = 3.9 lotes × 132 min =
+**8.6 h necesarias contra 8 h disponibles**. El horario está al límite: si los juegos agotaran su
+tope, ~7% no se jugarían. En la práctica muchos terminan antes (win/derrota/abandono), así que la
+cobertura real es mayor — **no medible desde aquí**. Dos consecuencias:
+
+1. **Mecanismo plausible para σ=0.12**: qué juegos alcanzan a jugarse antes del corte varía entre
+   noches. Es la misma explicación que AG2 dio a su spread de 3-4 pts con código byte-idéntico.
+2. **Candidato estructural**: bajar `max_runtime_s_per_game` compra cobertura a costa de
+   profundidad — el análogo directo del *cheap-first* que fue la mayor palanca única de AG2
+   (+1.67). **Con la advertencia grande**: es exactamente la clase de cambio que regresó en ambos
+   proyectos (AG2 presupuesto adaptativo −2.08; nuestro v5 de contexto 0.60), y no es verificable
+   offline. Queda anotado como candidato con riesgo alto, no promovido.

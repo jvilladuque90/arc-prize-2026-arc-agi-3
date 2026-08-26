@@ -978,3 +978,26 @@ cobertura real es mayor — **no medible desde aquí**. Dos consecuencias:
    (+1.67). **Con la advertencia grande**: es exactamente la clase de cambio que regresó en ambos
    proyectos (AG2 presupuesto adaptativo −2.08; nuestro v5 de contexto 0.60), y no es verificable
    offline. Queda anotado como candidato con riesgo alto, no promovido.
+
+### 8.16. Post-mortem de v7 (hipótesis registrada ANTES de más datos) y corrección staged
+
+v7 duró una noche: primera muestra **0.68**, fuera del rango histórico (0.76–1.17, 14 muestras),
+y la regla pre-registrada de n=1 disparó la reversión a v6 (commit `43830ac`). Puede ser ruido
+—2.3σ ocurre— pero hay un **mecanismo concreto** que explicaría un daño real, y se registra aquí
+antes de que lleguen más datos para que no sea una racionalización post-hoc:
+
+**Error de categoría: tratar ACTION6 como acción sin parámetro.** v7 canonicaliza los
+`MOUSE(row,col)` bajo ACTION6 para que los clics entren en la tabla. Pero la línea de descarte
+(`"SIN EFECTO en N intentos — no gastes turnos en ella"`) se renderizaba igual para ACTION6 que
+para ACTION1-5, y con `min_obs=2` bastaban **2 clics desafortunados** para aconsejar abandonar
+el canal. Un clic es **posicional**: fallar en 2 celdas no generaliza; en un juego de clics donde
+solo ciertas celdas responden, ese consejo suprime el único canal de control. En v6 esa línea no
+podía dispararse para ACTION6 (cada clic era una "acción" única y el filtro la descartaba).
+
+**Corrección (staged para v8, verificada local + regresión 25/25):** ACTION6 nunca recibe el
+descarte; con pocos clics fallidos la nota dice *"el efecto depende de la celda: prueba celdas
+distintas"*, y solo con ≥8 fallos sugiere esperar/RESET — sin descartar el canal.
+
+**Decisión de despliegue:** v8 NO se despliega aún. Primero la 4ª muestra de v6 (esta noche)
+completa su lectura formal; después se decide con la serie limpia. El coste de esperar es cero
+(v6 validado sirve de trigger); el coste de precipitarse ya lo pagamos una vez.

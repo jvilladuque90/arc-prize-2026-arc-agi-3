@@ -227,6 +227,16 @@ def render_effects_note(table: dict[str, dict], min_obs: int = 2) -> str:
             # callar. Se degrada a incertidumbre honesta.
             lines.append(f"  {action}: cambia el tablero, pero su efecto NO es "
                          f"constante ({d['conf']:.0%} de {d['n']} obs) — verifica antes de fiarte")
+        elif d["kind"] == "sin efecto" and action == "ACTION6":
+            # ACTION6 es POSICIONAL: fallar en N celdas no generaliza al canal.
+            # La v7 renderizaba aqui el mismo descarte que para ACTION1-5 y podia
+            # suprimir el unico canal de control de un juego de clics con solo 2
+            # clics desafortunados (min_obs=2). Hipotesis mecanica registrada en
+            # DESIGN 8.16 ANTES de la 2a muestra de v7; corregido a consejo
+            # posicional que nunca descarta el canal.
+            lines.append(f"  ACTION6: los clics probados ({d['n']}) no cambiaron nada, "
+                         f"pero un clic depende de la CELDA — prueba celdas distintas "
+                         f"antes de descartarlo")
         elif d["kind"] == "sin efecto":
             lines.append(f"  {action}: SIN EFECTO en {d['n']} intentos "
                          f"— no gastes turnos en ella")
@@ -254,10 +264,16 @@ def render_effects_note(table: dict[str, dict], min_obs: int = 2) -> str:
         if clicks and clicks["n"] >= min_obs and clicks["kind"] != "sin efecto":
             note += (" Los clics SI cambian el tablero: este juego se controla "
                      "por coordenadas (ACTION6).")
+        elif clicks and clicks["n"] >= 8:
+            # solo con MUCHOS clics fallidos se sugiere buscar otra cosa — y aun
+            # asi sin descartar el canal, porque el fallo de clics es por celda
+            note += (f" Los clics probados ({clicks['n']}) tampoco cambiaron nada en "
+                     "este estado: prueba celdas muy distintas, y si nada responde, "
+                     "considera esperar o RESET.")
         elif clicks and clicks["n"] >= min_obs:
-            note += (f" Los clics probados ({clicks['n']}) TAMPOCO cambiaron nada: "
-                     "en este estado nada de lo intentado responde — busca otro "
-                     "mecanismo (celdas concretas, esperar, RESET).")
+            note += (f" Los clics probados ({clicks['n']}) aun no cambiaron nada, "
+                     "pero son pocos y el efecto depende de la celda: prueba celdas "
+                     "distintas antes de concluir.")
         else:
             note += (" Los clics (ACTION6) aun no se han probado lo suficiente: "
                      "pruebalos, pero verifica que cambian algo antes de insistir.")

@@ -1066,3 +1066,42 @@ truncado. **Las dos capacidades no son la misma.**
 corrida del LLM a **régimen completo** (~2 h/juego). Si con sus 132 min el LLM también gana en los
 10 juegos que hoy son "solo explorador", el híbrido suma cero. Ese es el único gasto de G4 que
 esta línea justifica, y es la comprobación decisiva — no una confirmación de cortesía.
+
+### 8.21. Comprobación (2): intercalar NO, particionar SÍ (2026-08-26)
+
+Lectura del harness (`framework/solver.py`). Arquitectura real:
+
+- `_run_games` crea una tarea asyncio por juego, con un **semáforo de tamaño `concurrency`
+  (28)**; cada una corre `_play_one` en un hilo de un pool de 28.
+- `_HarnessGameSession.play()` es un bucle **síncrono**: `analyzer.analyze(...)` **bloquea** el
+  hilo del juego mientras el LLM genera, y sólo después se ejecutan las acciones.
+- `_execute_action` muta `self.game`, **añade a `history_entries`** y llama a
+  `write_runtime_state()` (el fichero que lee el sandbox del agente).
+
+**Por qué intercalar es inseguro — tres razones, no una:**
+
+1. **La acción del LLM quedaría obsoleta.** Analiza un estado y devuelve una acción para *ese*
+   estado; si otro hilo movió el tablero mientras generaba, la acción se aplica a un tablero que
+   nunca vio.
+2. **Le mentiríamos en su propio historial.** Las acciones del explorador entrarían en
+   `history_entries`, así que el LLM leería como suyas jugadas que no decidió. Es exactamente el
+   modo de fallo que ya medimos: con entradas falsas sin marcar, el acierto cae de 81.8% a 45.5%
+   (§8.14, experimento F).
+3. **Carrera sobre el fichero de estado.** `write_runtime_state()` no está protegido para
+   escritores concurrentes.
+
+**La variante que sí es limpia: particionar POR JUEGO, no por tiempo.** El semáforo reparte
+*juegos*, no instantes. Un explorador CPU que se ocupe de K juegos no ocupa slot de LLM, no
+comparte estado con nadie y no puede corromper ningún historial. Y la aritmética ayuda: con 110
+juegos son 3.93 lotes × 132 min = **8.6 h** (por encima de las 8 disponibles, §8.18); con 80
+juegos son 2.86 lotes = **6.3 h**, que devuelve holgura para subir el tiempo por juego de los que
+sí lleva el LLM.
+
+**El riesgo real de esta variante, y no es pequeño:** hay que decidir *qué* juegos ceder, sin
+saberlo de antemano. Ceder uno como `sb26` —que el LLM resuelve y la búsqueda no alcanza ni con
+40.000 acciones— es perder un nivel seguro. Aquí sí aplica la advertencia de AG2: quitarle trabajo
+al worker fuerte es una apuesta.
+
+**Consecuencia para el plan:** la corrida de régimen (comprobación 1) ya no sirve sólo para medir
+el solapamiento — **da la regla de asignación**. Sin ella no hay forma de decidir la partición, y
+con ella se decide todo de una vez.

@@ -1037,3 +1037,32 @@ estructural respecto a los ensembles que allí regresaron (2B y TRM sí competí
 (a) si el harness permite intercalar acciones sin corromper el historial que ve el LLM, y (b) si
 los niveles del explorador y los del LLM son **disjuntos** — si coinciden en los mismos juegos, la
 suma es cero. (b) es medible offline; (a) exige leer el harness.
+
+### 8.20. ¿Son disjuntos el LLM y el explorador? (2026-08-26) — evidencia parcial, a favor
+
+Comprobación (1) de las dos que exige §8.19, hecha con datos que ya teníamos: el `benchmark.json`
+del Save & Run de v6 corrió el **harness completo (27B)** sobre los **mismos 25 juegos locales**
+que el banco de niveles. Comparación por juego:
+
+| | LLM (validación) | explorador (3.000 acc) |
+|---|---|---|
+| total | 3 niveles | 18 niveles |
+| solo el LLM | **sb26** | — |
+| ambos | su15, tn36 | su15, tn36 |
+| solo el explorador | — | cd82, lf52, lp85, ls20, m0r0, r11l, sc25, sp80, tu93, vc33 |
+
+**El 3 vs 18 NO significa que el explorador sea mejor.** La corrida del LLM duró **16 min en total**
+(validación truncada) contra los **132 min por juego** de producción: es el **12%** del tiempo real,
+y todos los `game_runs` acabaron en `cancelled`. Comparar los totales sería el mismo error de
+régimen que nos costó el v5.
+
+**Lo que sí es robusto, y es el dato que importa:** `sb26` es uno de los **8 juegos AMPLIOS** donde
+el explorador da cero **incluso con 40.000 acciones** — y el LLM sacó un nivel allí en 16 minutos.
+Eso no depende del reparto de tiempo: demuestra que el LLM resuelve algo que la búsqueda no
+alcanza por fuerza bruta. Y a la inversa, tu93 (5 niveles al explorador) quedó en cero para el LLM
+truncado. **Las dos capacidades no son la misma.**
+
+**Lo que falta para promover el híbrido a propuesta:** el solapamiento real sólo se conoce con una
+corrida del LLM a **régimen completo** (~2 h/juego). Si con sus 132 min el LLM también gana en los
+10 juegos que hoy son "solo explorador", el híbrido suma cero. Ese es el único gasto de G4 que
+esta línea justifica, y es la comprobación decisiva — no una confirmación de cortesía.

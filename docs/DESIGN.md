@@ -1001,3 +1001,39 @@ distintas"*, y solo con ≥8 fallos sugiere esperar/RESET — sin descartar el c
 **Decisión de despliegue:** v8 NO se despliega aún. Primero la 4ª muestra de v6 (esta noche)
 completa su lectura formal; después se decide con la serie limpia. El coste de esperar es cero
 (v6 validado sirve de trigger); el coste de precipitarse ya lo pagamos una vez.
+
+### 8.19. Diagnóstico de los juegos a cero y la asimetría de tiempo ocioso (2026-08-26)
+
+**Los 8 juegos que nunca dan nivel NO están bloqueados por exploración.** Sonda con 6.000
+acciones sobre los 8 que dan cero incluso con 40.000 (bp35, g50t, ka59, re86, sb26, sk48, tr87,
+wa30), clasificando por dos ejes (¿cambia el tablero? ¿se ven estados nuevos?):
+
+| clase | juegos |
+|---|---|
+| INERTE (nada responde) | **0** |
+| EN BUCLE (revisita lo mismo) | **0** |
+| **AMPLIO** (cambia mucho, miles de estados, cero niveles) | **8 de 8** |
+
+`tr87` cambia el tablero en el **100%** de sus acciones y visita **5.820 estados distintos** — más
+que tu93, que gana 5 niveles con 3.278. **El cuello de esos juegos es la META, no la búsqueda.**
+Encaja con lo medido en el banco de metas: el modelo elige la celda objetivo a nivel de azar.
+
+**No hay señal intermedia que escalar.** El `FrameDataRaw` no expone `score`: el único indicador
+es `levels_completed`. Recompensa completamente esparsa — no hay gradiente que seguir, ni para el
+explorador ni para el LLM.
+
+**La asimetría que sí abre una puerta.** Cruzando la física del presupuesto (§8.3) con la config
+desplegada (`solver.pkl`): la ventana es de **132 min por juego** y el agente gasta **~94
+acciones** en ella = **84 segundos por acción**, cuando la latencia del gateway es de 0.1-0.2 s.
+**La sesión del juego está ociosa el 99.8% del tiempo**, esperando GPU. En esa misma ventana caben
+~39.000 acciones de un explorador CPU.
+
+Esto **no contradice la lección de AG2** ("un worker fuerte limitado por cobertura quiere TODO el
+cómputo; cederlo a un partner débil es neto-negativo") — precisamente porque el explorador **no
+consume GPU**: no le quita nada al 27B, usa reloj que hoy se tira. Es la primera diferencia
+estructural respecto a los ensembles que allí regresaron (2B y TRM sí competían por cómputo).
+
+**Estado: candidato, no propuesta.** Faltan dos comprobaciones antes de que merezca una lectura:
+(a) si el harness permite intercalar acciones sin corromper el historial que ve el LLM, y (b) si
+los niveles del explorador y los del LLM son **disjuntos** — si coinciden en los mismos juegos, la
+suma es cero. (b) es medible offline; (a) exige leer el harness.

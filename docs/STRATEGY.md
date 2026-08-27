@@ -11,7 +11,7 @@
 {1.10, 0.95, 0.87, 0.91, 0.93, 1.04} = media 0.967** (el 0.91 del 20-ago apareció al barrer la
 lista completa), indistinguible de la línea base v2 {1.17, 1.03, 0.76, 0.96} = 0.98 — las diez
 muestras juntas dan **0.97 de media, rango 0.76–1.17**, y esa es
-la referencia contra la que se lee v6 (desplegado 2026-08-21). Serie v6: **{0.83, 1.09, 0.85}** — media 0.92 vs referencia 0.97; lectura formal en la 4ª muestra (corte: ±0.10).
+la referencia contra la que se lee v6 (desplegado 2026-08-21). Serie v6 **CERRADA**: {0.83, 1.09, 0.85, 0.99} media **0.940** vs referencia 0.972 → diferencia **−0.032 (0.4σ)**, dentro del corte pre-registrado de ±0.10 → **NEUTRO**. El IC 95% de la diferencia es [−0.17, +0.11]: descarta ganancias ≥+0.15, que era el listón de §10.
 Nuestro stack propio de exploración topaba en 0.25.
 Leaderboard: puntero 2.52, segundo 1.86, Tufa 1.62, la masa de forks del duck entre 1.1 y 1.3.
 

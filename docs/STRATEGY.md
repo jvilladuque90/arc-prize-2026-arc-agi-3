@@ -282,6 +282,15 @@ de score que tengan cubierta la variación*.
 - **Carga de inferencia de META** (el eslabón encima de la mecánica): el banco mostró que el
   modelo ya planifica bien con la tabla (90.9%); si v6 sale neutro, la hipótesis pasa a que el
   cuello es saber *qué* perseguir, no *cómo* moverse. Necesita diseño de banco primero.
+**Contabilidad de cuota, corregida (2026-08-28).** La cuota semanal de 30h de G4 es
+**compartida entre los tres proyectos de la cuenta** (arc-agi-3, arc-agi-2, biohub): esta semana
+la consumieron 8 corridas de biohub + una de agi2, no nosotros. Y los **envíos diarios NO
+facturan cuota** (verificado: toda la semana salieron con la cuota a cero; solo facturan los
+Save & Run manuales). Consecuencia: el presupuesto de experimentos G4 de agi3 se negocia con los
+otros proyectos, pero la cadencia de envíos es intocable. El pre-filtro de banking (~5.2h, dos
+brazos de 2h+arranque) queda armado para dispararse tras el reset del viernes 8pm
+(`ARC-AGI3-BankingAB`, un solo disparo, veto con `Unregister-ScheduledTask`).
+
 - El gap del líder (2.52 vs 0.97) = **12σ**: quien está ahí tiene algo estructuralmente
   distinto. Los ajustes finos no cruzan ese océano; las dos líneas de arriba al menos apuntan
   a la categoría correcta de cambio.

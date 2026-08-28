@@ -41,3 +41,5 @@ models/
 daily_submit.log
 .effects_deployed
 effects_deploy.log
+.banking_ab_launched
+banking_ab.log

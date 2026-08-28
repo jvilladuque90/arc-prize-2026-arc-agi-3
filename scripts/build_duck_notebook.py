@@ -207,6 +207,7 @@ def main() -> int:
     # Justificada por el banco micro: 44.0% -> 66.1% en planificacion a 4B,
     # con 24 de 24 discordantes a favor. Ver docs/DESIGN.md 8.11.
     ap.add_argument("--effects", action="store_true")
+    ap.add_argument("--banking", action="store_true")
     args = ap.parse_args()
 
     cells = list(CELLS)
@@ -223,6 +224,24 @@ def main() -> int:
         else:
             print("ERROR: no encontre donde inyectar concurrency")
             return 1
+    if args.banking:
+        # CANDIDATO FUERTE #1 (STRATEGY §10): win-then-replay. Toca la mecanica del
+        # score (MAX sobre plays: cada victoria compra un segundo intento mas
+        # hondo). Analogo del cheap-first de AG2 (+1.67, su mayor palanca unica).
+        # Injerto del autor del fork, disenado para degradar a stock ante cualquier
+        # divergencia. Pre-filtro: A/B offline 2h en regimen (esta build) antes de
+        # gastar noches de lectura.
+        for i, c in enumerate(cells):
+            if '"shortcircuit": True, "schema_helpers": True' in c:
+                cells[i] = c.replace(
+                    '"shortcircuit": True, "schema_helpers": True',
+                    '"shortcircuit": True, "schema_helpers": True,\n'
+                    '                              "banking": True')
+                break
+        else:
+            print("ERROR: no encontré el dict de flags para inyectar banking")
+            return 1
+
     if args.context_window:
         for i, c in enumerate(cells):
             if '"shortcircuit": True, "schema_helpers": True' in c:

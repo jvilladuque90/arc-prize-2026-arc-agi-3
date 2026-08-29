@@ -1239,3 +1239,40 @@ llegó a morder porque en modo offline las acciones son casi instantáneas (sin 
 Lección para leer futuras validaciones cortas: **el preludio y el LLM compiten por la ventana en
 proporciones que sólo son representativas si la ventana lo es.** Una validación de 12 min da al
 preludio el 100% del tiempo; la de producción le da el 5%.
+
+### 8.24. La veta de los parámetros de generación (2026-08-29)
+
+**El agente desplegado expone un panel entero por variables de entorno** que nunca habíamos
+tocado (`inference/agent/tool_agent.py:137-148`): `ENABLE_THINKING` (**True** por defecto),
+`TEMPERATURE` 0.6, `TOP_P` 0.95, `TOP_K` 20, `CONTEXT_WINDOW` 32768, `TOOL_STEPS` 12, `SEED` −1.
+Cambiar cualquiera es una línea en el notebook, sin tocar el harness.
+
+**Y todo nuestro banco se midió con thinking apagado y temperatura 0** — el tercer desajuste de
+régimen que encontramos, después del v5 y del idioma.
+
+**Barrido 2×2 en el banco** (Qwen3-4B, 99 problemas de planificación, pareado):
+
+| brazo | acierto | tokens/respuesta |
+|---|---|---|
+| greedy **sin** thinking | **90.9%** | **3.0** |
+| greedy con thinking | 87.9% | 420.4 |
+| producción (T=0.6) **sin** thinking | 89.9% | 3.0 |
+| producción con thinking | 84.8% | 416.5 |
+
+Pareado del thinking: **12–9** (greedy, p=0.66) y **14–9** (producción, p=0.40) a favor de
+apagarlo. **No es significativo en precisión** — lo honesto es decir que *no ayuda*, no que
+perjudique. La temperatura tampoco decide nada (1–0, p=1.0).
+
+**El coste sí es inequívoco, y se midió en producción, no en el banco.** Las transcripciones del
+run de régimen registran `reasoning_chars` en **1.784 de 1.784 llamadas** (thinking activo en el
+100%): media **1.799 caracteres ≈ 514 tokens de pensamiento por llamada**, sobre **1.442 tokens
+generados por acción**. Es decir, **el 36% de todo lo que el modelo genera es pensamiento**.
+
+**Consecuencia:** apagarlo deja ~928 tokens/acción → **1.55× acciones**, de ~94 a ~146 por juego.
+Misma calidad medida, una variable de entorno.
+
+**Reserva honesta.** El banco pregunta por un nombre de acción (3 tokens sin pensar); producción
+escribe código Python en un sandbox, una tarea bastante más difícil donde el pensamiento podría
+pagar. Lo que el banco establece es que *en tareas de mecánica y planificación no ayuda*; que eso
+valga para la generación de código es una extrapolación, no una medición. Pero el 36% de tokens sí
+está medido en producción.

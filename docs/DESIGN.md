@@ -1187,3 +1187,41 @@ operación real, **la lotería de throughput de la GPU es lotería de niveles** 
 por encima del piso las acciones *extra deliberadas* no compraban niveles, pero la *varianza*
 de acciones (GPU) sí explica gran parte de la σ≈0.12 nocturna. Corolario: los A/B de una noche
 miden sobre todo qué GPU te tocó.
+
+### 8.23. El híbrido secuencial funciona en producción (2026-08-29)
+
+`--hybrid`: antes de que arranque la sesión del LLM, el explorador CPU juega el juego. Corre
+**antes** de `play()`, así que `seed_initial_history` abre el historial del LLM desde el estado
+resultante — ninguno de los tres problemas de §8.21 (acción obsoleta, historial con jugadas
+ajenas, carrera sobre el fichero de estado) puede darse.
+
+**Validación en el kernel (15 min, 25 juegos, config = v4 + preludio):**
+
+| | niveles |
+|---|---|
+| preludio (explorador, 2.000 acciones) | 15 |
+| **LLM encima** | **+3** — en `ar25`, `sb26`, `sk48` |
+| **total** | **18** |
+| *comparables:* v4 solo LLM (16 min) | 3 |
+| *comparables:* v6 solo LLM (112 min) | 9 |
+
+**Lo que valida no es el 18 sino el +3.** `sb26` y `ar25` son juegos donde el explorador da cero
+incluso con 40.000 acciones (§8.19). El LLM sumó justo ahí: la complementariedad opera como se
+diseñó y **no hay interferencia** — el preludio no le quita sus juegos.
+
+**El presupuesto se fijó con dato, no con suposición.** Los 25 preludios reportaron "2000
+acciones": agotaron el tope de **acciones** sin acercarse al de **tiempo** (420 s). El cap de
+segundos es el que manda, así que subir `max_actions` no cuesta tiempo extra — sólo aprovecha la
+ventana cuando el gateway responde rápido, y si el del rerun es lento, corta a los 7 min igual.
+Subido a **12.000** (v9): lleva al explorador cerca de su techo y mueve la estimación de **+0.10
+(bajo el listón) a +0.16**.
+
+**Metodología que lo hizo posible.** El parche se probó **extraído del notebook** y contra el
+`taaf.game.Game` real (el bundle importa en Windows), no contra un stub. Eso cazó que
+`available_actions` son ints y no nombres — con strings el explorador no formaba candidatos y daba
+600 acciones con 0 niveles. Un stub con mis propias suposiciones habría dado verde y el fallo se
+habría descubierto gastando un Save & Run.
+
+**Reserva que sigue en pie.** El 18-vs-3 es sobre los 25 juegos **públicos**, donde este explorador
+se ajustó en julio; en el set oculto marcó 0.25 frente al 0.97 del harness. La ganancia real será
+mucho menor, y la estimación (+0.16) cuelga de tres multiplicadores frágiles. Cuatro noches dirán.

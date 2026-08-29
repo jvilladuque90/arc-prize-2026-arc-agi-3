@@ -1142,3 +1142,25 @@ primero, LLM después**, secuencial dentro de cada juego. El explorador consigue
 arranca ahí. No hay hilos concurrentes, no hay historial corrompido, no se le quita GPU a nadie —
 y el LLM empieza más arriba, que es exactamente donde su comprensión hace falta y la búsqueda ya
 no llega.
+
+### 8.17. σ del instrumento offline, medida con dos controles idénticos (2026-08-29)
+
+Al perderse el brazo de banking del A/B por una colisión de ficheros (dos agentes regenerando el
+mismo notebook), el disparo de las 20:10 corrió **dos veces el control** (v6 @ 120 min/juego,
+config byte-idéntica). Lo que parecía un accidente produjo el dato que faltaba:
+
+| control A | control B |
+|---|---|
+| 9 niveles · 1.713 acciones | 13 niveles · 2.407 acciones (+41%) |
+
+**Corridas idénticas difieren en 4 niveles y 41% de throughput.** `tu93` y `vc33` pasan de 0 a 2
+niveles entre corridas. Consecuencias operativas:
+
+1. **Un A/B offline n=1 vs n=1 solo lee efectos ≥ ~8 niveles.** Cualquier diferencia menor entre
+   brazos cae dentro del spread de los controles. Los pre-filtros offline de candidatos deben
+   apoyarse primero en **evidencia binaria de activación** (banners, eventos en el log), y solo
+   después en niveles — o pagar pares repetidos.
+2. **El régimen quedó validado con números**: 2h offline dan 68–96 acciones/juego ≈ las ~94 del
+   rerun de producción. La corrida de 2h ES el proxy correcto (la de 16 min del v5 no lo era).
+3. La varianza offline (4 niveles ≈ 0.16 en escala de score sobre 25 juegos) es consistente con
+   la σ≈0.12 del set oculto: el ruido no es del set oculto, es **del harness+GPU**.

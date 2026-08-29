@@ -1225,3 +1225,17 @@ habría descubierto gastando un Save & Run.
 **Reserva que sigue en pie.** El 18-vs-3 es sobre los 25 juegos **públicos**, donde este explorador
 se ajustó en julio; en el set oculto marcó 0.25 frente al 0.97 del harness. La ganancia real será
 mucho menor, y la estimación (+0.16) cuelga de tres multiplicadores frágiles. Cuatro noches dirán.
+
+**Validación de v9 (preludio a 12.000 acciones) y un artefacto que hay que saber leer.** 25 niveles
+frente a los 18 de v8, pero el dato que importa está en las acciones: **todos los juegos sumaron
+~12.000 en total**, es decir que el preludio agotó su tope de acciones y **el LLM apenas jugó**
+(0-26 acciones). Por eso se perdieron `sb26` y `sk48` — los dos juegos donde el LLM aportaba.
+
+**Eso es un artefacto de validar en una ventana de 12 min, no del diseño.** En producción la
+ventana es de 132 min y el cap del preludio son 420 s = **5% de la ventana**; al LLM le quedan 125
+min ≈ 89 acciones, su cantidad normal. El cap de segundos existe exactamente para eso, y aquí no
+llegó a morder porque en modo offline las acciones son casi instantáneas (sin HTTP al gateway).
+
+Lección para leer futuras validaciones cortas: **el preludio y el LLM compiten por la ventana en
+proporciones que sólo son representativas si la ventana lo es.** Una validación de 12 min da al
+preludio el 100% del tiempo; la de producción le da el 5%.

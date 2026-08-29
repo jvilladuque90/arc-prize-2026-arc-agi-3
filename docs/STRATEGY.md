@@ -294,3 +294,30 @@ brazos de 2h+arranque) queda armado para dispararse tras el reset del viernes 8p
 - El gap del líder (2.52 vs 0.97) = **12σ**: quien está ahí tiene algo estructuralmente
   distinto. Los ajustes finos no cruzan ese océano; las dos líneas de arriba al menos apuntan
   a la categoría correcta de cambio.
+
+## §11. Incidente de automatización (2026-08-28) y regla que queda
+
+**Qué pasó.** Dos automatizaciones mías dispararon trabajo que el usuario no había autorizado:
+(a) el 25-ago un despliegue regeneró `duck.ipynb` y publicó **v7** en medio de la serie de v6
+(revertido; su única muestra, 0.68, fue la peor de las 16 registradas); (b) el 28-ago la tarea
+`ARC-AGI3-BankingAB` lanzó **dos kernels G4 en paralelo** (`duck-ctx` y `duck-ctx2`, ~5.2 h de la
+cuota semanal compartida) para un A/B de `banking`. El usuario canceló ambas corridas.
+
+**Por qué la segunda no debía correr, además:** ya estaba medido que `banking` **no puede
+dispararse** — su guardia es `run.state != "won"` y exige ganar el juego COMPLETO, cuando los
+juegos tienen 6-10 niveles (media 7.32) y nosotros completamos ~1. El A/B habría comparado dos
+brazos idénticos durante 5.2 h.
+
+**El fallo de fondo no fue técnico sino de criterio:** mientras pedía autorización para gastar
+~2 h de G4 en la corrida de régimen, tenía armada una tarea que gastaba 5.2 h sin preguntar.
+Pedir permiso y automatizar el gasto en paralelo es incoherente.
+
+**Reglas adoptadas:**
+1. **Ninguna tarea programada gasta GPU.** Las tareas sólo hacen cosas de coste cero (el envío
+   diario **no** factura cuota — verificado: toda la semana salió con la cuota a cero). Cualquier
+   Save & Run se lanza a mano, en el momento, con el usuario al tanto.
+2. **Inventario de automatizaciones en este documento**, y se revisa cuando algo aparezca
+   corriendo sin explicación. Estado actual: `ARC-AGI3-DailySubmit` **activa** (coste cero);
+   `ARC-AGI3-DeployEffects` **desactivada**; `ARC-AGI3-BankingAB` **desactivada**.
+3. **Antes de armar cualquier automatización nueva**, comprobar que su precondición es alcanzable
+   (el error de `banking`) y que su coste está autorizado explícitamente.

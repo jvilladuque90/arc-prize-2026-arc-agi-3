@@ -1,10 +1,10 @@
 {
-  "juliancamilovilla/arc-agi3-duck": 6,
+  "juliancamilovilla/arc-agi3-duck": 4,
   "juliancamilovilla/arc-agi3-llm": 13,
   "juliancamilovilla/arc-agi3-explorer054": 2,
   "juliancamilovilla/arc-agi3-submit": 4,
   "juliancamilovilla/arc-agi3-features": 2,
   "juliancamilovilla/arc-agi3-duck-ctx": 5,
-  "juliancamilovilla/arc-agi3-duck-ctx2": 2,
-  "juliancamilovilla/arc-agi3-duck-nav": 1
+  "juliancamilovilla/arc-agi3-duck-ctx2": 3,
+  "juliancamilovilla/arc-agi3-duck-nav": 2
 }

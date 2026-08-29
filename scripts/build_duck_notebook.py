@@ -207,6 +207,11 @@ def main() -> int:
     # Justificada por el banco micro: 44.0% -> 66.1% en planificacion a 4B,
     # con 24 de 24 discordantes a favor. Ver docs/DESIGN.md 8.11.
     ap.add_argument("--effects", action="store_true")
+    # HIBRIDO (docs/DESIGN.md 8.22): el explorador CPU juega antes que el LLM.
+    # 2.000 acciones sobre el gateway a ~0.15 s = ~5 min de la ventana de 132.
+    ap.add_argument("--hybrid", action="store_true")
+    ap.add_argument("--hybrid-actions", type=int, default=2000)
+    ap.add_argument("--hybrid-seconds", type=float, default=420.0)
     ap.add_argument("--banking", action="store_true")
     args = ap.parse_args()
 
@@ -279,6 +284,73 @@ try:
     print("NAV_HELPERS injected:", len(_nav_src), "chars")
 except Exception as exc:
     print(f"[nav_helpers] injection failed, running stock: {{type(exc).__name__}}: {{exc}}")
+'''
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     patch + "\nimport arc_agi, taaf.game_api")
+                break
+        else:
+            print("ERROR: no encontre la celda del install de grafts")
+            return 1
+
+    if args.hybrid:
+        import base64
+        sys.path.insert(0, str(ROOT / "src"))
+        mods = {}
+        for name in ("features", "agent", "hybrid_prelude"):
+            src = (ROOT / "src" / "arc3" / f"{name}.py").read_text(encoding="utf-8")
+            mods[name] = base64.b64encode(src.encode("utf-8")).decode("ascii")
+        pares = ", ".join(f'("{n}", "{b}")' for n, b in mods.items())
+        patch = f'''
+# HIBRIDO SECUENCIAL: el explorador CPU juega ANTES que el LLM en cada juego.
+#
+# Medido (docs/DESIGN.md 8.22) sobre los 25 juegos locales con regimen de 2 h:
+#   LLM 9 niveles | explorador 18 | UNION 21 — y en parte disjuntos: bp35 y sb26
+#   los gana solo el LLM (el explorador da cero alli incluso con 40.000 acciones),
+#   tu93 y vc33 solo el explorador.
+#
+# SECUENCIAL, no concurrente: corre antes de `play()`, asi que `seed_initial_history`
+# abre el historial del LLM desde el estado resultante. No hay accion obsoleta, ni
+# historial con jugadas ajenas, ni carrera sobre el fichero de estado (los tres
+# problemas de 8.21).
+#
+# Probado contra el `taaf.game.Game` REAL en local (scripts/test_hybrid_prelude.py):
+# 6 niveles en 12 juegos con 2.000 acciones. Ese test cazo que `available_actions`
+# son ints y no nombres — un stub no lo habria visto.
+try:
+    import base64 as _b64, sys as _sys, types as _types
+    _pkg = _types.ModuleType("arc3"); _pkg.__path__ = []
+    _sys.modules["arc3"] = _pkg
+    for _n, _s in ({pares}):
+        _m = _types.ModuleType("arc3." + _n)
+        _m.__package__ = "arc3"
+        exec(compile(_b64.b64decode(_s).decode("utf-8"), "arc3/" + _n + ".py", "exec"),
+             _m.__dict__)
+        _sys.modules["arc3." + _n] = _m
+        setattr(_pkg, _n, _m)
+    from arc3.hybrid_prelude import run_prelude as _run_prelude
+    import inference.framework.solver as _slv
+    _HY_ACC = int(os.environ.get("HYBRID_ACTIONS", "{args.hybrid_actions}"))
+    _HY_SEC = float(os.environ.get("HYBRID_SECONDS", "{args.hybrid_seconds}"))
+    _orig_play = _slv._HarnessGameSession.play
+
+    def _play_con_preludio(self):
+        try:
+            _r = _run_prelude(self.game, max_actions=_HY_ACC, max_seconds=_HY_SEC,
+                              should_stop=self.should_stop)
+            print(f"[hybrid] {{getattr(self.game.game_run,'game_id','?')}}: "
+                  f"{{_r['acciones']}} acciones, nivel {{_r['niveles']}}, {{_r['motivo']}}",
+                  flush=True)
+        except Exception as _exc:   # el preludio NUNCA debe impedir jugar
+            print(f"[hybrid] preludio fallo, sigo stock: {{type(_exc).__name__}}: {{_exc}}",
+                  flush=True)
+        return _orig_play(self)
+
+    _slv._HarnessGameSession.play = _play_con_preludio
+    print(f"HYBRID_PRELUDE installed: {{_HY_ACC}} acciones / {{_HY_SEC}}s por juego")
+except Exception as exc:
+    print(f"[hybrid_prelude] injection failed, running stock: {{type(exc).__name__}}: {{exc}}")
 '''
         for i, c in enumerate(cells):
             if "taaf_grafts.composite import install" in c:

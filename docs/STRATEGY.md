@@ -11,7 +11,7 @@
 {1.10, 0.95, 0.87, 0.91, 0.93, 1.04} = media 0.967** (el 0.91 del 20-ago apareció al barrer la
 lista completa), indistinguible de la línea base v2 {1.17, 1.03, 0.76, 0.96} = 0.98 — las diez
 muestras juntas dan **0.97 de media, rango 0.76–1.17**, y esa es
-la referencia contra la que se lee v6 (desplegado 2026-08-21). Serie v6 (n=5): {0.83, 1.09, 0.85, 0.99, 0.80} media **0.912** vs referencia 0.972 → diferencia **−0.060 (0.9σ)**, dentro del corte pre-registrado de ±0.10 → **NEUTRO** (veredicto emitido en n=4 y sin cambio). IC 95% [−0.19, +0.07]: descarta ganancias ≥+0.15 (el listón de §10) y también daño ≥0.19. La deriva ligeramente baja se vigila, no se actúa: 0.9σ es exactamente lo que produce el ruido.
+la referencia contra la que se lee v6 (desplegado 2026-08-21). Serie v6 (n=6): {0.83, 1.09, 0.85, 0.99, 0.80, 0.86} media **0.903** vs referencia 0.972 → **−0.069 (1.2σ)**, aún dentro del corte de ±0.10 → **NEUTRO**. Pero la media de v6 lleva tres actualizaciones bajando (0.940 → 0.912 → 0.903) y ahora tiene el **mismo n que v4** (6 muestras: 0.967). Ningún criterio dispara, y aun así la decisión racional para las ~9 semanas de envíos que quedan es quedarse con el **punto estimado más alto**: nada cuesta cambiar el puntero, v6 nunca demostró ganancia, y su contenido —aunque cierto— sólo añade tokens. **Recomendación: devolver el trigger a v4.**
 Nuestro stack propio de exploración topaba en 0.25.
 Leaderboard: puntero 2.52, segundo 1.86, Tufa 1.62, la masa de forks del duck entre 1.1 y 1.3.
 

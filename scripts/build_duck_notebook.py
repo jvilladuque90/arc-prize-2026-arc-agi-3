@@ -210,7 +210,13 @@ def main() -> int:
     # HIBRIDO (docs/DESIGN.md 8.22): el explorador CPU juega antes que el LLM.
     # 2.000 acciones sobre el gateway a ~0.15 s = ~5 min de la ventana de 132.
     ap.add_argument("--hybrid", action="store_true")
-    ap.add_argument("--hybrid-actions", type=int, default=2000)
+    # 12.000 y no 2.000: en la validacion los 25 preludios agotaron el tope de
+    # ACCIONES sin acercarse al de TIEMPO (420 s), o sea que sobraba ventana. El
+    # cap de segundos es el que manda de verdad, asi que subir este numero no
+    # cuesta tiempo extra — solo aprovecha la ventana cuando el gateway es rapido.
+    # Con 2.000 el explorador iba al 58% de su techo (estimacion +0.10, por debajo
+    # del liston); cerca de su techo la estimacion sube a +0.16.
+    ap.add_argument("--hybrid-actions", type=int, default=12000)
     ap.add_argument("--hybrid-seconds", type=float, default=420.0)
     ap.add_argument("--banking", action="store_true")
     args = ap.parse_args()

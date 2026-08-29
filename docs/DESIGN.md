@@ -1105,3 +1105,40 @@ al worker fuerte es una apuesta.
 **Consecuencia para el plan:** la corrida de régimen (comprobación 1) ya no sirve sólo para medir
 el solapamiento — **da la regla de asignación**. Sin ella no hay forma de decidir la partición, y
 con ella se decide todo de una vez.
+
+### 8.22. Corrida de régimen (2026-08-29): hay disyunción real, y un sesgo que la infla
+
+Un kernel G4, 112 min, config **idéntica a la desplegada** (v6), 25 juegos locales en paralelo
+(concurrencia 28 ≥ 25, así que cada juego tuvo la ventana completa). Cruce con el banco de niveles:
+
+| | LLM (112 min) | explorador (3.000 acc) |
+|---|---|---|
+| total | **9 niveles** | **18 niveles** |
+| sólo LLM | **ar25, bp35, sb26** | — |
+| ambos | cd82, lf52, lp85, r11l, su15 | idem |
+| sólo explorador | — | ls20, m0r0, sc25, sp80, tn36, tu93, vc33 |
+| ninguno | 10 juegos | 10 juegos |
+| **unión** | **21 niveles** (2.3× el LLM solo) | |
+
+**La disyunción es real y va en las dos direcciones.** `bp35` y `sb26` están entre los 8 juegos
+donde el explorador da cero **incluso con 40.000 acciones**, y el LLM los resuelve. Eso no es
+ruido: es una capacidad que la búsqueda no alcanza por fuerza bruta.
+
+**Pero el número local exagera, y hay que decirlo antes de entusiasmarse.** Los mismos dos agentes,
+medidos en el **set oculto**: explorador propio **0.25**, harness duck **0.97**. **La relación se
+invierte** — local el explorador gana 2:1, oculto pierde 4:1. La causa es evidente: los 25 juegos
+locales *son* los públicos, sobre los que el explorador se ajustó en julio (máscara de contador,
+supresión deadsig, orden de acciones aprendido). Sus 7 juegos "sólo explorador" están contaminados
+por ese ajuste; los 3 "sólo LLM" no lo están.
+
+**Estimación honesta para el set oculto.** Si la fracción disjunta (12 de 18 niveles = 67%) se
+mantuviera sobre el rendimiento real del explorador allí: **0.25 × 0.67 ≈ +0.17**, justo en el
+listón de §10 y con barras de error enormes (n=1 corrida, sin repeticiones, y la fracción disjunta
+medida sobre el set contaminado).
+
+**Diseño implementable que el resultado sugiere** (sin los problemas de §8.21): **explorador
+primero, LLM después**, secuencial dentro de cada juego. El explorador consigue sus niveles en
+~3.000 acciones (segundos de CPU, cero GPU) y deja el juego en el nivel donde se atasca; el LLM
+arranca ahí. No hay hilos concurrentes, no hay historial corrompido, no se le quita GPU a nadie —
+y el LLM empieza más arriba, que es exactamente donde su comprensión hace falta y la búsqueda ya
+no llega.

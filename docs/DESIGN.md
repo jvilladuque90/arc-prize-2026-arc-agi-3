@@ -1164,3 +1164,26 @@ niveles entre corridas. Consecuencias operativas:
    rerun de producción. La corrida de 2h ES el proxy correcto (la de 16 min del v5 no lo era).
 3. La varianza offline (4 niveles ≈ 0.16 en escala de score sobre 25 juegos) es consistente con
    la σ≈0.12 del set oculto: el ruido no es del set oculto, es **del harness+GPU**.
+
+### 8.18. Pre-filtro de banking: se arma, nunca dispara → descartado (2026-08-29)
+
+Tercera corrida del régimen 2h con `banking` activo (verificado: banner `FEATURES` con
+`"banking":true`, `[banking] armed`, `BankingHarnessSolver` en el pickle — la instalación que
+falló la noche anterior por la colisión de notebooks quedó corregida en el slug `ducknav`).
+
+**Resultado: cero victorias completas en 2h × 25 juegos → banking nunca disparó.** Su gatillo
+(ganar un juego *entero* para replicar el trace en una play nueva) es un evento que nuestro
+agente casi no produce: promedia ~1 nivel/juego en juegos multi-nivel. Por la regla de §10, un
+injerto cuyo gatillo no ocurre no puede plausiblemente rendir +0.15 → **fuera de la cola**,
+re-encolable si el agente alguna vez gana juegos completos. Coste del veredicto: ~7.8h del pool
+compartido, cero noches de envío. (`transfer`, que además exige clones del set público, cae con
+él a fortiori.)
+
+**El subproducto vale tanto como el veredicto.** Con banking inerte, la corrida es un TERCER
+control idéntico: {9, 13, 17} niveles, {1.713, 2.407, 2.658} acciones. (a) La σ offline real es
+mayor que la del par de ayer: corridas idénticas abarcan 9–17 niveles. (b) Los niveles siguen a
+las acciones casi linealmente en las tres (0.0053–0.0064 niveles/acción): en el punto de
+operación real, **la lotería de throughput de la GPU es lotería de niveles** — matiza el §8.9:
+por encima del piso las acciones *extra deliberadas* no compraban niveles, pero la *varianza*
+de acciones (GPU) sí explica gran parte de la σ≈0.12 nocturna. Corolario: los A/B de una noche
+miden sobre todo qué GPU te tocó.

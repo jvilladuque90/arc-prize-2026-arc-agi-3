@@ -276,9 +276,9 @@ de score que tengan cubierta la variación*.
    de 2h en régimen (efecto grande visible incluso con n=1 offline). El envío confirma, no explora.
 
 **Cola de candidatos fuertes, por prioridad:**
-- **`banking`** (win-then-replay, injerto sin usar): estructural — toca la mecánica del score
-  (MAX sobre plays; cada victoria compra un segundo intento más hondo). Análogo del cheap-first
-  de AG2 (+1.67, su mayor palanca única).
+- ~~**`banking`**~~ **PRE-FILTRADO FUERA (2026-08-29)**: se arma correctamente pero su gatillo
+  (victoria completa de un juego) no ocurrió ni una vez en 2h × 25 juegos — el agente promedia
+  ~1 nivel/juego. Re-encolar solo si el agente empieza a ganar juegos enteros. Ver DESIGN §8.18.
 - **Carga de inferencia de META** (el eslabón encima de la mecánica): el banco mostró que el
   modelo ya planifica bien con la tabla (90.9%); si v6 sale neutro, la hipótesis pasa a que el
   cuello es saber *qué* perseguir, no *cómo* moverse. Necesita diseño de banco primero.

@@ -44,3 +44,6 @@ effects_deploy.log
 .banking_ab_launched
 banking_ab.log
 .banking_ab_launched
+traces_goal*.json
+micro_eval_*.json
+level_ab.json

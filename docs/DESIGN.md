@@ -1292,3 +1292,44 @@ método: contar `reasoning_chars` en las transcripciones permitió anticipar el 
 
 Trigger avanzado a v10. Lo que falta es lo único que el banco no puede decir: si esas ~1.5× acciones
 se convierten en niveles en el set oculto.
+
+### 8.25. El híbrido fracasó en producción: 0.26, el peor puntaje del proyecto (2026-08-30)
+
+v9 (v4 + preludio del explorador) marcó **0.26** en el set oculto. La referencia es 0.972 con rango
+0.76–1.17: son **6σ por debajo de la media** y 0.50 bajo el mínimo histórico. La regla
+pre-registrada disparó y se revirtió a v4 el mismo día, antes del envío siguiente. v10 llevaba el
+mismo preludio, así que se revirtió también sin llegar a muestrearse.
+
+**El mecanismo del fallo.** 0.26 es casi exactamente el **0.25 que marca nuestro explorador SOLO**
+en el set oculto. Es decir: el LLM no aportó nada y el híbrido degeneró en explorador puro. La
+causa está en `seed_initial_history`:
+
+```python
+def seed_initial_history(self):
+    if not self.history_entries:
+        self.history_entries.append(HistoryEntry(action="", frame=self.current_frame()))
+```
+
+Una sola entrada, con `action=""` y el frame actual. Cuando el preludio corre antes, el LLM
+**hereda un tablero a mitad de partida con CERO historial**: no sabe qué hacen las acciones, no ha
+visto ninguna transición, no tiene el nivel 1 desde el que construir su modelo del mundo. Y sólo
+tiene ~89 acciones para reconstruirlo todo. Arrancar limpio en el nivel 1 es mucho más fácil que
+aterrizar en un estado ajeno sin contexto.
+
+Yo escribí en §8.23 que «el LLM abre su historial desde el estado resultante **como si fuera el
+inicial**» — y lo di por benigno. No lo es: la equivalencia sólo vale si el estado es realmente
+inicial. Un estado a mitad de partida sin historial es estrictamente peor que uno inicial con
+historial, porque el agente pierde su fase de aprendizaje.
+
+**Tenía la señal delante y la racionalicé.** La validación de v9 mostró que el LLM apenas jugó
+(0-26 acciones) y lo atribuí a la ventana corta de 12 min. Era una explicación plausible y por eso
+no la investigué. Pero en producción el LLM tuvo 125 min y **siguió aportando cero**: la inanición
+nunca fue de tiempo, era de contexto. La lección no es «valida en régimen» —eso ya lo sabíamos—
+sino **no explicar una anomalía con la hipótesis que te conviene sin comprobarla**.
+
+**Qué queda vivo de la línea.** La disyunción medida (§8.22) sigue siendo real: hay juegos que sólo
+resuelve el LLM y juegos que sólo resuelve la búsqueda. Lo que está refutado es **esta forma** de
+combinarlas. Una versión que preservara el historial del preludio (traduciendo sus transiciones a
+`HistoryEntry`) atacaría la causa — pero eso reintroduce el problema de §8.21 (el LLM leyendo como
+suyas jugadas que no decidió), que medimos como el modo de fallo más dañino. Las dos vías obvias
+se bloquean entre sí; sin una idea nueva, la línea queda cerrada.

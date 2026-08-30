@@ -1276,3 +1276,19 @@ escribe código Python en un sandbox, una tarea bastante más difícil donde el 
 pagar. Lo que el banco establece es que *en tareas de mecánica y planificación no ayuda*; que eso
 valga para la generación de código es una extrapolación, no una medición. Pero el 36% de tokens sí
 está medido en producción.
+
+**Confirmación de v10 (híbrido + thinking off), 2026-08-30.** El cambio mordió y el ahorro coincide
+con lo predicho casi exactamente:
+
+| | tokens/acción (media) | mediana |
+|---|---|---|
+| v9, thinking ON (run de régimen) | 1.442 | 1.024 |
+| **v10, thinking OFF** | **936** | **706** |
+| cambio | **−35%** | −31% |
+
+La predicción era 1442 − 514 = **928**; lo medido, **936** (error del 0.9%). Eso valida además el
+método: contar `reasoning_chars` en las transcripciones permitió anticipar el efecto de una perilla
+**antes** de gastar la corrida. El multiplicador de acciones queda en **1.54×**, como se estimó.
+
+Trigger avanzado a v10. Lo que falta es lo único que el banco no puede decir: si esas ~1.5× acciones
+se convierten en niveles en el set oculto.

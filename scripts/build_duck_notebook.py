@@ -210,6 +210,11 @@ def main() -> int:
     # HIBRIDO (docs/DESIGN.md 8.22): el explorador CPU juega antes que el LLM.
     # 2.000 acciones sobre el gateway a ~0.15 s = ~5 min de la ventana de 132.
     ap.add_argument("--hybrid", action="store_true")
+    # THINKING OFF (docs/DESIGN.md 8.24): medido en produccion que el pensamiento
+    # es el 36% de los tokens generados (514 de 1.442 por accion, en 1784/1784
+    # llamadas) y el banco dice que no mejora la precision. Apagarlo da 1.55x
+    # acciones por juego con la misma calidad medida.
+    ap.add_argument("--no-thinking", action="store_true")
     # 12.000 y no 2.000: en la validacion los 25 preludios agotaron el tope de
     # ACCIONES sin acercarse al de TIEMPO (420 s), o sea que sobraba ventana. El
     # cap de segundos es el que manda de verdad, asi que subir este numero no
@@ -299,6 +304,34 @@ except Exception as exc:
         else:
             print("ERROR: no encontre la celda del install de grafts")
             return 1
+
+    if args.no_thinking:
+        # DOS BARRERAS, porque una no basta: la variable se lee en el import de
+        # tool_agent (nivel de modulo), asi que si el modulo ya estaba importado
+        # su valor quedo congelado. Es la leccion del proxy #2 con la temperatura.
+        cells[0] = cells[0].replace(
+            'os.environ["MPLBACKEND"] = "Agg"',
+            'os.environ["MPLBACKEND"] = "Agg"\n'
+            '# thinking OFF: el 36% de los tokens generados eran pensamiento (medido\n'
+            '# en produccion, 1784/1784 llamadas) y el banco no ve mejora de precision.\n'
+            'os.environ["LOCAL_ANALYZER_ENABLE_THINKING"] = "0"')
+        refuerzo = """
+# Refuerzo del thinking OFF: si `tool_agent` ya estaba importado, la variable de
+# entorno no basta — su valor quedo congelado en el import (misma leccion que el
+# proxy #2 con la temperatura). Se parchea el global del modulo tambien.
+try:
+    import inference.agent.tool_agent as _ta
+    _ta._LOCAL_ANALYZER_ENABLE_THINKING = False
+    print("THINKING OFF:", _ta._LOCAL_ANALYZER_ENABLE_THINKING,
+          "| temp", _ta._LOCAL_ANALYZER_TEMPERATURE)
+except Exception as exc:
+    print(f"[no_thinking] no pude parchear el global: {type(exc).__name__}: {exc}")
+"""
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     refuerzo + "\nimport arc_agi, taaf.game_api")
+                break
 
     if args.hybrid:
         import base64

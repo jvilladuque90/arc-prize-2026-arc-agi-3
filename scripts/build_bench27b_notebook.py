@@ -97,6 +97,22 @@ def preguntar(args):
     except Exception as exc:
         return (f"<error {type(exc).__name__}>", 0)
 
+# SALVAGUARDAS (dos corridas perdidas sin saber por que):
+#  a) el kernel lleva competition_sources y Kaggle puede abortar si no hay
+#     submission.parquet -> se escribe uno vacio ANTES de nada
+#  b) resultados a disco tras CADA variante, para que un corte no lo pierda todo
+#  c) traceback visible: la corrida anterior murio 80 s despues de que vLLM
+#     estuviera listo y el log del kernel no llego a descargarse
+import traceback
+from pathlib import Path as _P
+SALIDA = _P("/kaggle/working/bench27b.json")
+try:
+    import pandas as _pd
+    _pd.DataFrame({"id": [], "output": []}).to_parquet("/kaggle/working/submission.parquet")
+    print("submission.parquet vacio escrito (evita que Kaggle aborte)", flush=True)
+except Exception as _e:
+    print(f"no pude escribir submission.parquet: {_e}", flush=True)
+
 t0 = time.monotonic()
 resultado = {"modelo": MODELO, "variantes": {}}
 
@@ -104,9 +120,12 @@ def medir(nombre, items, constructor, tipo, pensar, maxtok):
     if time.monotonic() - t0 > PRESUPUESTO_S:
         print(f"  {nombre}: saltado (presupuesto agotado)", flush=True)
         return
+    print(f"  {nombre}: lanzando {len(items)} peticiones ({CONCURRENCIA} en paralelo)...",
+          flush=True)
     tareas = [(constructor(it), pensar, maxtok) for it in items]
     with ThreadPoolExecutor(max_workers=CONCURRENCIA) as ex:
         salidas = list(ex.map(preguntar, tareas))
+    print(f"  {nombre}: {len(salidas)} respuestas recibidas", flush=True)
     aciertos = sum(1 for it, (txt, _) in zip(items, salidas)
                    if normalize(txt, tipo) == it["answer"])
     toks = [n for _, n in salidas]
@@ -119,14 +138,20 @@ def medir(nombre, items, constructor, tipo, pensar, maxtok):
     r = resultado["variantes"][nombre]
     print(f"  {nombre:22} {aciertos:3}/{len(items):3} = {r['precision']:6.1%} | "
           f"{r['tokens_medios']:7.1f} tok | {time.monotonic()-t0:.0f}s", flush=True)
+    SALIDA.write_text(json.dumps(resultado, indent=2, ensure_ascii=False), encoding="utf-8")
 
 # orden por valor: primero lo que compara directo con el 4B (90.9% en planificacion)
-medir("B.V3_plan_sin_think", PLAN, prompt_plan_words, "plan_action", False, 64)
-medir("B.V3_plan_con_think", PLAN, prompt_plan_words, "plan_action", True, 512)
-medir("A.V0_efecto_sin_think", EFECTO, lambda it: prompt_effect(it, False),
-      "effect_of_action", False, 64)
-medir("A.V0_efecto_con_think", EFECTO, lambda it: prompt_effect(it, False),
-      "effect_of_action", True, 512)
+for _args in (("B.V3_plan_sin_think", PLAN, prompt_plan_words, "plan_action", False, 64),
+              ("B.V3_plan_con_think", PLAN, prompt_plan_words, "plan_action", True, 512),
+              ("A.V0_efecto_sin_think", EFECTO, lambda it: prompt_effect(it, False),
+               "effect_of_action", False, 64),
+              ("A.V0_efecto_con_think", EFECTO, lambda it: prompt_effect(it, False),
+               "effect_of_action", True, 512)):
+    try:
+        medir(*_args)
+    except Exception:
+        print(f"  {_args[0]}: EXCEPCION", flush=True)
+        traceback.print_exc()
 
 print("\\n===== BENCH 27B =====")
 print(json.dumps(resultado, indent=2, ensure_ascii=False)[:6000])

@@ -256,6 +256,31 @@ lo que refuerza ambas): su smoke contaminado = nuestro v5 (offline miente fuera 
 truncación de MAX_NEW midiendo al evaluador = nuestro brazo inglés; su disciplina de poder
 estadístico = nuestro contraste pareado con p de signo.
 
+## §12. Corrección del criterio de reversión (2026-08-31)
+
+**El 31-ago la línea base v4 marcó 0.68** — exactamente el valor por el que revertí v7 el día 26,
+argumentando que caía «fuera del rango observado [0.76, 1.17]». **Ese rango era un artefacto de
+n=10**: con la muestra nueva la referencia pasa a n=11, rango **0.68–1.17**, media **0.945**,
+σ **0.142**. Mi criterio disparó sobre una muestra perfectamente legítima.
+
+**Por qué el criterio estaba mal.** «Fuera del rango observado» no es un umbral: es un estadístico
+que se ensancha con cada muestra nueva, así que garantiza falsos positivos según crece la serie.
+Con n pequeño el mínimo observado está muy por encima del mínimo real de la distribución.
+
+**Criterio nuevo, robusto a n:** revertir con n=1 sólo si la muestra cae por debajo de
+**media − 3σ = 0.52**. Aplicado hacia atrás:
+
+| build | muestra | criterio viejo | criterio nuevo |
+|---|---|---|---|
+| v7 (pista de clics) | 0.68 | revertir (falso positivo) | **dentro** — no debió revertirse |
+| v9 (híbrido) | 0.26 | revertir | **fuera** — reversión correcta |
+
+**Lo que esto cambia y lo que no.** El fracaso del híbrido sigue siendo real (0.26 está a 0.42 del
+nuevo mínimo y su mecanismo está diagnosticado). Pero **v7 se retiró sin motivo**, y su cambio —la
+pista de clics condicionada— nunca llegó a evaluarse. No se rescata ahora: es un cambio pequeño,
+sin ganancia estimada que alcance el listón de §10, y reabrirlo costaría una lectura de las pocas
+que quedan. Queda en el inventario con la nota de que su único dato **no era evidencia en contra**.
+
 ## §10. Regla de portafolio: solo cambios que cubran la varianza (2026-08-25, del usuario)
 
 La desviación típica del harness es **σ ≈ 0.12** (10 muestras de referencia). Con un envío por

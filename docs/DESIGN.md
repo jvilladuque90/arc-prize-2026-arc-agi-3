@@ -1333,3 +1333,31 @@ combinarlas. Una versión que preservara el historial del preludio (traduciendo 
 `HistoryEntry`) atacaría la causa — pero eso reintroduce el problema de §8.21 (el LLM leyendo como
 suyas jugadas que no decidió), que medimos como el modo de fallo más dañino. Las dos vías obvias
 se bloquean entre sí; sin una idea nueva, la línea queda cerrada.
+
+### 8.26. Tres intentos fallidos de medir el 27B en el banco — se para (2026-08-31)
+
+**La pregunta era buena:** todo el banco se midió con modelos de 0.6B a 8B; del 27B de producción
+no tenemos ni un dato. Y la aritmética la hacía decisiva — un 4B daría ~1.582 acciones/juego frente
+a ~234 del 27B, y el 4B ya saca 90.9% planificando. Si el 27B rindiera parecido, cambiar de modelo
+sería la palanca más grande del proyecto.
+
+**No se consiguió el dato.** Tres Save & Run (~1.5 h de G4), tres `ERROR`. Lo que se sabe:
+
+- vLLM arranca **sano** en los tres (CUDA, FLASH_ATTN, KV cache 177.968 tokens = igual que
+  producción). El montaje del kernel no es el problema.
+- En el tercer intento no existe ni `bench27b.json` ni el `submission.parquet` vacío — y escribirlo
+  es la **primera línea** de mi celda. **Mi celda nunca llegó a ejecutarse.** Las peticiones que vi
+  en los logs anteriores eran del propio setup validando el servidor, no mías.
+- El log del kernel nunca llegó a descargarse en ninguno de los tres, así que la causa real sigue
+  sin verse.
+
+**El error de método, que es lo que hay que retener.** Relancé tres veces cambiando una hipótesis
+cada vez (peticiones secuenciales → concurrencia; falta de submission → parquet vacío) **sin haber
+conseguido nunca el diagnóstico**. Es el mismo patrón que ya me costó el híbrido: actuar sobre la
+explicación conveniente en vez de sobre la evidencia. Con tres fallos seguidos y sin log, la
+decisión correcta era parar en el segundo.
+
+**Se para aquí.** La alternativa cuesta **cero cuota adicional**: la próxima vez que haya que
+validar una versión del duck —que es un kernel que funciona de punta a punta— se le añade una fase
+corta de banco al principio. El dato llegará cuando toque, sin arriesgar más G4 en un montaje que
+no entiendo.

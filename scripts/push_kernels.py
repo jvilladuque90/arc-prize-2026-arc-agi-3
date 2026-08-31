@@ -73,6 +73,14 @@ KERNELS = {
                                      "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).
     # CPU puro: NO gasta cuota G4. Base probada para cerrar la brecha de exploración.
+    # Corre NUESTRO banco contra el 27B de produccion: la comparacion que decide
+    # si el tamano del modelo esta justificado o si conviene cambiarlo por
+    # throughput (un 4B daria ~7x acciones). REQUIERE --gpu.
+    "bench27b": {"notebook": "notebooks/bench27b.ipynb", "slug": "arc-agi3-bench27b",
+                 "title": "arc agi3 bench27b",
+                 "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
+                                      "driessmit1/arc3-vllm-h100-wheelhouse-v3",
+                                      "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
     "explorer054": {"notebook": "notebooks/explorer054.ipynb", "slug": "arc-agi3-explorer054",
                     "title": "arc agi3 explorer054"},
     # Fase 3 (NUESTRO agente): LLMAgent con features objetuales + fallback. REQUIERE --gpu.

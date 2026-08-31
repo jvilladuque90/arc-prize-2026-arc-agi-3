@@ -41,10 +41,18 @@ OUT = ROOT / "notebooks" / "bench27b.ipynb"
 
 CELDA_BANCO = '''
 # ---- NUESTRO BANCO contra el 27B servido por vLLM en localhost:1234 ----
-import json, re, time, urllib.request
+# PETICIONES CONCURRENTES. El primer intento las hizo una a una y el kernel murio
+# por tiempo: con un 27B y una sola peticion en vuelo, vLLM iba a ~1 tok/s (su log).
+# El servidor agrupa por lotes solo si le llegan varias a la vez, que es justo como
+# trabaja el harness real (28 juegos concurrentes).
+import json, time, urllib.request
+from concurrent.futures import ThreadPoolExecutor
 
 RAW = "https://raw.githubusercontent.com/jvilladuque90/arc-prize-2026-arc-agi-3/main"
-MODELO = "vrfai/Qwen3.6-27B-FP8"      # kaggle_served_model_name del solver
+MODELO = "vrfai/Qwen3.6-27B-FP8"
+BASE = "http://127.0.0.1:1234/v1"
+CONCURRENCIA = 16
+PRESUPUESTO_S = 45 * 60          # tope duro: reporta lo que haya
 
 def bajar(p):
     with urllib.request.urlopen(f"{RAW}/{p}?cb={int(time.time())}", timeout=60) as r:
@@ -53,12 +61,13 @@ def bajar(p):
 ITEMS = [json.loads(l) for l in bajar("micro_bench.jsonl").splitlines() if l.strip()]
 _mp = {}
 exec(compile(bajar("scripts/micro_prompts.py"), "micro_prompts.py", "exec"), _mp)
-VARIANTS, normalize = _mp["VARIANTS"], _mp["normalize"]
-trivial_baselines, paired_contrast = _mp["trivial_baselines"], _mp["paired_contrast"]
-print(f"banco: {len(ITEMS)} items", flush=True)
+prompt_plan_words, prompt_effect = _mp["prompt_plan_words"], _mp["prompt_effect"]
+normalize, trivial_baselines = _mp["normalize"], _mp["trivial_baselines"]
 
-# esperar a que el servidor este vivo (el setup ya lo arranco)
-BASE = "http://127.0.0.1:1234/v1"
+PLAN = [i for i in ITEMS if i["type"] == "plan_action"]
+EFECTO = [i for i in ITEMS if i["type"] == "effect_of_action"]
+print(f"banco: {len(PLAN)} planificacion + {len(EFECTO)} efecto", flush=True)
+
 dl = time.monotonic() + 900
 while time.monotonic() < dl:
     try:
@@ -70,57 +79,59 @@ while time.monotonic() < dl:
     time.sleep(10)
 print("vLLM listo", flush=True)
 
-def preguntar(prompt, thinking, max_tokens=64):
+def preguntar(args):
+    prompt, pensar, maxtok = args
     cuerpo = json.dumps({
         "model": MODELO,
         "messages": [{"role": "user", "content": prompt}],
-        "temperature": 0.0, "max_tokens": max_tokens,
-        "chat_template_kwargs": {"enable_thinking": bool(thinking)},
+        "temperature": 0.0, "max_tokens": maxtok,
+        "chat_template_kwargs": {"enable_thinking": bool(pensar)},
     }).encode()
     req = urllib.request.Request(f"{BASE}/chat/completions", data=cuerpo,
                                  headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(req, timeout=300) as r:
-        d = json.loads(r.read())
-    m = d["choices"][0]["message"]
-    return m.get("content") or "", d.get("usage", {}).get("completion_tokens", 0)
+    try:
+        with urllib.request.urlopen(req, timeout=600) as r:
+            d = json.loads(r.read())
+        return (d["choices"][0]["message"].get("content") or "",
+                d.get("usage", {}).get("completion_tokens", 0))
+    except Exception as exc:
+        return (f"<error {type(exc).__name__}>", 0)
 
-BASES = trivial_baselines(ITEMS)
-print("base trivial:", json.dumps(BASES, ensure_ascii=False), flush=True)
-
-# Se mide con thinking OFF y ON: ademas de la precision del 27B, da su coste real
-# en tokens sobre las MISMAS preguntas donde el 4B saco 90.9%.
+t0 = time.monotonic()
 resultado = {"modelo": MODELO, "variantes": {}}
-for pensar in (False, True):
-    for nombre, tipo, constructor in VARIANTS:
-        if not nombre.startswith(("A.", "B.V3", "C.")):
-            continue                      # los mas informativos, para no eternizar
-        sub = [i for i in ITEMS if i["type"] == tipo]
-        if not sub:
-            continue
-        aciertos, toks, ejem = 0, [], []
-        for it in sub:
-            try:
-                txt, nt = preguntar(constructor(it), pensar,
-                                    max_tokens=512 if pensar else 64)
-            except Exception as exc:
-                txt, nt = f"<error {type(exc).__name__}>", 0
-            toks.append(nt)
-            ok = normalize(txt, tipo) == it["answer"]
-            aciertos += ok
-            if len(ejem) < 2:
-                ejem.append({"esperado": it["answer"], "crudo": txt.strip()[:120]})
-        clave = f"{nombre}{'_think' if pensar else ''}"
-        resultado["variantes"][clave] = {
-            "n": len(sub), "aciertos": aciertos,
-            "precision": round(aciertos / len(sub), 3),
-            "tokens_medios": round(sum(toks) / max(1, len(toks)), 1),
-            "ejemplos": ejem}
-        print(f"  {clave:22} {aciertos:3}/{len(sub):3} = {aciertos/len(sub):6.1%} | "
-              f"{resultado['variantes'][clave]['tokens_medios']:7.1f} tok", flush=True)
+
+def medir(nombre, items, constructor, tipo, pensar, maxtok):
+    if time.monotonic() - t0 > PRESUPUESTO_S:
+        print(f"  {nombre}: saltado (presupuesto agotado)", flush=True)
+        return
+    tareas = [(constructor(it), pensar, maxtok) for it in items]
+    with ThreadPoolExecutor(max_workers=CONCURRENCIA) as ex:
+        salidas = list(ex.map(preguntar, tareas))
+    aciertos = sum(1 for it, (txt, _) in zip(items, salidas)
+                   if normalize(txt, tipo) == it["answer"])
+    toks = [n for _, n in salidas]
+    resultado["variantes"][nombre] = {
+        "n": len(items), "aciertos": aciertos,
+        "precision": round(aciertos / len(items), 3),
+        "tokens_medios": round(sum(toks) / max(1, len(toks)), 1),
+        "ejemplos": [{"esperado": it["answer"], "crudo": txt.strip()[:120]}
+                     for it, (txt, _) in list(zip(items, salidas))[:2]]}
+    r = resultado["variantes"][nombre]
+    print(f"  {nombre:22} {aciertos:3}/{len(items):3} = {r['precision']:6.1%} | "
+          f"{r['tokens_medios']:7.1f} tok | {time.monotonic()-t0:.0f}s", flush=True)
+
+# orden por valor: primero lo que compara directo con el 4B (90.9% en planificacion)
+medir("B.V3_plan_sin_think", PLAN, prompt_plan_words, "plan_action", False, 64)
+medir("B.V3_plan_con_think", PLAN, prompt_plan_words, "plan_action", True, 512)
+medir("A.V0_efecto_sin_think", EFECTO, lambda it: prompt_effect(it, False),
+      "effect_of_action", False, 64)
+medir("A.V0_efecto_con_think", EFECTO, lambda it: prompt_effect(it, False),
+      "effect_of_action", True, 512)
 
 print("\\n===== BENCH 27B =====")
 print(json.dumps(resultado, indent=2, ensure_ascii=False)[:6000])
 '''
+
 
 
 def main() -> int:

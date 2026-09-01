@@ -7,6 +7,8 @@
 
 ## §0. Estado vigente (2026-08-16)
 
+**Serie v11 (v4 + thinking off, desplegado 2026-08-30):** {0.99} — primera muestra por encima de la media de referencia (0.945, n=11), pero con n=1 no distingue nada. Lectura formal con 4 muestras.
+
 **Dónde estamos (actualizado 2026-08-23):** v4 (duck + `schema_helpers`) cerró con **6 muestras
 {1.10, 0.95, 0.87, 0.91, 0.93, 1.04} = media 0.967** (el 0.91 del 20-ago apareció al barrer la
 lista completa), indistinguible de la línea base v2 {1.17, 1.03, 0.76, 0.96} = 0.98 — las diez

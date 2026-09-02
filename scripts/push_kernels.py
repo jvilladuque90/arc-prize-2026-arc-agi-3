@@ -71,6 +71,14 @@ KERNELS = {
                 "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
                                      "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                                      "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
+    # v12 = v11 + nav, bajo la METRICA REAL (DESIGN 8.27): nav es +25% en las dos
+    # varas independientes (offline 1.32 vs 1.06 y LB oculto). Slug propio de
+    # experimento: NO toca el kernel del envio diario. Smoke de ~25 min en G4.
+    "duckv12": {"notebook": "notebooks/duck_v12.ipynb", "slug": "arc-agi3-duck-v12",
+                "title": "arc agi3 duck v12",
+                "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
+                                     "driessmit1/arc3-vllm-h100-wheelhouse-v3",
+                                     "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).
     # CPU puro: NO gasta cuota G4. Base probada para cerrar la brecha de exploración.
     # Corre NUESTRO banco contra el 27B de produccion: la comparacion que decide

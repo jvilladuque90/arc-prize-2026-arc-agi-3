@@ -7,7 +7,16 @@
 
 ## §0. Estado vigente (2026-08-16)
 
-**Serie v11 (v4 + thinking off, desplegado 2026-08-30):** {0.99} — primera muestra por encima de la media de referencia (0.945, n=11), pero con n=1 no distingue nada. Lectura formal con 4 muestras.
+**Serie v11 (v4 + thinking off): CERRADA en n=2 {0.99, 0.81}** (media 0.90, −0.3σ vs 0.945;
+neutra, como predijo el banco: el thinking no cambiaba la precisión, solo el coste). Cerrada
+antes de la lectura formal por decisión de portafolio: la evidencia de v13 (ranuras 55–2 p≈0
++ nav +25% en dos varas) supera lo que quedaba por aprender de v11.
+
+**Serie v13 (nav + ranuras obligatorias + thinking off, desplegado 2026-09-02):** en curso.
+Kernel v12, validación en su propio save&run (regla de cuota reforzada: cero smokes extra).
+Expectativa bajo la métrica real: nav vale +25% medido; las ranuras son el primer cambio que
+ataca la PROFUNDIDAD (memoria entre niveles), donde vive el puntaje (1→3 niveles = 0.04→7.87).
+Verificación post-despliegue: contar llenado de ranuras del 27B en los transcripts del kernel.
 
 **Dónde estamos (actualizado 2026-08-23):** v4 (duck + `schema_helpers`) cerró con **6 muestras
 {1.10, 0.95, 0.87, 0.91, 0.93, 1.04} = media 0.967** (el 0.91 del 20-ago apareció al barrer la

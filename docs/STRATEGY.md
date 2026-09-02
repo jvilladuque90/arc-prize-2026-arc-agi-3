@@ -62,18 +62,52 @@ Leaderboard: puntero 2.52, segundo 1.86, Tufa 1.62, la masa de forks del duck en
 > validados en producción — una sola línea de nota bastó para que el modelo adoptara código nuestro
 > en 25 de 25 juegos (726 llamadas). El canal funciona; lo que falló fue la carga.
 
-**La aritmética que gobierna el puntaje ahora (medida, 2026-08-16):**
+**LA ARITMÉTICA DEL PUNTAJE — CORREGIDA 2026-09-01. Lo anterior era falso.**
 
-```
-puntaje ≈ niveles completados ∝ acciones útiles por juego
-acciones por juego = (tokens disponibles por juego) / (tokens por acción)
+> Durante seis semanas este documento afirmó `puntaje ≈ niveles completados ∝ acciones útiles`.
+> **Las dos mitades son falsas.** La fórmula real está en el paquete instalado que usa el propio
+> concurso, `arc_agi/scorecard.py`, y nunca la leímos: dimos por supuesta la métrica en vez de
+> abrir el código que la calcula. Es el mismo error que ya nos costó el detector de movimiento
+> —confiar en una suposición cómoda en vez de en la medición— pero aplicado a la **función
+> objetivo entera**.
+
+```python
+# por NIVEL completado (scorecard.py:168-171)
+score_nivel = min((baseline_humano / acciones_gastadas) ** 2 * 100, 115)
+# por JUEGO (scorecard.py:196-206): media PONDERADA POR PROFUNDIDAD sobre TODOS
+# sus niveles (los no completados entran como 0). peso del nivel i = i.
+score_juego = Σ(score_nivel_i · i) / Σ(i)
+# final (scorecard.py:613-618): media sobre los ~110 juegos; por juego se
+# queda el MEJOR intento (EnvironmentScoreList.score = max sobre runs)
 ```
 
-Con 195 tokens/segundo de generación repartidos entre 28 juegos durante 8 horas, cada juego
-recibe ~52.000 tokens y ejecuta ~94 acciones — y el primer nivel de un juego típico cuesta
-entre 7 y 55 acciones jugando perfecto. **De ahí que el techo natural sea ~1 nivel por juego,
-que es exactamente donde estamos.** Para llegar a 2.5 (el puntero) hacen falta ~3× más acciones
-útiles. Como el caudal de la tarjeta está fijo, la única vía es bajar el costo por acción.
+Tres consecuencias que reordenan todo, calculadas sobre los 25 juegos públicos con sus
+`baseline_actions` reales:
+
+**1. Completar solo el nivel 1 tiene un techo duro de 3.52 puntos**, aunque se juegue con la
+eficiencia de un humano. No es una barrera de habilidad: es aritmética del peso. Estamos en ~1.0,
+o sea "nivel 1 a ~1,7-2× el baseline humano". **Ninguna mejora de eficiencia en el nivel 1 puede
+llevarnos ni a 4.**
+
+**2. El puntaje vive en la PROFUNDIDAD, y crece muy rápido:**
+
+| niveles alcanzados | nivel 1 caro (10× baseline), resto a 1.5× |
+|---|---|
+| 1 | 0.04 |
+| 2 | 3.17 |
+| 3 | **7.87** |
+| 4 | 14.13 |
+
+**3. Gastar acciones aprendiendo en el nivel 1 es casi GRATIS.** Con 3 niveles alcanzados, que el
+nivel 1 cueste 10× o 3× el baseline mueve el puntaje de 7.87 a 8.22 — un 4%. Las acciones se
+contabilizan **por nivel** (`level_actions = actions_at_level - prev_actions`), así que el
+derroche se localiza donde ocurre. La estrategia que esto dicta es **explorar barato-y-sucio en el
+nivel 1 y ejecutar con precisión del 2 en adelante**, que es lo contrario de lo que optimizamos.
+
+**Esto reexplica resultados viejos sin necesidad de teorías nuevas.** El "techo semántico 0.25"
+del explorador nunca fue semántico: la búsqueda ciega completa niveles a ~50× el baseline y
+(1/50)² ≈ 0. El híbrido a 0.26 con 12.000 acciones de prelude, igual. Y el líder en 7.51 no está
+haciendo algo inalcanzable: está llegando al **nivel 3** con ejecución limpia.
 
 **Dónde se está yendo el presupuesto (auditoría del log del servidor de inferencia):**
 

@@ -490,3 +490,4 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 
 *This appendix is updated on every new result; the narrative sections above are revised when a decision
 changes the strategy.*
+| 2026-09-01 | Real metric discovered & verified (efficiency² depth-weighted); re-scoring: nav was +25% and we discarded it under the false metric; harness audited (5/7 world-model slots dead); vote bench: adaptive w/ thinking 82.8% vs 68.7% (p=0.02, planning) → dual-regime explore-cheap/execute-precise | DESIGN §8.27-8.28 |

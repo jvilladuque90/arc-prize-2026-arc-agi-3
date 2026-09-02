@@ -1435,3 +1435,33 @@ pérdida no está en la eficiencia de lo ganado sino en lo nunca ganado: profund
 Refuerza la estrategia de la aritmética: el derroche en nivel 1 es barato; lo que puntúa es
 llegar más hondo.
 
+### 8.28. Banco de voto: la auto-consistencia compra acierto en PLANIFICACIÓN (2026-09-01)
+
+Qwen3-4B, T4, dos tareas (plan 99 + efecto 54), tres muestras por item, brazos pareados
+exactos (el brazo 1x es la muestra 0 de la misma llamada). Dos controles internos salieron
+exactamente como la predicción, lo que acredita el instrumento: sin thinking las 3 muestras
+coinciden el 99% (voto = base, 68.7% = 68.7%, 0 discordantes — no hay ruido que recuperar,
+como decía §8.25) y con thinking el acuerdo 3/3 cae a 58.6% (diversidad real de caminos).
+
+| brazo (planificación) | acierto | tok/decisión |
+|---|---|---|
+| 1x sin think (= régimen v11) | 68.7% | 3 |
+| 1x con think | 76.8% | 431 |
+| voto 3x con think | **82.8%** | 1.293 |
+| **adaptativo con think** (2 si coinciden, 3 si no) | **82.8%** | **1.001** |
+
+Pareado agrupado (plan+efecto, n=153): voto 26 – base 11, **p=0.0201** → la regla
+pre-registrada PASA. El adaptativo iguala al voto pleno con 2.32 muestras medias: la
+tercera muestra solo paga cuando las dos primeras discrepan.
+
+**Dónde NO hay nada:** en inferir el efecto de una acción (A.V0) el pensamiento ni ayuda
+(63.0% vs 64.8% sin él). El voto es específico de la decisión de PLANIFICAR.
+
+**Lectura de despliegue — régimen dual, no ajuste plano.** Desplegar voto para todo
+mataría el presupuesto (≈15 acciones/juego). Pero la métrica real (§8.27) parte el juego en
+dos regímenes con costes opuestos: en nivel 1 el derroche es casi gratis (explorar barato,
+sin think, 3 tok) y del nivel 2 en adelante cada acción pesa su número de nivel (ejecutar
+preciso: voto adaptativo, ~1.000 tok). El banco acaba de dar la evidencia de que el modo
+caro es realmente mejor justo en la tarea que importa en ese régimen. Caveat de siempre:
+medido a 4B; el 27B sigue sin dato propio.
+

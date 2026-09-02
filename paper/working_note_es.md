@@ -510,3 +510,4 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 
 *Este apéndice se actualiza en cada resultado nuevo; las secciones narrativas de arriba se revisan
 cuando una decisión cambia la estrategia.*
+| 2026-09-01 | Métrica real descubierta y verificada (eficiencia² ponderada por profundidad); re-score: nav era +25% y se descartó por métrica falsa; harness auditado (5/7 ranuras muertas); banco de voto: adaptativo con think 82.8% vs 68.7% (p=0.02, plan) → régimen dual explorar-barato/ejecutar-preciso | DESIGN §8.27-8.28 |

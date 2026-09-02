@@ -511,3 +511,4 @@ planner-sobre-simulador o LoRA-SFT como la próxima inversión.
 *Este apéndice se actualiza en cada resultado nuevo; las secciones narrativas de arriba se revisan
 cuando una decisión cambia la estrategia.*
 | 2026-09-01 | Métrica real descubierta y verificada (eficiencia² ponderada por profundidad); re-score: nav era +25% y se descartó por métrica falsa; harness auditado (5/7 ranuras muertas); banco de voto: adaptativo con think 82.8% vs 68.7% (p=0.02, plan) → régimen dual explorar-barato/ejecutar-preciso | DESIGN §8.27-8.28 |
+| 2026-09-01 | Banco de ranuras: formato requerido 7/7 llenado y 59.6% tras desalojo vs 6.1% con la frase 'optional' (55-2, p≈0); empata la cota algorítmica y cuesta 2.5× menos tokens → v13 (nav+slots+nothink) al trigger diario | DESIGN §8.29 |

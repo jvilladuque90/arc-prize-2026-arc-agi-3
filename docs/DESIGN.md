@@ -1465,3 +1465,33 @@ preciso: voto adaptativo, ~1.000 tok). El banco acaba de dar la evidencia de que
 caro es realmente mejor justo en la tarea que importa en ese régimen. Caveat de siempre:
 medido a 4B; el 27B sigue sin dato propio.
 
+### 8.29. Banco de ranuras: lo obligatorio preserva TODO lo preservable (2026-09-01)
+
+Dos fases con desalojo simulado (aprender la tabla → perderlo todo menos las líneas
+etiquetadas → decidir), tres brazos, Qwen3-4B, cuenta 5 de Colab. El resultado más limpio
+que ha dado el banco en todo el proyecto:
+
+| brazo | llenado de ranuras (fase 1) | acierto tras el desalojo |
+|---|---|---|
+| M (formato requerido, el texto del parche --slots) | **7/7 en 99/99 items** | **59.6%** |
+| O (frase "optional" del harness actual) | **0/7 en 99/99** | **6.1%** |
+| A (ranuras rellenadas algorítmicamente — cota superior) | — | 59.6% |
+
+Pareado M vs O: **55–2, p≈0**. Pareado M vs A: 7–7, p=1.0 — **el brazo mandatorio EMPATA
+con la cota superior**: el mecanismo preserva todo lo que el canal puede llevar. Y encima
+es más barato: las notas forzadas cuestan 58.6 tokens contra 145.5 del texto libre.
+
+Con la frase "optional" el modelo escribe notas sin etiquetas → el harness no persiste
+NADA → tras el desalojo decide a ciegas (6.1% ≈ azar). Es la reproducción en banco del
+patrón medido en producción (§8.27: 2/7 ranuras, Cross-level notes = 0). La referencia
+con la tabla en contexto es 68.7%: las ranuras recuperan el 87% de esa señal tras perder
+el contexto entero.
+
+**Decisión (regla pre-registrada: MERECE G4, con la restricción de cuota reforzada de hoy):
+sin smoke aparte.** El parche degrada a stock ante cualquier excepción (test_slots_patch
+4/4) y viaja sobre un seam validado en producción; la validación será el propio save&run
+del despliegue: mañana el trigger diario pasa a **v13 = duck_slots (nav + thinking off +
+ranuras obligatorias)** y su push valida antes del envío. Verificación post-despliegue en
+los transcripts del kernel: contar llenado de ranuras del 27B (esperado ~7/7 por paso).
+Caveat: compliance medida a 4B; el 27B es más capaz siguiendo formatos, no menos.
+

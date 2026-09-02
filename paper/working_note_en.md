@@ -491,3 +491,4 @@ diagnostics point to a simulator-planner or LoRA-SFT as the next investment.
 *This appendix is updated on every new result; the narrative sections above are revised when a decision
 changes the strategy.*
 | 2026-09-01 | Real metric discovered & verified (efficiency² depth-weighted); re-scoring: nav was +25% and we discarded it under the false metric; harness audited (5/7 world-model slots dead); vote bench: adaptive w/ thinking 82.8% vs 68.7% (p=0.02, planning) → dual-regime explore-cheap/execute-precise | DESIGN §8.27-8.28 |
+| 2026-09-01 | Slots bench: required format fills 7/7 and scores 59.6% post-eviction vs 6.1% under the 'optional' phrasing (55-2, p≈0); matches the algorithmic upper bound at 2.5× fewer tokens → v13 (nav+slots+nothink) to the daily trigger | DESIGN §8.29 |

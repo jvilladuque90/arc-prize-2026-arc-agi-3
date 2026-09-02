@@ -1361,3 +1361,56 @@ decisión correcta era parar en el segundo.
 validar una versión del duck —que es un kernel que funciona de punta a punta— se le añade una fase
 corta de banco al principio. El dato llegará cuando toque, sin arriesgar más G4 en un montaje que
 no entiendo.
+
+### 8.27. Auditoría del harness contra la métrica real (2026-09-01)
+
+Bajada la fuente del duck (`thtennant/taaf-kaggle-source-share-fork`, 75 archivos) y leída contra
+la función objetivo ya corregida (STRATEGY §aritmética). Tres hallazgos.
+
+**A. El harness optimiza la métrica equivocada, igual que nosotros.** En `inference/framework/
+solver.py` (líneas 382, 570, 711) el "score" interno es literalmente
+`int(self.game.current_state.levels_completed)`. Un `grep baseline_action` sobre los 75 archivos
+no devuelve **nada**: el agente no tiene ninguna noción de eficiencia, de presupuesto de acciones,
+ni de que gastar 10× el baseline humano en un nivel lo deja en (1/10)²=1% de su valor. No es un
+defecto de nuestro fork; es del diseño original. Explica que todo el cluster de forks del duck
+se amontone en 1–2 puntos.
+
+**B. No comprimimos el contexto: lo DESALOJAMOS.** `_trim_messages_for_context`
+(`tool_agent.py:1672-1690`) va tirando el bloque **más viejo** hasta que la petición cabe en el
+presupuesto (32.768 − reservas). No hay resumen de lo que sale: se pierde. Y
+`_persistent_history_messages` conserva solo los últimos `_PERSISTENT_HISTORY_ASSISTANT_TURNS = 30`
+turnos de asistente entre llamadas.
+
+**C. Sí existe una capa de compresión, pero es opcional y auto-declarada — y está medio muerta.**
+`_summarized_knowledge` mantiene siete ranuras que **sobreviven al desalojo** y se reinyectan en el
+prompt (`tool_agent.py:1236`). Pero solo se llenan si el modelo escribe voluntariamente el prefijo
+correspondiente, porque el prompt las ofrece como *"helpful **optional** prefixes"*
+(`tool_agent.py:1250`). Medido sobre **1.622 pasos de análisis reales en 25 juegos**
+(`_tmp_ctxlog/transcripts/`):
+
+| ranura | usos en 1.622 pasos |
+|---|---|
+| `World model:` | 633 |
+| `Plan:` | 627 |
+| `Goal model:` | **7** |
+| `Action model:` | **0** |
+| `Recent findings:` | **0** |
+| `Open questions:` | **0** |
+| `Cross-level notes:` | **0** |
+
+**El modelo usa 2 de 7 ranuras.** Las cinco muertas incluyen las dos que la métrica corregida
+señala como más valiosas: `Goal model` (nuestro diagnóstico de §8.19 dijo que el cuello es la
+META, y la ranura de la meta está en 7/1.622) y `Cross-level notes` (**cero usos**), que es
+exactamente el canal para llevar lo aprendido del nivel 1 al 2 — donde vive el puntaje, porque el
+nivel *i* pesa *i*.
+
+**Por qué esto importa ahora y no antes.** Con el modelo viejo ("puntaje = niveles") una ranura de
+transferencia entre niveles era un lujo. Con el real, pasar de 1 a 3 niveles va de 0.04 a 7.87, y
+`Cross-level notes` es el único mecanismo del harness diseñado para eso — sin usar ni una vez.
+
+*Cautela antes de entusiasmarse:* el intento de inyectar transferencia entre niveles **por prompt**
+ya se midió y salió flojo (§8.16: firma sola 6.2% contra 25% de base trivial; firma+colores 31.2%).
+Lo que no se ha probado es (a) hacer las ranuras **obligatorias** en vez de opcionales, que es un
+cambio de una línea en un seam ya validado, y (b) rellenarlas **algorítmicamente** desde el
+historial en vez de pedírselo al modelo.
+

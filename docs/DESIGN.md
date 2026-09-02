@@ -1367,13 +1367,14 @@ no entiendo.
 Bajada la fuente del duck (`thtennant/taaf-kaggle-source-share-fork`, 75 archivos) y leída contra
 la función objetivo ya corregida (STRATEGY §aritmética). Tres hallazgos.
 
-**A. El harness optimiza la métrica equivocada, igual que nosotros.** En `inference/framework/
-solver.py` (líneas 382, 570, 711) el "score" interno es literalmente
-`int(self.game.current_state.levels_completed)`. Un `grep baseline_action` sobre los 75 archivos
-no devuelve **nada**: el agente no tiene ninguna noción de eficiencia, de presupuesto de acciones,
-ni de que gastar 10× el baseline humano en un nivel lo deja en (1/10)²=1% de su valor. No es un
-defecto de nuestro fork; es del diseño original. Explica que todo el cluster de forks del duck
-se amontone en 1–2 puntos.
+**A. El FRAMEWORK conoce la métrica real; el AGENTE no — corregido 2026-09-01.** La primera
+lectura afirmó que el harness no referenciaba el baseline; falso:
+`taaf/game.py::_compute_final_score` (381-411) implementa la fórmula oficial exacta ("Mirrors
+arc_agi.scorecard") y la escribe como `final_score` en el `benchmark.json` de cada validación —
+**todas las corridas pasadas eran re-puntuables gratis** (`scripts/real_score.py`, verificación
+cruzada 0 discrepancias en 9 corridas). Lo que sí se sostiene, y es lo accionable: el "score" de
+`solver.py` (382, 570, 711) es `levels_completed`, y en `inference/agent/` no hay ni una mención
+al baseline ni a la eficiencia. **El marcador conoce la métrica; el jugador no.**
 
 **B. No comprimimos el contexto: lo DESALOJAMOS.** `_trim_messages_for_context`
 (`tool_agent.py:1672-1690`) va tirando el bloque **más viejo** hasta que la petición cabe en el
@@ -1413,4 +1414,24 @@ ya se midió y salió flojo (§8.16: firma sola 6.2% contra 25% de base trivial;
 Lo que no se ha probado es (a) hacer las ranuras **obligatorias** en vez de opcionales, que es un
 cambio de una línea en un seam ya validado, y (b) rellenarlas **algorítmicamente** desde el
 historial en vez de pedírselo al modelo.
+
+**Re-puntuaje de todas las corridas (2026-09-01, `scripts/real_score.py`):** _tmp_ducklog_v4
+0.444 · _tmp_long_c14 0.495 (7 niveles: más niveles ≠ más score) · _tmp_long_c28 1.059 ·
+**_tmp_nav 1.320 — la mejor corrida que hemos tenido, y la descartamos por leerla con la métrica
+falsa.** Nav es +25% offline (1.32 vs 1.06, mismos niveles, menos acciones/nivel) y +25% en el
+LB oculto (STRATEGY §53-55): dos medidas independientes, mismo sentido. **v12 = v11 + nav**
+compuesto y verificado (`notebooks/duck_v12.ipynb`); falta validarlo en G4 antes de mover el
+trigger.
+
+**Ranuras obligatorias (candidata v13): parche construido y probado.** `--slots` reemplaza la
+frase "helpful optional prefixes" (literal verificado contra el dataset desplegado: modo
+REEMPLAZO) por un formato requerido de 7 líneas, con `Cross-level notes` declarada única memoria
+entre niveles. `scripts/test_slots_patch.py`: 4/4. Antes de G4: banco de ranuras en Colab
+(¿el mecanismo preserva información a través del desalojo?).
+
+**El dato del kernel de v11 (corrida corta de 15 min, n=2, no sobreleer):** cuando el agente
+completa un nivel ya es MÁS eficiente que el humano (sb26 a 0.5× baseline, su15 a 0.8×). La
+pérdida no está en la eficiencia de lo ganado sino en lo nunca ganado: profundidad y cobertura.
+Refuerza la estrategia de la aritmética: el derroche en nivel 1 es barato; lo que puntúa es
+llegar más hondo.
 

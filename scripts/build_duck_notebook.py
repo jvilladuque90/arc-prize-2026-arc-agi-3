@@ -215,6 +215,13 @@ def main() -> int:
     # llamadas) y el banco dice que no mejora la precision. Apagarlo da 1.55x
     # acciones por juego con la misma calidad medida.
     ap.add_argument("--no-thinking", action="store_true")
+    # RANURAS OBLIGATORIAS (docs/DESIGN.md 8.27): el harness persiste 7 ranuras
+    # de modelo de mundo que sobreviven al desalojo de contexto, pero el prompt
+    # las declara "helpful OPTIONAL prefixes". Medido en 1.622 pasos reales:
+    # el modelo usa 2 de 7; Goal model=7 usos, Cross-level notes=0 — justo las
+    # dos que la metrica real hace valiosas (transferir al nivel 2+, que pesa
+    # mas). Este flag reescribe la frase opcional por un formato REQUERIDO.
+    ap.add_argument("--slots", action="store_true")
     # 12.000 y no 2.000: en la validacion los 25 preludios agotaron el tope de
     # ACCIONES sin acercarse al de TIEMPO (420 s), o sea que sobraba ventana. El
     # cap de segundos es el que manda de verdad, asi que subir este numero no
@@ -442,6 +449,59 @@ try:
     print("EFFECTS_NOTE injected on seam C:", len(_ns), "symbols")
 except Exception as exc:
     print(f"[effects_note] injection failed, running stock: {{type(exc).__name__}}: {{exc}}")
+'''
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     patch + "\nimport arc_agi, taaf.game_api")
+                break
+        else:
+            print("ERROR: no encontre la celda del install de grafts")
+            return 1
+
+    if args.slots:
+        # Mismo seam C que --effects: se envuelve _build_user_prompt y se opera
+        # sobre el TEXTO resultante. Si ambos flags estan activos los wrappers se
+        # apilan (cada uno captura el anterior); cada uno degrada a stock solo.
+        # La frase objetivo es literal de tool_agent.py:1250; si el upstream la
+        # cambia, el replace no casa y el bloque ANEXA el requisito igualmente
+        # (peor posicion, mismo contenido) avisando en el log.
+        patch = '''
+# RANURAS OBLIGATORIAS (seam C, v1). El harness ya persiste y reinyecta las 7
+# ranuras (_summarized_knowledge, sobreviven al desalojo de 32k) pero solo se
+# llenan si el modelo escribe el prefijo, y el prompt dice "optional": medido
+# 2/7 en uso real, con Cross-level notes (la unica memoria entre niveles) en 0.
+_SLOTS_OLD = ("If you include assistant text before a tool call, keep it short and "
+              "use it to update the world model. Helpful optional prefixes are "
+              "`World model:`, `Goal model:`, `Action model:`, `Recent findings:`, "
+              "`Open questions:`, `Plan:`, and `Cross-level notes:`.")
+_SLOTS_NEW = ("REQUIRED FORMAT: before every tool call, first write the revised world "
+              "model as EXACTLY these seven labeled lines, one per line, in this order: "
+              "`World model:`, `Goal model:`, `Action model:`, `Recent findings:`, "
+              "`Open questions:`, `Plan:`, `Cross-level notes:`. Update every line from "
+              "the newest evidence; write `unknown` where truly unknown; never omit a "
+              "label. `Action model:` lists each valid action and its observed effect. "
+              "`Cross-level notes:` carries ONLY facts likely to stay true on later "
+              "levels (controls, mechanics, goal pattern) — it is your sole memory "
+              "across levels.")
+try:
+    import taaf_grafts.schema_helpers as _sh2
+    _orig_bup_slots = _sh2.SchemaHelpersToolAgent._build_user_prompt
+    _slots_miss = {"n": 0}
+
+    def _bup_with_slots(self, action_num, **kw):
+        base = _orig_bup_slots(self, action_num, **kw)
+        if _SLOTS_OLD in base:
+            return base.replace(_SLOTS_OLD, _SLOTS_NEW)
+        if _slots_miss["n"] == 0:
+            print("[slots] frase opcional no encontrada; anexando el requisito")
+        _slots_miss["n"] += 1
+        return base + "\\n" + _SLOTS_NEW
+
+    _sh2.SchemaHelpersToolAgent._build_user_prompt = _bup_with_slots
+    print("SLOTS_MANDATORY injected on seam C")
+except Exception as exc:
+    print(f"[slots] injection failed, running stock: {type(exc).__name__}: {exc}")
 '''
         for i, c in enumerate(cells):
             if "taaf_grafts.composite import install" in c:

@@ -1495,3 +1495,38 @@ ranuras obligatorias)** y su push valida antes del envío. Verificación post-de
 los transcripts del kernel: contar llenado de ranuras del 27B (esperado ~7/7 por paso).
 Caveat: compliance medida a 4B; el 27B es más capaz siguiendo formatos, no menos.
 
+### 8.30. v13 = 0.62: diagnóstico mecánico — inanición de acciones por coste de ranuras (2026-09-03)
+
+El 0.62 (−2.3σ, bajo todo el rango observado) NO fue varianza. La validación corta de v13
+comparada con sus dos predecesoras en la misma ventana lo muestra sin ambigüedad:
+
+| versión | acciones | tok/acción |
+|---|---|---|
+| v11 (nothink) | 373 | 469 |
+| v12 (nav+nothink) | 406 | 481 |
+| **v13 (+ranuras cada paso)** | **205 (−49%)** | **743 (+58%)** |
+
+El parche SÍ funcionó como texto: 248/248 prompts con el requisito, el 27B pasó de 2/7
+ranuras a las 7 completas en el 39% de pasos (Cross-level notes 0→21%), score corto 0.200
+idéntico, cero errores. Pero exigir las 7 líneas **en cada paso** duplica el coste por
+acción, y con el caudal fijo eso significa la mitad de acciones en 8 h → menos profundidad
+→ 0.62. La métrica castiga exactamente eso.
+
+**El error de instrumento, con nombre:** el banco (§8.29) midió la nota como escritura
+ÚNICA (58.6 tok, "más barata que el texto libre" — cierto en ese régimen); producción la
+repite en cada paso (+274 tok/acción de media). Es el MISMO desajuste banco-vs-producción
+que ya pagamos con el idioma (§8.14) y que yo mismo dejé escrito. Tercera vez. La regla que
+lo habría atrapado: **todo cambio de prompt se presupuesta en tok/acción × pasos antes de
+desplegarse** — la aritmética estaba disponible y no la hice.
+
+**Lo rescatable (importante):** la persistencia funciona nativamente en modo incremental —
+`_update_summarized_knowledge_from_assistant` solo sobreescribe las etiquetas PRESENTES en
+la respuesta. No hace falta reescribir las 7: una actualización parcial conserva el resto.
+
+**v14 (diseñada, no desplegada): mandato incremental.** Las 7 líneas completas SOLO al
+entrar a un nivel y cada ~8 pasos; en los demás, únicamente las ranuras cuya evidencia
+cambió (mínimo `Recent findings:`); `Cross-level notes:` obligatoria al descubrir un hecho
+transferible. Presupuesto: ~12% de pasos con escritura completa → +85 tok/acción estimados
+(~554, +18% sobre v11) contra +274 medidos de v13. Trigger revertido a v4 (hecho en el tick
+anterior); v14 se valida en su propio save&run mañana — un solo gasto G4, regla reforzada.
+

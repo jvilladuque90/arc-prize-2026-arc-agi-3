@@ -222,6 +222,13 @@ def main() -> int:
     # dos que la metrica real hace valiosas (transferir al nivel 2+, que pesa
     # mas). Este flag reescribe la frase opcional por un formato REQUERIDO.
     ap.add_argument("--slots", action="store_true")
+    # v14 (docs/DESIGN.md 8.30): mandato INCREMENTAL. El de --slots exigia las 7
+    # lineas en cada paso y costo +58% tok/accion y -49% acciones (v13=0.62,
+    # inanicion). La persistencia del harness es incremental por diseno (solo
+    # sobreescribe las etiquetas presentes), asi que basta actualizar lo que
+    # cambio. Presupuesto: ~12% de pasos con escritura completa -> +85 tok/accion
+    # estimados contra +274 medidos de v13.
+    ap.add_argument("--slots-inc", action="store_true")
     # 12.000 y no 2.000: en la validacion los 25 preludios agotaron el tope de
     # ACCIONES sin acercarse al de TIEMPO (420 s), o sea que sobraba ventana. El
     # cap de segundos es el que manda de verdad, asi que subir este numero no
@@ -449,6 +456,56 @@ try:
     print("EFFECTS_NOTE injected on seam C:", len(_ns), "symbols")
 except Exception as exc:
     print(f"[effects_note] injection failed, running stock: {{type(exc).__name__}}: {{exc}}")
+'''
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     patch + "\nimport arc_agi, taaf.game_api")
+                break
+        else:
+            print("ERROR: no encontre la celda del install de grafts")
+            return 1
+
+    if args.slots_inc:
+        # Mismo seam y misma frase objetivo que --slots; cambia SOLO el texto del
+        # requisito: incremental en vez de cada-paso. Ver presupuesto en 8.30.
+        patch = '''
+# RANURAS INCREMENTALES (seam C, v2). La v1 (--slots) exigia las 7 lineas en
+# CADA paso: +58% tok/accion, -49% acciones, 0.62 en el set oculto (DESIGN 8.30).
+# El harness persiste por etiqueta (solo sobreescribe las presentes), asi que
+# la actualizacion parcial conserva el resto: se pide lo minimo que mantiene
+# las ranuras vivas sin pagar el peaje en cada paso.
+_SLOTS_OLD = ("If you include assistant text before a tool call, keep it short and "
+              "use it to update the world model. Helpful optional prefixes are "
+              "`World model:`, `Goal model:`, `Action model:`, `Recent findings:`, "
+              "`Open questions:`, `Plan:`, and `Cross-level notes:`.")
+_SLOTS_NEW = ("NOTE FORMAT (your labeled lines are the ONLY memory that survives "
+              "context eviction; unlabeled text is lost): when you enter a new level "
+              "and roughly every 8th step, write all seven lines `World model:`, "
+              "`Goal model:`, `Action model:`, `Recent findings:`, `Open questions:`, "
+              "`Plan:`, `Cross-level notes:`. On other steps write ONLY the lines "
+              "whose content changed (at least `Recent findings:` when you learned "
+              "something). Whenever you discover a fact likely to stay true on later "
+              "levels (controls, mechanics, goal pattern), update `Cross-level "
+              "notes:` immediately. Keep every line short.")
+try:
+    import taaf_grafts.schema_helpers as _sh2
+    _orig_bup_slots = _sh2.SchemaHelpersToolAgent._build_user_prompt
+    _slots_miss = {"n": 0}
+
+    def _bup_with_slots(self, action_num, **kw):
+        base = _orig_bup_slots(self, action_num, **kw)
+        if _SLOTS_OLD in base:
+            return base.replace(_SLOTS_OLD, _SLOTS_NEW)
+        if _slots_miss["n"] == 0:
+            print("[slots] frase opcional no encontrada; anexando el requisito")
+        _slots_miss["n"] += 1
+        return base + "\\n" + _SLOTS_NEW
+
+    _sh2.SchemaHelpersToolAgent._build_user_prompt = _bup_with_slots
+    print("SLOTS_INCREMENTAL injected on seam C")
+except Exception as exc:
+    print(f"[slots_inc] injection failed, running stock: {type(exc).__name__}: {exc}")
 '''
         for i, c in enumerate(cells):
             if "taaf_grafts.composite import install" in c:

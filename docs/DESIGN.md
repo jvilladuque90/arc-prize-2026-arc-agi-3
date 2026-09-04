@@ -1530,3 +1530,27 @@ transferible. Presupuesto: ~12% de pasos con escritura completa → +85 tok/acci
 (~554, +18% sobre v11) contra +274 medidos de v13. Trigger revertido a v4 (hecho en el tick
 anterior); v14 se valida en su propio save&run mañana — un solo gasto G4, regla reforzada.
 
+### 8.31. Minería de los transcripts de v13: el mecanismo funciona de punta a punta (2026-09-04)
+
+Antes de redesplegar (v14), se miró QUÉ escribió el 27B en las ranuras durante la validación
+de v13 — 52 notas Cross-level con contenido real. La calidad es exactamente la que la
+estrategia de profundidad necesita: hechos mecánicos, precisos, refinados iterativamente:
+
+- cn04: "SPACE rotates 90° clockwise. Arrow keys move the object by ~5 cells." (4 refinamientos)
+- wa30: "Player moves 4 cells per directional press. SPACE converts charcoal frames to white when adjacent."
+- ka59: "RIGHT/LEFT move 3 cells horizontally. Vertical movement may be blocked."
+- r11l: "Only MOUSE action available. Clicking targets teleports the player there."
+- s5i5: "Bottom row is a step counter that decreases each action."
+
+**Y la prueba de punta a punta, verificada en sb26:** al entrar al nivel 2, el prompt lleva
+"Working world model carried from earlier turns: - Cross-level notes: Color-matching puzzle:
+select bottom color, click target slot to place it, then submit to complete level." El
+harness además LIMPIA las ranuras de nivel al cambiar de nivel y conserva solo Cross-level
+notes — la semántica correcta, ya venía de fábrica. **Primera vez en el proyecto que el
+agente empieza un nivel sabiendo cómo se juega.** (Formato real de la inyección: líneas con
+guion bajo "Working world model carried from earlier turns:" — un regex sin el guion las
+pierde, error que costó una falsa alarma en esta misma sesión.)
+
+Conclusión: v13 tenía el mecanismo CORRECTO con el precio EQUIVOCADO. v14 (incremental)
+conserva lo primero y arregla lo segundo. Pendiente de cuota (reset viernes 8pm).
+

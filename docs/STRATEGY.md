@@ -12,7 +12,15 @@ neutra, como predijo el banco: el thinking no cambiaba la precisión, solo el co
 antes de la lectura formal por decisión de portafolio: la evidencia de v13 (ranuras 55–2 p≈0
 + nav +25% en dos varas) supera lo que quedaba por aprender de v11.
 
-**Serie v13 (nav + ranuras obligatorias + thinking off, desplegado 2026-09-02):** en curso.
+**Serie v13: CERRADA en n=1 {0.62}** — diagnóstico mecánico en DESIGN §8.30 (inanición de
+acciones: +58% tok/acción, −49% acciones). Trigger revertido a v4; muestra de control v4 =
+**0.92** (2026-09-04, en plena media de la referencia — la reversión funcionó).
+
+**v14 (nav + ranuras INCREMENTALES + thinking off): lista, en espera de cuota.** Presupuesto
++85 tok/acción (regla de §8.30). El push del 2026-09-04 00:10 chocó con la cuota semanal
+agotada (30h compartidas); reset viernes 8pm → push esa noche tras el submit de v4, primera
+muestra la noche siguiente. Guard pre-registrado en la validación: tok/acción ≤ ~550, si no,
+el trigger no se mueve.
 Kernel v12, validación en su propio save&run (regla de cuota reforzada: cero smokes extra).
 Expectativa bajo la métrica real: nav vale +25% medido; las ranuras son el primer cambio que
 ataca la PROFUNDIDAD (memoria entre niveles), donde vive el puntaje (1→3 niveles = 0.04→7.87).

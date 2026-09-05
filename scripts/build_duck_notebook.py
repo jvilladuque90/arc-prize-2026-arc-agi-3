@@ -229,6 +229,13 @@ def main() -> int:
     # cambio. Presupuesto: ~12% de pasos con escritura completa -> +85 tok/accion
     # estimados contra +274 medidos de v13.
     ap.add_argument("--slots-inc", action="store_true")
+    # v15 (DESIGN 8.32): decodificacion especulativa n-gram en vLLM 0.19 (V1).
+    # Sin modelo borrador: busca los ultimos tokens en el propio prompt y el 27B
+    # solo verifica -> salida identica, 2-4x decodificacion en regimenes
+    # repetitivos (el nuestro: ACTION*, codigo del sandbox, lineas del modelo de
+    # mundo). La generacion ES el presupuesto de acciones (195 tok/s / 28 juegos).
+    # Guard en el save&run: tok/s, metricas SpecDecoding y tok/accion.
+    ap.add_argument("--vllm-ngram", action="store_true")
     # 12.000 y no 2.000: en la validacion los 25 preludios agotaron el tope de
     # ACCIONES sin acercarse al de TIEMPO (420 s), o sea que sobraba ventana. El
     # cap de segundos es el que manda de verdad, asi que subir este numero no
@@ -464,6 +471,34 @@ except Exception as exc:
                 break
         else:
             print("ERROR: no encontre la celda del install de grafts")
+            return 1
+
+    if args.vllm_ngram:
+        # El server arranca en un SUBPROCESO (setup_commands.json es un heredoc
+        # de Python cuyo texto viaja en el json), asi que el monkeypatch no llega:
+        # se transforma el TEXTO del comando antes de ejecutarlo. Ancla literal
+        # verificada contra el bundle real (unica, 8 espacios de indentacion).
+        transform = '''
+    # INYECCION vLLM (v15): especulacion n-gram, salida identica, solo mas rapida.
+    _ancla = "        '--enable-prefix-caching',\\n"
+    _spec = ("        '--speculative-config',\\n"
+             "        '{\\"method\\": \\"ngram\\", \\"num_speculative_tokens\\": 5, "
+             "\\"prompt_lookup_max\\": 4, \\"prompt_lookup_min\\": 2}',\\n")
+    if _ancla in c and "--speculative-config" not in c:
+        c = c.replace(_ancla, _ancla + _spec, 1)
+        print("[vllm_ngram] flags de especulacion inyectadas", flush=True)
+'''
+        viejo = ('for c in json.loads((BUNDLE/"setup_commands.json").read_text()):\n'
+                 '    print("setup:", c[:80], flush=True)')
+        nuevo = ('for c in json.loads((BUNDLE/"setup_commands.json").read_text()):'
+                 + transform +
+                 '    print("setup:", c[:80], flush=True)')
+        for i, cell in enumerate(cells):
+            if 'setup_commands.json' in cell and viejo in cell:
+                cells[i] = cell.replace(viejo, nuevo)
+                break
+        else:
+            print("ERROR: no encontre el bucle de setup_commands para inyectar ngram")
             return 1
 
     if args.slots_inc:

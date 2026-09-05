@@ -1554,3 +1554,32 @@ pierde, error que costó una falsa alarma en esta misma sesión.)
 Conclusión: v13 tenía el mecanismo CORRECTO con el precio EQUIVOCADO. v14 (incremental)
 conserva lo primero y arregla lo segundo. Pendiente de cuota (reset viernes 8pm).
 
+### 8.32. v15 (especulación n-gram): refutada por el guard — el precio oculto era el async scheduling (2026-09-05)
+
+La especulación funcionó como se esperaba EN LO LOCAL: flags inyectadas (transform sobre el
+heredoc, ancla verificada), server arriba, aceptación media 2.3–3.0 tokens. Pero vLLM 0.19
+desactiva el **async scheduling** del motor V1 cuando hay especulación n-gram ("Async
+scheduling not supported with ngram-based speculative decoding and will be disabled"), y con
+28 conversaciones concurrentes ese es el mecanismo que mantiene la tarjeta ocupada:
+
+| métrica | base (v14) | v15 |
+|---|---|---|
+| throughput de generación | ~195 tok/s | **110 tok/s** |
+| acciones de juego en la validación | 291 | **0 en 25 juegos** |
+| score real corto | 0.171 | 0.000 |
+
+Dato colateral que vale la pena conservar: el acierto de caché de prefijos midió **76-77%**
+en esta corrida (la cifra histórica de 44% venía del régimen de agosto con thinking on y
+contextos más largos) — el desalojo de contexto pesa menos de lo estimado en el régimen
+actual.
+
+**Lección (cuarta del mismo género, ahora en la capa de serving):** el guard funcionó
+exactamente como debía — pérdida contenida a un save&run (~45 min), cero submits quemados,
+reversión a v14 el mismo día. La especulación n-gram queda CERRADA para este stack mientras
+vLLM no soporte async scheduling + ngram a la vez; si una versión futura del wheelhouse lo
+permite, la aceptación medida (2.3-3.0) dice que el premio sigue ahí.
+
+**Escalera ejecutada:** v15 roto → trigger a v14 (kernel v13) para el submit de esta noche.
+v16 (KV fp8) queda EN PAUSA hasta leer la primera muestra oculta de v14: es la misma familia
+de cambio de serving y no se apilan dos incógnitas.
+

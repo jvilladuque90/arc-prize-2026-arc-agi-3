@@ -531,14 +531,28 @@ try:
     def _bup_with_slots(self, action_num, **kw):
         base = _orig_bup_slots(self, action_num, **kw)
         if _SLOTS_OLD in base:
-            return base.replace(_SLOTS_OLD, _SLOTS_NEW)
-        if _slots_miss["n"] == 0:
-            print("[slots] frase opcional no encontrada; anexando el requisito")
-        _slots_miss["n"] += 1
-        return base + "\\n" + _SLOTS_NEW
+            base = base.replace(_SLOTS_OLD, _SLOTS_NEW)
+        else:
+            if _slots_miss["n"] == 0:
+                print("[slots] frase opcional no encontrada; anexando el requisito")
+            _slots_miss["n"] += 1
+            base = base + "\\n" + _SLOTS_NEW
+        # HOST-REMINDER (v16, DESIGN 8.33): el que cuenta pasos es el HOST, no el
+        # modelo. v13 (exigir siempre) escribio en 39% de pasos; v14 (dejar al
+        # criterio del modelo) en 3%. Cadencia determinista: cada 8a accion se
+        # exige el bloque completo -> 12.5% exacto, coste acotado por construccion
+        # (~+11 tok/accion sobre v14).
+        try:
+            _n = int(action_num)
+        except Exception:
+            _n = 0
+        if _n % 8 == 0:
+            base += ("\\nTHIS TURN (host reminder): include the FULL seven-line "
+                     "world model block before your tool call.")
+        return base
 
     _sh2.SchemaHelpersToolAgent._build_user_prompt = _bup_with_slots
-    print("SLOTS_INCREMENTAL injected on seam C")
+    print("SLOTS_INCREMENTAL+HOSTREMINDER injected on seam C")
 except Exception as exc:
     print(f"[slots_inc] injection failed, running stock: {type(exc).__name__}: {exc}")
 '''

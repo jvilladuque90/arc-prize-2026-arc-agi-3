@@ -236,6 +236,12 @@ def main() -> int:
     # mundo). La generacion ES el presupuesto de acciones (195 tok/s / 28 juegos).
     # Guard en el save&run: tok/s, metricas SpecDecoding y tok/accion.
     ap.add_argument("--vllm-ngram", action="store_true")
+    # v17 (DESIGN 8.33): KV cache en FP8. La memoria de atencion esta
+    # sobresuscrita (28 conversaciones de 32k) y duplicar su capacidad reduce
+    # desalojo/recalculo. Calidad: <=0.7 pts reportado (vllm.ai 2026-04-22,
+    # camino "accuracy-neutral"). NUNCA anadir --calculate-kv-scales (bug de
+    # corrupcion, vllm#37554). Guard: transcripts sanos + real_score.
+    ap.add_argument("--vllm-kv-fp8", action="store_true")
     # 12.000 y no 2.000: en la validacion los 25 preludios agotaron el tope de
     # ACCIONES sin acercarse al de TIEMPO (420 s), o sea que sobraba ventana. El
     # cap de segundos es el que manda de verdad, asi que subir este numero no
@@ -499,6 +505,30 @@ except Exception as exc:
                 break
         else:
             print("ERROR: no encontre el bucle de setup_commands para inyectar ngram")
+            return 1
+
+    if args.vllm_kv_fp8:
+        # Mismo mecanismo que --vllm-ngram: transform de texto sobre el heredoc.
+        transform = '''
+    # INYECCION vLLM (v17): KV cache FP8 — duplica la memoria de atencion.
+    _ancla_kv = "        '--enable-prefix-caching',\\n"
+    _kv = ("        '--kv-cache-dtype',\\n"
+           "        'fp8',\\n")
+    if _ancla_kv in c and "--kv-cache-dtype" not in c:
+        c = c.replace(_ancla_kv, _ancla_kv + _kv, 1)
+        print("[vllm_kv_fp8] KV cache FP8 inyectado", flush=True)
+'''
+        viejo = ('for c in json.loads((BUNDLE/"setup_commands.json").read_text()):\n'
+                 '    print("setup:", c[:80], flush=True)')
+        nuevo = ('for c in json.loads((BUNDLE/"setup_commands.json").read_text()):'
+                 + transform +
+                 '    print("setup:", c[:80], flush=True)')
+        for i, cell in enumerate(cells):
+            if 'setup_commands.json' in cell and viejo in cell:
+                cells[i] = cell.replace(viejo, nuevo)
+                break
+        else:
+            print("ERROR: no encontre el bucle de setup_commands para inyectar kv_fp8")
             return 1
 
     if args.slots_inc:

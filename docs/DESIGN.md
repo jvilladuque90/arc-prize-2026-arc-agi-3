@@ -1583,3 +1583,31 @@ permite, la aceptación medida (2.3-3.0) dice que el premio sigue ahí.
 v16 (KV fp8) queda EN PAUSA hasta leer la primera muestra oculta de v14: es la misma familia
 de cambio de serving y no se apilan dos incógnitas.
 
+### 8.33. v16: el host cuenta los pasos — cadencia de escritura resuelta (2026-09-05)
+
+v13 exigía el bloque completo siempre (39% de pasos, inanición); v14 lo dejaba al criterio
+del modelo (3%, memoria vestigial). v16 mueve el contador al HOST: el wrapper del seam C
+recibe `action_num` y cada 8ª acción anexa un recordatorio que exige el bloque completo.
+Guard de su validación: **11% de bloques completos** (objetivo 8-16%), +18% de parciales
+espontáneos, **35 escrituras Cross-level** (v14: 8), 565 tok/acción (≤650), 328 acciones
+(v14: 291), score corto 0.200. El péndulo quedó clavado en el centro por construcción.
+
+### 8.34. v17: KV cache FP8 — +29% de acciones gratis (2026-09-05)
+
+Sobre v16, `--kv-cache-dtype fp8` (sin `--calculate-kv-scales`, bug vllm#37554). La
+sobresuscripción de la memoria de atención era un freno real:
+
+| métrica | v16 | v17 |
+|---|---|---|
+| acciones en la misma ventana | 328 | **422 (+29%)** |
+| caché de prefijos | 76% | **84-85%** |
+| tok/acción | 565 | 599 |
+| respuestas | — | coherentes, sin rastro de corrupción |
+
+**Cadena construir→probar→lanzar del 2026-09-05, completa en el día** (pedida por Julian):
+v15 (ngram) refutada y revertida → v16 diseñada del diagnóstico de v14, validada → v17
+apilada sobre v16, validada → **submit manual de v17** (id 56044974). El submit automático
+queda DESACTIVADO por orden explícita; reactivar solo con su visto bueno. Config v17 =
+nav + ranuras con host-reminder + thinking off + KV fp8 = la primera versión que ataca a la
+vez las tres pérdidas diagnosticadas (dirección, memoria, presupuesto de acciones).
+

@@ -60,9 +60,11 @@ def _hb():
 threading.Thread(target=_hb, daemon=True).start()
 
 log("preparando entorno ...")
+# OJO: NO instalar/actualizar pillow — medio-actualizarlo en el runtime vivo de
+# Colab rompe sus imports internos (ImportError: _Ink; corrida perdida 2026-09-06).
+# El PIL preinstalado basta para rectangulos, elipses y texto.
 subprocess.run([sys.executable, "-m", "pip", "install", "-q", "-U",
-                "transformers>=4.51", "accelerate", "pillow", "qwen-vl-utils"],
-               check=False)
+                "transformers>=4.51", "accelerate"], check=False)
 os.environ.update({"USE_TF": "0", "TRANSFORMERS_NO_TF": "1",
                    "TRANSFORMERS_NO_TORCHVISION": "1", "TOKENIZERS_PARALLELISM": "false"})
 

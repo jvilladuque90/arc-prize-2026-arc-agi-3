@@ -1611,3 +1611,26 @@ queda DESACTIVADO por orden explícita; reactivar solo con su visto bueno. Confi
 nav + ranuras con host-reminder + thinking off + KV fp8 = la primera versión que ataca a la
 vez las tres pérdidas diagnosticadas (dirección, memoria, presupuesto de acciones).
 
+### 8.35. Hipótesis VLM refutada a 4B — y la autopsia que apunta a la siguiente (2026-09-06)
+
+Banco de metas, tres brazos con el MISMO Qwen3-VL-4B (aísla modalidad): texto 17.1%,
+imagen 22.0%, imagen con candidatas marcadas 25.6% (pareado vs texto 20-13, p=0.30).
+La regla pre-registrada (p<0.05 y ≥40%) falla sin ambigüedad: **a 4B la visión no
+resuelve la inferencia de meta**, y con los marcadores la indexación estaba eliminada
+del todo — el fallo no es (solo) de indexación.
+
+**Autopsia.** V2 quedó en la base trivial: ni viendo el tablero perfectamente el modelo
+sabe cuál celda es la meta. La conclusión que esto fuerza: **la meta de un juego ARC-AGI-3
+no es perceptible en un tablero estático; se descubre interactuando** (la tesis de AERA:
+EXPLORE→VERIFY→PLAN). ARC-VL aplica visión a puzzles ESTÁTICOS de ARC-1/2; el nuestro es
+interactivo. Cautela pendiente: un VLM de 30B podría comportarse distinto (umbral de
+capacidad ya visto en 1.7B vs 4B), pero no es verificable en T4 y no gastamos G4 en ello.
+
+**H2 — la siguiente hipótesis del ciclo (salto simbólico, testeable GRATIS):** la meta no
+se infiere, se EXTRAE. Cuando un nivel se completa, el sistema presenció el estado ganador.
+Cadena propuesta: transición ganadora → firma algorítmica → celdas candidatas computadas
+por el host en el nivel siguiente → nav/plan_moves las ejecuta (el eslabón del 90.9%).
+El LLM sale del bucle de adivinar la meta. Activos ya medidos a favor: firma 100%
+consistente entre niveles en los 4 juegos multinivel de las trazas (§8.16); LocalGame +
+arcengine en local para el experimento con el motor real, sin GPU.
+

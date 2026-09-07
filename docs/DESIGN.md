@@ -1705,3 +1705,31 @@ probe discriminador → 1.15 + causa aislada en 24 horas. El siguiente injerto (
 objetos, §8.36) se monta sobre v16-config y se valida con el A/B canario obligatorio
 (tu93/sc25/cd82/vc33) — ahí sí se gasta presupuesto G4.
 
+### 8.38. Research de código abierto (pedido Julian): el meta cambió de MODELO (2026-09-07)
+
+Leaderboard al 09-07: **Tufa Labs 11.04** (eran 1.62 hace tres semanas), Third Intelligence
+8.21, Franzen 7.63, mostik 7.51, banda de 32 equipos en 4-5 y **242 equipos en 3-4**.
+Nosotros: 1.17, puesto 793/2869. Un clúster de 242 equipos es la firma inequívoca de un
+baseline público forkeado en masa. Encontrado: kernel **"LB-9 arc3 duck v12 with Qwen 3.8
+27B"** (foysalemonshanto, 275 votos) = harness duck + **Qwen3.8-27B-FP8** como modelo
+Kaggle público (`foysalemonshanto/qwen3-8-27b-fp8-repacked-v1`, variation hf-fp8) sobre el
+**mismo wheelhouse vLLM 0.19.0 que usamos** → el modelo nuevo es drop-in para nuestro stack.
+
+Mecánica verificada leyendo su fuente: `_patch_qwen38_setup_commands` reescribe tres
+asignaciones (`MODEL_OWNER`/`MODEL_SLUG`/`SERVED_MODEL_NAME`) en el TEXTO de
+setup_commands.json — exactamente nuestro mecanismo de transforms. Nuestro bundle
+(thtennant) usa los MISMOS nombres de variable, y `SERVED_MODEL_NAME` se propaga solo al
+cliente (`LOCAL_ANALYZER_MODEL_ID` sale del mismo setup). Adopción el mismo día:
+`--model-qwen38` en el builder (3 reemplazos + registro del mount del modelo en
+`TAAF_KAGGLE_INPUT_PATHS`) + `model_sources` en push_kernels. **v19 = nav + ranuras +
+objects + nothink + Qwen3.8** empujada al slot de experimento (duck-v12 v3). Cautela §8.37
+vigente: cambio de modelo = cambio numérico → el guard mira CALIDAD (transcripts, niveles)
+además de salud, y la muestra oculta decide.
+
+Otras piezas del ecosistema: keithtyser publica Qwen3.8 "Flash Next" NVFP4 + MTP (runtime
+vLLM propio — más throughput, más riesgo; NO adoptado por ahora). jakobbrggen comparte el
+harness "anim" (fork TAAF 08-07, 120 votos, segunda variable para un futuro A/B) y un
+modelo q38 previo (91 votos). Tufa no comparte nada desde junio — su 11.04 es cerrado
+hasta que el milestone del 30-09 los obligue a abrirlo: **agendar la lectura de su código
+el 30-09**. thtennant (nuestra referencia de fork) itera v22→v35 esta misma semana.
+

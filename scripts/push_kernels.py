@@ -78,7 +78,10 @@ KERNELS = {
                 "title": "arc agi3 duck v12",
                 "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
                                      "driessmit1/arc3-vllm-h100-wheelhouse-v3",
-                                     "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
+                                     "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"],
+                # Qwen3.8-27B-FP8 publico (fuente: kernel LB-9). Adjuntarlo no cambia
+                # nada si el notebook no se construyo con --model-qwen38.
+                "model_sources": ["foysalemonshanto/qwen3-8-27b-fp8-repacked-v1/PyTorch/hf-fp8/1"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).
     # CPU puro: NO gasta cuota G4. Base probada para cerrar la brecha de exploración.
     # Corre NUESTRO banco contra el 27B de produccion: la comparacion que decide
@@ -142,7 +145,7 @@ def main() -> int:
         "enable_internet": False,  # obligatorio en evaluación; igual que RTX_G4
         "dataset_sources": datasets,
         "competition_sources": [COMP],
-        "model_sources": [],
+        "model_sources": cfg.get("model_sources", []),
         "kernel_sources": [],
         "docker_image": DOCKER_IMAGE,
     }

@@ -240,6 +240,12 @@ def main() -> int:
                          "prompt (componentes conexas del tablero actual). La meta esta "
                          "en/junto a un objeto en 92% de los triunfos medidos; solo "
                          "tokens de entrada, cero escritura exigida al modelo")
+    ap.add_argument("--model-qwen38", action="store_true",
+                    help="Cambia el modelo a Qwen3.8-27B-FP8 (modelo Kaggle publico "
+                         "foysalemonshanto/qwen3-8-27b-fp8-repacked-v1, mismo wheelhouse "
+                         "vLLM 0.19.0). Fuente: kernel publico LB-9 (275 votos) que hace "
+                         "exactamente este swap sobre el bundle TAAF. Requiere adjuntar "
+                         "el model_source en push_kernels")
     ap.add_argument("--vllm-ngram", action="store_true")
     # v17 (DESIGN 8.33): KV cache en FP8. La memoria de atencion esta
     # sobresuscrita (28 conversaciones de 32k) y duplicar su capacidad reduce
@@ -534,6 +540,52 @@ except Exception as exc:
                 break
         else:
             print("ERROR: no encontre el bucle de setup_commands para inyectar kv_fp8")
+            return 1
+
+    if args.model_qwen38:
+        # SWAP DE MODELO (mecanismo del kernel publico LB-9): el bundle TAAF define
+        # MODEL_OWNER/MODEL_SLUG/SERVED_MODEL_NAME como asignaciones python dentro
+        # del texto de setup_commands.json; se reescriben las tres. El served name
+        # se propaga solo al cliente (LOCAL_ANALYZER_MODEL_ID sale del mismo
+        # setup). El modelo Kaggle monta en /kaggle/input/models/... y se registra
+        # en TAAF_KAGGLE_INPUT_PATHS para que resolve_kaggle_dataset_path lo vea.
+        transform = '''
+    # INYECCION MODELO QWEN3.8 (v19): mismas ruedas vLLM, otra identidad de modelo.
+    _rep38 = [("MODEL_OWNER = 'driessmit1'", "MODEL_OWNER = 'foysalemonshanto'"),
+              ("MODEL_SLUG = 'vrfai-qwen3-6-27b-fp8-hf-snapshot'",
+               "MODEL_SLUG = 'qwen3-8-27b-fp8-repacked-v1'"),
+              ("SERVED_MODEL_NAME = 'vrfai/Qwen3.6-27B-FP8'",
+               "SERVED_MODEL_NAME = 'Qwen/Qwen3.8-27B-FP8'")]
+    _n38 = 0
+    for _viejo38, _nuevo38 in _rep38:
+        if _viejo38 in c:
+            c = c.replace(_viejo38, _nuevo38, 1); _n38 += 1
+    if _n38:
+        print(f"[model_qwen38] {_n38}/3 asignaciones reescritas", flush=True)
+'''
+        viejo = ('for c in json.loads((BUNDLE/"setup_commands.json").read_text()):\n'
+                 '    print("setup:", c[:80], flush=True)')
+        nuevo = ('for c in json.loads((BUNDLE/"setup_commands.json").read_text()):'
+                 + transform +
+                 '    print("setup:", c[:80], flush=True)')
+        for i, cell in enumerate(cells):
+            if 'setup_commands.json' in cell and viejo in cell:
+                cells[i] = cell.replace(viejo, nuevo)
+                break
+        else:
+            print("ERROR: no encontre el bucle de setup_commands para el swap qwen38")
+            return 1
+        # registrar el mount del modelo Kaggle en el mapa de rutas
+        viejo_p = 'paths = {r: (str(BUNDLE) if i==0 else mount(r)) for i,r in enumerate(DATASET_SOURCES)}'
+        nuevo_p = (viejo_p + '\n'
+                   'paths["foysalemonshanto/qwen3-8-27b-fp8-repacked-v1"] = '
+                   '"/kaggle/input/models/foysalemonshanto/qwen3-8-27b-fp8-repacked-v1/pytorch/hf-fp8/1"')
+        for i, cell in enumerate(cells):
+            if viejo_p in cell:
+                cells[i] = cell.replace(viejo_p, nuevo_p)
+                break
+        else:
+            print("ERROR: no encontre la linea de paths para registrar el modelo qwen38")
             return 1
 
     if args.slots_inc:

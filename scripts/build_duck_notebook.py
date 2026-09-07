@@ -235,6 +235,11 @@ def main() -> int:
     # repetitivos (el nuestro: ACTION*, codigo del sandbox, lineas del modelo de
     # mundo). La generacion ES el presupuesto de acciones (195 tok/s / 28 juegos).
     # Guard en el save&run: tok/s, metricas SpecDecoding y tok/accion.
+    ap.add_argument("--objects", action="store_true",
+                    help="H3 (DESIGN 8.36-8.37): mapa de objetos host-computado en el "
+                         "prompt (componentes conexas del tablero actual). La meta esta "
+                         "en/junto a un objeto en 92% de los triunfos medidos; solo "
+                         "tokens de entrada, cero escritura exigida al modelo")
     ap.add_argument("--vllm-ngram", action="store_true")
     # v17 (DESIGN 8.33): KV cache en FP8. La memoria de atencion esta
     # sobresuscrita (28 conversaciones de 32k) y duplicar su capacidad reduce
@@ -585,6 +590,99 @@ try:
     print("SLOTS_INCREMENTAL+HOSTREMINDER injected on seam C")
 except Exception as exc:
     print(f"[slots_inc] injection failed, running stock: {type(exc).__name__}: {exc}")
+'''
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     patch + "\nimport arc_agi, taaf.game_api")
+                break
+        else:
+            print("ERROR: no encontre la celda del install de grafts")
+            return 1
+
+    if args.objects:
+        # H3: MAPA DE OBJETOS (seam C). Medido en trazas ganadoras (h2_goal_transfer):
+        # la meta esta en/junto a una componente conexa no-fondo en 22/24 = 92% de los
+        # triunfos, mediana 4 objetos/tablero. El host lo computa por turno y lo entrega
+        # como TEXTO: solo tokens de ENTRADA (throughput 26:1 vs salida) y cero escritura
+        # exigida al modelo (no repite la inanicion de v13). Estructuras grandes NO se
+        # filtran (el filtro >15% dejaba a vc33 con 0 objetos): se etiquetan structure.
+        patch = '''
+# MAPA DE OBJETOS (seam C, H3). Nombres propios (_sh3/_orig_bup_obj) para apilar
+# con --slots-inc/--effects sin colision; degrada a stock ante cualquier fallo.
+try:
+    import taaf_grafts.schema_helpers as _sh3
+    from collections import Counter as _ObjCounter
+    _orig_bup_obj = _sh3.SchemaHelpersToolAgent._build_user_prompt
+
+    def _obj_components(grid):
+        H = len(grid); W = len(grid[0]) if H else 0
+        fondo = _ObjCounter(v for row in grid for v in row).most_common(1)[0][0]
+        vis = [[False] * W for _ in range(H)]
+        comps = []
+        for r0 in range(H):
+            for c0 in range(W):
+                if vis[r0][c0] or grid[r0][c0] == fondo:
+                    continue
+                pila = [(r0, c0)]; vis[r0][c0] = True; cells = []
+                while pila:
+                    y, x = pila.pop(); cells.append((y, x))
+                    for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                        ny, nx = y + dy, x + dx
+                        if 0 <= ny < H and 0 <= nx < W and not vis[ny][nx] \\
+                                and grid[ny][nx] != fondo:
+                            vis[ny][nx] = True; pila.append((ny, nx))
+                comps.append(cells)
+        return comps
+
+    def _obj_note(frame, history):
+        if frame is None or not frame.grid:
+            return ""
+        grid = [list(r) for r in frame.grid]
+        comps = _obj_components(grid)
+        if not comps:
+            return ""
+        start = None
+        for h in history:
+            if h.frame is not None and h.frame.level == frame.level:
+                start = [list(r) for r in h.frame.grid]
+                break
+        big = len(grid) * len(grid[0]) * 0.15
+        items = []
+        for cells in comps:
+            ys = [y for y, _ in cells]; xs = [x for _, x in cells]
+            col = _ObjCounter(grid[y][x] for y, x in cells).most_common(1)[0][0]
+            changed = ""
+            if start is not None and any(start[y][x] != grid[y][x] for y, x in cells):
+                changed = ", changed since level start"
+            kind = "structure" if len(cells) > big else "object"
+            items.append((len(cells),
+                          f"- {kind}: color {col}, {len(cells)} cells, "
+                          f"center ({(min(ys)+max(ys))//2},{(min(xs)+max(xs))//2}), "
+                          f"rows {min(ys)}-{max(ys)}, cols {min(xs)}-{max(xs)}{changed}"))
+        items.sort(key=lambda t: t[0])
+        lines = ["OBJECT MAP (host-computed connected components of the current board; "
+                 "measured on winning traces: the level goal lies on or next to one of "
+                 "these in 92% of wins):"]
+        lines += [ln for _, ln in items[:14]]
+        if len(items) > 14:
+            lines.append(f"- (+{len(items) - 14} more objects not listed)")
+        lines.append("Unvisited objects are the best exploration candidates; try "
+                     "reaching or clicking them, smallest first.")
+        return "\\n".join(lines)
+
+    def _bup_with_objects(self, action_num, **kw):
+        base = _orig_bup_obj(self, action_num, **kw)
+        try:
+            note = _obj_note(kw.get("current_frame"), kw.get("history_entries") or [])
+        except Exception:
+            return base
+        return base + "\\n" + note if note else base
+
+    _sh3.SchemaHelpersToolAgent._build_user_prompt = _bup_with_objects
+    print("OBJECT_MAP injected on seam C")
+except Exception as exc:
+    print(f"[objects] injection failed, running stock: {type(exc).__name__}: {exc}")
 '''
         for i, c in enumerate(cells):
             if "taaf_grafts.composite import install" in c:

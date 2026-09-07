@@ -1682,3 +1682,26 @@ tablero" tumbaba la cobertura a 67% (vc33 quedaba con 0 objetos): las estructura
 NO se filtran, se representan (esquinas/extremos como puntos salientes). Diseño del
 injerto pendiente de la autopsia del probe 56067684 (decide la base sobre la que se monta).
 
+### 8.37. El probe habla: v16-config = 1.15, RÉCORD del proyecto; fp8-KV cerrado (2026-09-07)
+
+El probe 56067684 (kernel v15 = nav + ranuras-hostreminder + nothink, SIN fp8) marcó
+**1.15 en el set oculto — el mejor puntaje de toda la serie** (máximo anterior 1.09 de v6
+el 08-24; media de v4 0.945, σ 0.142). Doble veredicto, limpio porque la única diferencia
+con v17 era el flag fp8:
+
+1. **KV fp8 CERRADO como culpable de v17=0.51**: misma pila exacta, 0.51 con fp8 → 1.15
+   sin fp8. El +29% de acciones era real pero inútil: la caché KV en fp8 degrada la calidad
+   de decisión y la métrica cuadrática (acciones²) lo amplifica. Regla nueva: **toda
+   palanca de throughput que toque la numérica (fp8, cuantización, especulación) necesita
+   compuerta de CALIDAD en el guard, no solo de salud** — el guard de v17 midió velocidad,
+   caché y coherencia superficial, y todo eso pasó mientras las decisiones empeoraban.
+2. **La pila nav+ranuras+nothink queda VALIDADA en producción**: 1.15 > todo v4 (máx 1.04)
+   y > v6 (máx 1.09). La predicción del banco offline (_tmp_nav = 1.320, +25%) apuntaba en
+   la dirección correcta. Con n=1 la cautela es obvia, pero la base del proyecto pasa a ser
+   **v16-config (kernel v15)**; trigger apuntado ahí a costo cero.
+
+Secuencia del ciclo hasta aquí, todo con 0/5h de G4: v17 0.51 → autopsia (no-inanición) →
+probe discriminador → 1.15 + causa aislada en 24 horas. El siguiente injerto (checklist de
+objetos, §8.36) se monta sobre v16-config y se valida con el A/B canario obligatorio
+(tu93/sc25/cd82/vc33) — ahí sí se gasta presupuesto G4.
+

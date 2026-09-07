@@ -1634,3 +1634,51 @@ El LLM sale del bucle de adivinar la meta. Activos ya medidos a favor: firma 100
 consistente entre niveles en los 4 juegos multinivel de las trazas (§8.16); LocalGame +
 arcengine en local para el experimento con el motor real, sin GPU.
 
+### 8.36. v17 = 0.51 (peor desde v9) + H2 refutada como transferencia visual (2026-09-07)
+
+**Autopsia de v17 en el set oculto.** Primera muestra: **0.51** — el peor COMPLETE desde
+v9 (0.26); incluso el mínimo histórico de v4 fue 0.68. El día anterior v4 marcó 0.87 en el
+mismo régimen. En el smoke, la TASA de acciones de v17 (24.4/min) igualó a v4 (25.0/min)
+gracias al fp8 (+33% tok/s), así que NO es inanición tipo v13: las sospechas son (a) fp8
+en la caché KV degrada la calidad de decisión → más acciones por nivel → castigo cuadrático
+de la métrica; (b) la pila nav+ranuras se comporta distinto en producción (sería el 4.º
+desajuste banco-producción); (c) flake de Kaggle (ese mismo día hubo un ERROR de infra).
+**Probe discriminador lanzado a costo cero** (id 56067684): kernel v15 = config v16, la
+MISMA pila sin fp8. Si vuelve a ~0.85 → fp8 culpable, base = v16-config. Si repite ~0.5 →
+la pila es culpable, base vuelve a v11 (0.99/0.81). Presupuesto G4 del ciclo: sigue en 0/5h.
+
+**H2 ejecutada el mismo día, en local, gratis** (`scripts/h2_goal_transfer.py` sobre las
+45 subidas de nivel de `traces_goal*.json`). Dos resultados:
+
+1. **El instrumento es sólido**: la extracción de la posición de meta (click ganador en
+   juegos MOUSE; centroide del último diff pequeño antes de `pre_grid` en juegos ACTION)
+   da la MISMA meta en corridas independientes en 20/20 casos (tol 3).
+2. **La transferencia visual NO existe**: template matching del parche-meta (crudo y
+   ponderado por rareza) sobre los 8 pares N→N+1 da top-5 = 25% y 12% vs base trivial 11%.
+   REFUTADA. La inspección celda a celda explica por qué, juego a juego:
+   - vc33 (único HIT): meta color 9 en ambos niveles — apariencia estable, caso raro.
+   - cd82: color 4 y fila 63 en AMBOS niveles; tu93: color 6 en 3/5 niveles, fila 63 en
+     3/5 — hay REGLAS por juego (color de meta, sesgo de borde) pero el parche 5×5 no las
+     captura porque el entorno de la meta cambia.
+   - r11l, sp80, dc22: la meta está sobre FONDO PURO al inicio del nivel (0-2 celdas
+     no-fondo en 3×3) — **invisible por definición en el tablero estático**; refuerza §8.35.
+   - 8/24 triunfos son MOUSE(click); en 6 de esos 8 el objetivo es un objeto visible denso
+     (9/9 no-fondo) → en juegos de click la exploración por LISTA DE OBJETOS es acotable.
+
+**Síntesis → H3.** Lo que transfiere entre niveles no son píxeles sino reglas abstractas
+por juego (qué color es la meta, qué acción gana, qué borde). Eso es exactamente lo que las
+ranuras `Cross-level notes` ya acarrean en texto. El eslabón algorítmico que SÍ se puede
+regalar al host sin adivinar: **checklist de objetos** — segmentar el tablero en componentes
+conexas y llevar la cuenta de tocado/no-tocado, inyectándola como candidatas de exploración
+(cierra el caso click-games y acota la búsqueda en los demás).
+
+**Techo del checklist, MEDIDO el mismo día (gratis, sobre las 24 metas extraídas):** la
+meta está en (o junto a, tol 1) alguna componente conexa no-fondo en **22/24 = 92%** de
+los triunfos; con mediana de ~4 objetos pequeños por tablero (máx 30), la lista de
+candidatas es diminuta frente a 4096 celdas. Los 2 escapes (r11l, sp80) son metas de
+estado puro sobre fondo — para ellas solo queda exploración sistemática, que el propio
+checklist ordena. Nota de instrumentación: el filtro "descartar componentes >15% del
+tablero" tumbaba la cobertura a 67% (vc33 quedaba con 0 objetos): las estructuras grandes
+NO se filtran, se representan (esquinas/extremos como puntos salientes). Diseño del
+injerto pendiente de la autopsia del probe 56067684 (decide la base sobre la que se monta).
+

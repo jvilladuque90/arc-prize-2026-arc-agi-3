@@ -82,6 +82,18 @@ KERNELS = {
                 # Qwen3.8-27B-FP8 publico (fuente: kernel LB-9). Adjuntarlo no cambia
                 # nada si el notebook no se construyo con --model-qwen38.
                 "model_sources": ["foysalemonshanto/qwen3-8-27b-fp8-repacked-v1/PyTorch/hf-fp8/1"]},
+    # v21 MIGRACION DE BASE (docs/AUDIT_2026-09-08.md): el harness pasa a ser el
+    # fork "animation-awareness" de jakobbrggen — el que corre el kernel publico
+    # LB-9 de la banda 3-4. Se adjuntan CUATRO datasets porque el bundle anim no
+    # trae taaf-grafts: el fork de thtennant viaja solo para eso, y el notebook
+    # monta unicamente su subarbol src/taaf-grafts (nunca sus copias del harness,
+    # que sombrearian la conciencia de animacion). REQUIERE --gpu.
+    "duckanim": {"notebook": "notebooks/duck_anim.ipynb", "slug": "arc-agi3-duck-anim",
+                 "title": "arc agi3 duck anim",
+                 "default_datasets": ["jakobbrggen/taaf-kaggle-source-anim-20260807-anim",
+                                      "driessmit1/arc3-vllm-h100-wheelhouse-v3",
+                                      "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot",
+                                      "thtennant/taaf-kaggle-source-share-fork"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).
     # CPU puro: NO gasta cuota G4. Base probada para cerrar la brecha de exploración.
     # Corre NUESTRO banco contra el 27B de produccion: la comparacion que decide

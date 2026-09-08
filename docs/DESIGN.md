@@ -1733,3 +1733,63 @@ modelo q38 previo (91 votos). Tufa no comparte nada desde junio — su 11.04 es 
 hasta que el milestone del 30-09 los obligue a abrirlo: **agendar la lectura de su código
 el 30-09**. thtennant (nuestra referencia de fork) itera v22→v35 esta misma semana.
 
+
+### 8.39. v21: cambio de BASE, no de prompt — migración al harness con conciencia de animación (2026-09-08)
+
+La auditoría de tres pasadas (`docs/AUDIT_2026-09-08.md`) cerró la pregunta de dónde está la
+diferencia con la banda 3-4 del leaderboard, y la respuesta invalida la línea de trabajo de las
+últimas seis versiones. El kernel público LB-9 (277 votos, 242 forks) **no modifica nada** del
+harness: cero injertos, cero parches de prompt, configuración de runtime idéntica a la nuestra
+campo a campo. Su ventaja entera está en que corre **otro bundle**, el fork
+`jakobbrggen/...anim...` (rama `feature/animation-awareness`), con dos módulos que el nuestro no
+tiene:
+
+- **`inference/utils/animation.py` (375 líneas).** `arcengine` renderiza un frame por cada
+  `step()` interno, así que una acción puede devolver varios frames. `GameState.all_frames`
+  expone la lista completa — y está definido **en los dos bundles**, en `taaf/game.py:178`, con
+  el mismo código. El harness estándar simplemente **consumía sólo el último frame**. La
+  información siempre estuvo ahí; nunca la miramos. Su medición sobre 24 juegos: 13 devuelven
+  respuestas multi-frame, y en los de **tipo 1** (`ft09`, `sb26`) el primer y el último frame son
+  **idénticos**, con toda la señal (un clic rechazado, un intento consumido) viviendo sólo en los
+  intermedios.
+- **`inference/agent/noop_guard.py` (100 líneas).** Bloqueo del **host** de
+  `(nivel, firma-tablero, firma-acción)` ya probados inertes, con **exención explícita para
+  acciones animadas**. Su comentario documenta el intento previo: mencionar los no-ops en el
+  contexto dejaba ~12% de repeticiones porque el modelo podía ignorar el aviso.
+
+**El daño que nos hacíamos.** `src/arc3/sandbox_nav.py::_nav_shift` compara únicamente el frame
+final; si es idéntico al anterior devuelve `None` y `motion_model()` descarta esa acción como
+"sin efecto". En los juegos tipo 1 eso ocurre **precisamente cuando la acción sí hizo algo**: los
+helpers no eran ciegos a esa información, le enseñaban al modelo que las acciones informativas
+estaban muertas. Verificación contra nuestros propios datos: **`sb26` recibe más acciones que
+ningún otro juego (64-69 en una hora) y jamás pasa del nivel 1** — actividad máxima, progreso
+nulo, la firma de un agente que no puede ver por qué fallan sus acciones.
+
+**v21 = nuestros injertos sobre su harness.** Una sola variable: bundle anim, injertos
+`efficiency + retry_guard + schema_helpers`, **cero** parches de prompt (fuera nav, efectos,
+objetos, ranuras, thinking-off) y Qwen3.6 — el modelo queda como variable separada porque v19 lo
+cambió con nuestra pila puesta y dio 0.48.
+
+**Detalle de montaje.** `taaf-grafts` sólo existe en el bundle de thtennant, así que el kernel
+adjunta cuatro datasets y monta del fork **sólo** `src/taaf-grafts`; sus copias del harness
+sombrearían la conciencia de animación. Con dos marcadores de bundle presentes, la elección se
+hace por `benchmark_label`, no por el orden del `rglob`.
+
+**`shortcircuit` apagado (hallazgo de la implementación).** Su `step_env` lleva una copia verbatim
+del ensamblado del payload, anterior a las líneas `frame_count` / `pick_animation` de anim. En un
+lote homogéneo de ≥2 acciones idénticas el payload saldría sin ellas, `_action_animated()` leería
+"no animada" y el guard duro registraría un no-op **falso** que después bloquearía una acción que
+sí funcionó. El injerto rompería la mejora justo en los juegos tipo 1. Reescribirlo consciente de
+animación es trabajo aparte.
+
+**Verificado antes de gastar GPU** (primera vez en el proyecto que una base nueva se prueba
+ejecutándola): `scripts/verify_anim_compat.py` **32/32** (invariantes del notebook + cada costura
+entre los dos árboles: `_play_one` byte-idéntico, firmas idénticas, `SAFE_BUILTINS` sin cambios,
+defaults de las dos palancas en `True`) y `scripts/smoke_anim_grafts.py` **PASS** (montaje real:
+banner con los tres flags, solver sin reemplazar, `RetryGuard(SchemaHelpersToolAgent)` heredando
+del `ToolAgent` de anim con su `NoopGuard` vivo, prelude completo, y el guard exime a las acciones
+animadas).
+
+**Regla que queda.** Antes de escribir un parche que razone sobre el estado del juego, comprobar
+de qué *señal* lo lee. Seis versiones de trabajo de prompt se apoyaron en `board_changed` y en el
+frame final sin preguntarse si esa señal era completa. No lo era en la mitad de los juegos.

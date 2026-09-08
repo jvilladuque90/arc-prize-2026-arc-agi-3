@@ -53,6 +53,27 @@ Esta es la parte que importa para competir, y está **verificada en producción*
 | **D. Cadena de analizadores** | `composite.register_chain_layer(flag, loader)` envuelve el ToolAgent | según la capa | disponible, sin usar |
 | **E. Solver** | `from_solver` reemplaza la clase del solver (lo hacen `banking`/`transfer`) | según el caso | disponible, sin usar |
 
+### 2-bis. La base cambió: seams que ahora vienen de fábrica (2026-09-08)
+
+Desde la v21 el harness es el fork **anim** (`jakobbrggen/taaf-kaggle-source-anim-20260807-anim`),
+no el de thtennant. Dos mecanismos que antes intentábamos aproximar desde el prompt ahora son
+parte del bucle del agente, y **no cuestan tokens de salida**:
+
+| Mecanismo | Dónde vive | Qué hace |
+|---|---|---|
+| **Conciencia de animación** | `inference/utils/animation.py` + rama `query='animation'` en `step_env` + builtin `animation()` en el sandbox | `arcengine` renderiza un frame por `step()` interno; el harness estándar sólo consumía el último. Recupera los intermedios, donde vive toda la señal en los juegos tipo 1 (`ft09`, `sb26`) |
+| **Guard duro de no-ops** | `inference/agent/noop_guard.py`, llamado desde `ToolAgent` | Bloquea en el host re-ejecutar `(nivel, firma-tablero, firma-acción)` ya probado inerte, **eximiendo** las acciones animadas |
+
+Consecuencia para nuestros seams: **A y B siguen intactos** (el prelude y la nota se leen en cada
+llamada, igual que antes). **C queda en cuarentena**: `--effects` razona sobre `board_changed`,
+que es la señal incompleta. Y el seam **E queda vetado para `shortcircuit`** hasta reescribirlo:
+su copia verbatim del ensamblado de `step_env` borraría `frame_count`/`animation` del payload.
+
+Los injertos `taaf-grafts` **no viajan** en el bundle anim: sólo existen en el de thtennant. El
+kernel adjunta los dos y monta del fork **únicamente** `src/taaf-grafts`; sus copias del harness
+sombrearían la conciencia de animación. Con dos marcadores presentes, el bundle se elige por
+`benchmark_label`, no por el orden del `rglob`.
+
 **Regla de oro de los seams:** todo parche va envuelto en `try/except` que deja la configuración
 estándar intacta. Verificado dos veces en la G4: el banner sale o sale la línea de fallo, nunca
 se cae la corrida.
@@ -84,7 +105,12 @@ generados en las 8 h → **20-40 turnos de pensamiento y ~94 acciones por juego*
 
 1. **CPU local, segundos, gratis** — `test_schema_helpers.py`, `test_sandbox_nav.py` (corre el
    prelude bajo SAFE_BUILTINS restringidos), `smoke_graft_install.py`, `verify_nav_notebook.py`.
-   Cazaron dos bugs reales antes de gastar GPU.
+   Cazaron dos bugs reales antes de gastar GPU. Desde 2026-09-08 se suman los dos de la
+   migración de base: **`verify_anim_compat.py`** (estático: invariantes del notebook + cada
+   costura de la que dependen los injertos, comparada entre los dos árboles de fuente) y
+   **`smoke_anim_grafts.py`** (dinámico: *ejecuta* el montaje real —harness de anim + injertos
+   del fork— y construye un analizador de verdad). Entre los dos cazaron la incompatibilidad de
+   `shortcircuit` antes de cualquier gasto.
 2. **Save & Run de 1 hora, ~1 h de cuota, sin gastar envío** — `--soft-min 70`. Da 1420 acciones,
    9 niveles y 25/25 juegos activos: **el único instrumento offline que discrimina**. La ventana
    corta de 16 min solo sirve para verificar mecanismos.

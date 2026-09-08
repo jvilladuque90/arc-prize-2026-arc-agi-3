@@ -175,6 +175,9 @@ print("run terminado")
 
 
 
+ANIM_GUARD = '\n# GUARD DE BASE ANIM: sin esto el log no distingue "adjunte el bundle" de "las\n# palancas del bundle estan encendidas". Los dos campos viajan dentro del pickle\n# del solver (capturados del entorno del autor al desplegar), asi que se afirman\n# aqui explicitamente en vez de confiar en el default.\nfor _flag in ("hard_noop_guard", "animation_awareness"):\n    if not hasattr(bm.solver, _flag):\n        raise RuntimeError("bundle equivocado: el solver no tiene " + _flag +\n                           " (adjunta jakobbrggen/taaf-kaggle-source-anim-20260807-anim)")\n    setattr(bm.solver, _flag, True)\nimport inference.utils.animation as _anim_mod\nimport inference.agent.noop_guard as _ng_mod\nprint("ANIM_BASE animation=%s noop_guard=%s hard_noop_guard=%s animation_awareness=%s" % (\n    _anim_mod.__file__, _ng_mod.__file__,\n    bm.solver.hard_noop_guard, bm.solver.animation_awareness))\n'
+
+
 def code_cell(src: str) -> dict:
     return {"cell_type": "code", "execution_count": None, "metadata": {},
             "outputs": [], "source": src.splitlines(keepends=True)}
@@ -262,6 +265,25 @@ def main() -> int:
     ap.add_argument("--hybrid-actions", type=int, default=12000)
     ap.add_argument("--hybrid-seconds", type=float, default=420.0)
     ap.add_argument("--banking", action="store_true")
+    # v21 MIGRACION DE BASE (docs/AUDIT_2026-09-08.md): cambia el bundle del
+    # harness por el fork jakobbrggen "animation-awareness" que corre el kernel
+    # publico LB-9 (banda 3-4 del leaderboard). Aporta dos modulos que nuestro
+    # bundle no tiene, y que atacan causas MECANICAS, no el prompt:
+    #   - inference/utils/animation.py  (375 lineas): arcengine renderiza un
+    #     frame por cada step() interno y el harness estandar solo consumia el
+    #     ULTIMO. En los juegos "tipo 1" (ft09, sb26) el primero y el ultimo
+    #     son identicos y toda la senal vive en los intermedios descartados.
+    #   - inference/agent/noop_guard.py (100 lineas): bloqueo DURO en el host
+    #     de (nivel, firma-tablero, firma-accion) ya probados inertes, con
+    #     exencion explicita para acciones animadas.
+    # shortcircuit queda FORZADO A OFF: su copia verbatim del ensamblado de
+    # step_env es anterior a las lineas frame_count/pick_animation del fork
+    # anim, asi que en un lote homogeneo >=2 borraria la evidencia de animacion
+    # y _action_animated() la leeria como no-op -> el guard duro bloquearia
+    # acciones que SI funcionaron. Verificado en scripts/verify_anim_compat.py.
+    ap.add_argument("--anim", action="store_true",
+                    help="base = bundle jakobbrggen animation-awareness "
+                         "(adjunta los datasets con push_kernels duckanim)")
     args = ap.parse_args()
 
     cells = list(CELLS)
@@ -797,6 +819,84 @@ except Exception as exc:
         else:
             print("ERROR: no encontre la celda del install de grafts")
             return 1
+
+    if args.anim:
+        # 2.a  el dataset del bundle: el marker lo localiza un rglob, pero
+        #      DATASET_SOURCES[0] nombra el que hay que adjuntar al kernel.
+        old_ds = '"thtennant/taaf-kaggle-source-share-fork"'
+        new_ds = '"jakobbrggen/taaf-kaggle-source-anim-20260807-anim"'
+        if sum(c.count(old_ds) for c in cells) != 1:
+            print("ERROR: esperaba exactamente 1 mencion del dataset del bundle")
+            return 1
+        cells = [c.replace(old_ds, new_ds) for c in cells]
+        cells = [c.replace("adjunta thtennant/taaf-kaggle-source-share-fork",
+                           "adjunta jakobbrggen/taaf-kaggle-source-anim-20260807-anim")
+                 for c in cells]
+
+        # 2.b  seleccion DETERMINISTA del bundle: con dos datasets de bundle
+        #      adjuntos (anim para el harness + fork para los injertos), el
+        #      rglob del marker devolveria cualquiera de los dos. Se elige por
+        #      benchmark_label ("anim-20260807-anim" vs "duck-harness-kaggle").
+        old_pick = ('BUNDLE = None\n'
+                    'for m in Path("/kaggle/input").rglob("taaf-kaggle-bundle.json"):\n'
+                    '    BUNDLE = m.parent; break\n')
+        new_pick = ('BUNDLE = None\n'
+                    'for m in sorted(Path("/kaggle/input").rglob("taaf-kaggle-bundle.json")):\n'
+                    '    try: _label = json.loads(m.read_text()).get("benchmark_label", "")\n'
+                    '    except Exception: _label = ""\n'
+                    '    if "anim" in _label:\n'
+                    '        BUNDLE = m.parent; break\n')
+        if sum(c.count(old_pick) for c in cells) != 1:
+            print("ERROR: no encontre el bucle de seleccion del bundle")
+            return 1
+        cells = [c.replace(old_pick, new_pick) for c in cells]
+
+        # 2.c  los INJERTOS viven en el bundle de thtennant (src/taaf-grafts) y
+        #      NO en el de anim. Se adjunta ese dataset tambien, pero al
+        #      sys.path entra solo esa raiz importable: sus copias del harness
+        #      (ARC3-Inference, tufa-arc-agi-framework) sombrearian las de anim
+        #      y nos devolverian al harness ciego a la animacion.
+        old_list = '"driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]'
+        new_list = ('"driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot",\n'
+                    '                   "thtennant/taaf-kaggle-source-share-fork"]')
+        if sum(c.count(old_list) for c in cells) != 1:
+            print("ERROR: no encontre DATASET_SOURCES para anadir el fork de injertos")
+            return 1
+        cells = [c.replace(old_list, new_list) for c in cells]
+
+        old_entries = "entries = source_entries(BUNDLE)\n"
+        new_entries = (
+            "entries = source_entries(BUNDLE)\n"
+            "GRAFTS = None\n"
+            "for _g in Path(\"/kaggle/input\").rglob(\"taaf-grafts/taaf_grafts/composite.py\"):\n"
+            "    GRAFTS = _g.parent.parent; break\n"
+            "assert GRAFTS, \"taaf-grafts no encontrado (adjunta thtennant/taaf-kaggle-source-share-fork)\"\n"
+            "assert not (GRAFTS/\"ARC3-Inference\").exists(), \"raiz de injertos demasiado ancha\"\n"
+            "entries = entries + [GRAFTS]\n"
+            "print(\"GRAFTS =\", GRAFTS)\n")
+        if sum(c.count(old_entries) for c in cells) != 1:
+            print("ERROR: no encontre source_entries para montar los injertos")
+            return 1
+        cells = [c.replace(old_entries, new_entries) for c in cells]
+
+        # 2.d  shortcircuit OFF (ver el comentario del flag).
+        old_sc = '"shortcircuit": True, "schema_helpers": True'
+        new_sc = '"shortcircuit": False, "schema_helpers": True'
+        if sum(c.count(old_sc) for c in cells) != 1:
+            print("ERROR: no encontre el dict de flags para apagar shortcircuit")
+            return 1
+        cells = [c.replace(old_sc, new_sc) for c in cells]
+        cells = [c.replace("# Graft install (base = config v12 de thtennant, que marco 1.17)",
+                           "# Graft install (base = bundle anim de jakobbrggen, el de LB-9)")
+                 for c in cells]
+
+        # 2.e  guard de log.
+        guard = ANIM_GUARD
+        hook = 'os.environ.setdefault("RECORDINGS_DIR", str(WORKING/"server_recording"))'
+        if sum(c.count(hook) for c in cells) != 1:
+            print("ERROR: no encontre el ancla RECORDINGS_DIR para el guard anim")
+            return 1
+        cells = [c.replace(hook, hook + guard) for c in cells]
 
     out = Path(args.out) if args.out else OUT
     nb = {"nbformat": 4, "nbformat_minor": 5,

@@ -5,7 +5,33 @@
 > plan por fases) que se conserva porque su diagnóstico técnico sigue siendo válido, aunque
 > varias de sus conclusiones fueron **corregidas por medición** — cada corrección está marcada.
 
-## §0. Estado vigente (2026-08-16)
+## §0. Estado vigente (2026-09-08) — la base cambia
+
+**El diagnóstico que reordena todo (`docs/AUDIT_2026-09-08.md`).** La banda 3-4 del leaderboard
+son 242 forks de un kernel público (LB-9) que **no modifica nada** del harness: cero injertos,
+cero parches de prompt, runtime idéntico al nuestro campo a campo. Su única diferencia real es
+que corre **otro bundle** — el fork `jakobbrggen/...anim...`, con conciencia de animación y un
+guard duro de no-ops. En una frase: **ellos arreglaron el harness; nosotros decoramos el prompt.**
+
+Y peor que "no ayudaba": nuestros parches razonaban sobre el **frame final**, una señal que su
+trabajo demuestra **incompleta en la mitad de los juegos**. `sb26` recibe más acciones que
+ningún otro juego de nuestras corridas (64-69 en una hora) y jamás pasa del nivel 1.
+
+**v21, construida y verificada el mismo día:** bundle anim + nuestros injertos
+(`efficiency + retry_guard + schema_helpers`) + **cero** parches de prompt + Qwen3.6. Una sola
+variable, para que la muestra oculta se pueda leer. Verificación previa al gasto de GPU:
+`verify_anim_compat.py` 32/32 y `smoke_anim_grafts.py` PASS (montaje ejecutado, no sólo leído).
+Detalle: `shortcircuit` queda **apagado** — su copia verbatim del ensamblado de `step_env` es
+anterior a `frame_count`/`animation` y rompería el guard duro justo en los juegos tipo 1.
+
+**Marcas vigentes:** récord propio **1.15** (v16-config, kernel v15); v19 (Qwen3.8 sobre nuestra
+pila) **0.48**; líder Tufa Labs **11.04**.
+
+**Qué tenemos que ellos no** (y que la migración conserva): los injertos `taaf-grafts` —LB-9 corre
+sin ninguno—, el **híbrido explorador CPU** (LLM solo 9 niveles, explorador solo 18, **unión 21**,
+parcialmente disjuntos) que no depende del harness, y la infraestructura de medición.
+
+## §0-bis. Estado anterior (2026-08-16)
 
 **Serie v11 (v4 + thinking off): CERRADA en n=2 {0.99, 0.81}** (media 0.90, −0.3σ vs 0.945;
 neutra, como predijo el banco: el thinking no cambiaba la precisión, solo el coste). Cerrada

@@ -1,0 +1,7 @@
+﻿{
+    "corriendo":  false,
+    "cuenta":  4,
+    "terminado":  "2026-09-05T23:11:22",
+    "script":  "scripts/colab_vlm_goal_bench.py",
+    "exit":  0
+}

@@ -1825,3 +1825,58 @@ suerte. Hace falta la segunda.
 3.8, pero con nuestra pila de prompt encima — y ahora sabemos que la pila era el problema, no el
 modelo. Ese A/B, con la base ya limpia, es el siguiente salto natural.
 
+### 8.41. LA MÉTRICA NO ES "NIVELES": es niveles / acciones² (2026-09-09)
+
+**Verificado en el paquete oficial de la competencia** (`arc_agi 0.9.8`,
+`arc_agi/scorecard.py::EnvironmentScoreCalculator.add_level`, el mismo wheel que el kernel
+instala offline):
+
+```python
+if completed and actions_taken > 0:
+    score = ((baseline_actions / actions_taken) ** 2) * 100   # tope 115
+```
+
+y el puntaje del juego es la media de los niveles **ponderada por índice de nivel**
+(`total_score / total_weights`, peso = índice). `taaf/game.py::_compute_final_score` lo replica
+y su docstring lo dice explícitamente.
+
+**Todo el proyecto venía documentando "score = niveles completados en ~110 juegos ocultos". Es
+falso.** Completar un nivel es necesario pero el crédito colapsa como `1/acciones²`: al doble del
+baseline se cobra el 25%; a 10× el baseline, el 1%.
+
+**La prueba, con nuestros propios datos** (mismo juego, dos corridas del mismo día):
+
+| corrida | juego | niveles | baseline | acciones | score |
+|---|---|---|---|---|---|
+| v21 | `sb26` | 1 | 18 | **18** | **2.78** |
+| v22 | `sb26` | 0 | 18 | **12.010** | **0.00** |
+| v22 | `tu93` | **5** | 19 / 16 / 34 | 301 / 196 / 967 | **0.10** |
+
+En v21 el modelo completó `sb26` en **exactamente el baseline** y ese único nivel valió 2.78 — el
+mejor juego de la corrida. En v22 el explorador híbrido quemó 12.010 acciones en ese mismo juego
+y ni siquiera pasó el nivel 1. Y cinco niveles en `tu93` valen 0.10 porque salieron a 15-30× el
+baseline: `(19/301)² × 100 = 0,4`.
+
+**Qué invalida esto.**
+
+1. **El híbrido explorador queda refutado como estaba diseñado.** Su justificación medida —"LLM
+   solo 9 niveles, explorador solo 18, unión 21"— contaba **niveles**, la variable equivocada.
+   Con 12.000 acciones por juego el término cuadrático lo anula, y encima destruye los juegos que
+   el modelo resolvía cerca del baseline. Es el mismo error de Goodhart de v5 (§8.9), pero esta
+   vez en la **definición de la métrica**, no en el proxy offline.
+2. **Reordena el diagnóstico del líder.** Tufa en 11.04 frente a nuestro 1.15 no significa que
+   complete diez veces más niveles: significa que los completa **cerca del baseline de acciones**.
+   Un solo nivel a baseline vale 100 puntos de nivel; el mismo nivel a 10× vale 1.
+3. **Reordena las palancas.** Toda la línea de "comprar más acciones" (ventana de contexto, fp8-KV,
+   thinking apagado, throughput) empujaba una variable que la métrica **eleva al cuadrado en
+   nuestra contra** cuando se gasta dentro del nivel. Lo que paga es **acciones por nivel
+   completado**, no acciones totales.
+
+**Regla que queda:** antes de justificar un cambio con una métrica agregada, leer la fórmula en el
+paquete de la competencia. Estuvimos seis semanas optimizando una función objetivo que nunca
+habíamos abierto.
+
+**Decisión inmediata (Julian, 2026-09-09):** v23 = bundle anim + Qwen3.8 + injertos, **sin
+híbrido**. El explorador no se descarta: hay que rediseñarlo alrededor de eficiencia por nivel,
+no de volumen de acciones.
+

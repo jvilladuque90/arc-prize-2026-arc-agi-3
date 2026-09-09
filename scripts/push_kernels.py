@@ -93,7 +93,11 @@ KERNELS = {
                  "default_datasets": ["jakobbrggen/taaf-kaggle-source-anim-20260807-anim",
                                       "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                                       "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot",
-                                      "thtennant/taaf-kaggle-source-share-fork"]},
+                                      "thtennant/taaf-kaggle-source-share-fork"],
+                 # Qwen3.8-27B-FP8 publico: el modelo que corre LB-9. Necesario
+                 # cuando el notebook se construye con --model-qwen38; adjuntarlo
+                 # no cambia nada si no se usa ese flag.
+                 "model_sources": ["foysalemonshanto/qwen3-8-27b-fp8-repacked-v1/PyTorch/hf-fp8/1"]},
     # Réplica fiel del explorador público 0.54 (harness oficial + Explore2 vendorizado).
     # CPU puro: NO gasta cuota G4. Base probada para cerrar la brecha de exploración.
     # Corre NUESTRO banco contra el 27B de produccion: la comparacion que decide

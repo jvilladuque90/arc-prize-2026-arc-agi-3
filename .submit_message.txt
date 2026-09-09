@@ -1,0 +1,1 @@
+﻿v23 2026-09-10: bundle anim (animation-awareness, base de LB-9) + Qwen3.8-27B + injertos efficiency/retry_guard/schema_helpers, SIN hibrido ni parches de prompt. Hibrido retirado tras verificar la metrica oficial: score = (baseline/acciones)^2 por nivel. Guard: animation() 1003 veces en 25/25 juegos, 2 niveles en 239 acciones (0.5x baseline), 0 errores

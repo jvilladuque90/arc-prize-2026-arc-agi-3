@@ -45,13 +45,6 @@ def load_env() -> None:
         os.environ["KAGGLE_USERNAME"] = os.environ["kaggle_username"]
 
 
-def seconds_to_reset() -> float:
-    now = datetime.datetime.now(datetime.timezone.utc)
-    nxt = (now + datetime.timedelta(days=1)).replace(
-        hour=0, minute=0, second=20, microsecond=0)
-    return (nxt - now).total_seconds()
-
-
 def main() -> int:
     args = [a for a in sys.argv[1:] if a != "--now"]
     wait = "--now" not in sys.argv
@@ -64,28 +57,31 @@ def main() -> int:
     api = KaggleApi()
     api.authenticate()
 
-    if wait:
-        delay = seconds_to_reset()
-        log(f"esperando {delay/60:.1f} min al reset UTC para enviar {kernel} v{version}")
-        while delay > 0:
-            time.sleep(min(delay, 60))
-            delay = seconds_to_reset()
-            if delay > 23 * 3600:  # ya pasamos el reset
-                break
-
-    # Hasta 6 intentos: el cupo se abre en el instante exacto y el reloj del
-    # servidor puede ir unos segundos por detras del nuestro.
-    for attempt in range(1, 7):
+    # NO se calcula el instante del reset: se INTENTA y se reintenta hasta que el
+    # cupo abra. Asi el envio es inmune a la zona horaria de la maquina, al
+    # desfase del reloj del servidor y a que la tarea arranque antes o despues.
+    # El 400 del cupo agotado es FAILED_PRECONDITION y trae el motivo en el
+    # cuerpo (el CLI lo oculta); cualquier otro error se registra igual y se
+    # reintenta, porque un fallo de red no puede costar el envio del dia.
+    max_minutes = int(os.environ.get("SUBMIT_MAX_MINUTES", "240")) if wait else 1
+    deadline = time.time() + max_minutes * 60
+    log(f"armado: {kernel} v{version} — reintentando hasta {max_minutes} min "
+        f"o hasta que el cupo abra")
+    attempt = 0
+    while True:
+        attempt += 1
         try:
             api.competition_submit_code("submission.parquet", message, COMP,
                                         kernel, int(version))
-            log(f"ENVIADO {kernel} v{version}")
+            log(f"ENVIADO {kernel} v{version} (intento {attempt})")
             break
         except Exception as exc:
             resp = getattr(exc, "response", None)
-            body = resp.text[:400] if resp is not None else str(exc)[:400]
-            log(f"intento {attempt} fallo: {body}")
-            if attempt == 6:
+            body = resp.text[:300] if resp is not None else str(exc)[:300]
+            if attempt == 1 or attempt % 15 == 0:
+                log(f"intento {attempt}: {body}")
+            if time.time() >= deadline:
+                log(f"AGOTADO tras {attempt} intentos: {body}")
                 return 1
             time.sleep(60)
 

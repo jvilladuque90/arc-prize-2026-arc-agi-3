@@ -1880,3 +1880,18 @@ habíamos abierto.
 híbrido**. El explorador no se descarta: hay que rediseñarlo alrededor de eficiencia por nivel,
 no de volumen de acciones.
 
+**Refinamiento del 2026-09-09 (segundo término de la fórmula).** El puntaje del juego no es sólo
+la media ponderada: se topa en `max_weights / total_weights × 100`, donde `max_weights` suma
+**únicamente los niveles completados**, ponderados por profundidad. En un juego de 8 niveles
+`total_weights = 1+2+…+8 = 36`, así que **completar sólo el nivel 1 topa en 2.78** por muy
+eficiente que se sea — y es exactamente lo que marcan nuestros dos mejores juegos de v23
+(`lp85` con 9 acciones sobre un baseline de 17, y `ar25` con 17 sobre 32: ambos 0,5× el baseline,
+ambos 2.78). El objetivo real, entonces, tiene dos mitades:
+
+- **Eficiencia** lleva hasta el tope. Llegar al baseline lo satura; ser más rápido ya no suma.
+- **Profundidad** sube el tope, y de forma acelerada: nivel 1 = 2.78, niveles 1-2 = 8.33,
+  niveles 1-3 = 16.7.
+
+El híbrido fallaba por eficiencia. **Nosotros fallamos por profundidad**: llevamos meses
+saturando el tope del nivel 1. Ahí está la brecha con el 11.04 del líder, y ahí debe apuntar el
+próximo ciclo.

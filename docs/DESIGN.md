@@ -1793,3 +1793,35 @@ animadas).
 **Regla que queda.** Antes de escribir un parche que razone sobre el estado del juego, comprobar
 de qué *señal* lo lee. Seis versiones de trabajo de prompt se apoyaron en `board_changed` y en el
 frame final sin preguntarse si esa señal era completa. No lo era en la mitad de los juegos.
+
+### 8.40. v21 = 1.15: la base nueva iguala el récord SIN un solo parche de prompt (2026-09-09)
+
+Envío 56108996, COMPLETE, **1.15** — empata la mejor muestra del proyecto (v16-config), y lo hace
+a la primera sobre un harness que nunca habíamos corrido. Serie reciente para calibrar: v17 0.51,
+v18 0.87/0.92, v19 (Qwen3.8 sobre nuestra pila) **0.48**.
+
+**Lo que la muestra NO dice.** Con n=1 y σ≈0.12-0.14, 1.15 y 1.15 son indistinguibles. Nuestra
+propia regla (§8.9, y las dos veces que la rompí) prohíbe leer superioridad aquí.
+
+**Lo que sí dice, y vale más.** v21 retiró **todo** el trabajo de prompt acumulado desde v13 —nav,
+ranuras incrementales, host-reminder, mapa de objetos, thinking apagado: unos 311 tokens de
+entrada por turno más la escritura obligatoria del modelo de mundo— **y el puntaje no bajó.**
+Igualó el máximo histórico. La contribución neta de esa pila era ≈0, exactamente lo que predijo
+la auditoría, y una parte era activamente dañina: `_nav_shift` razonaba sobre el frame final y en
+los juegos tipo 1 le enseñaba al modelo que las acciones informativas estaban muertas.
+
+Es el resultado más incómodo del proyecto y el más útil: seis versiones de esfuerzo se pagaron
+solas **al retirarlas**. La lección operativa ya quedó escrita en §8.39 (comprobar de qué señal
+lee un parche antes de escribirlo); ésta le añade la versión de portafolio: **cuando una pila
+crece sin que ninguna pieza tenga su propia muestra limpia, el experimento que falta no es añadir
+la siguiente, es quitarlas todas.**
+
+**Lo que sigue sin medirse.** Si el canal de animación compra niveles en el régimen profundo. El
+mecanismo disparó 1.084 veces en 25/25 juegos, pero una muestra oculta no separa mecanismo de
+suerte. Hace falta la segunda.
+
+**La hipótesis más fuerte que queda.** anim + Qwen3.8 es la receta **exacta** de LB-9, con la que
+242 equipos puntúan 3-4. Tenemos la mitad (anim + Qwen3.6) y marcamos 1.15. v19 dio 0.48 con el
+3.8, pero con nuestra pila de prompt encima — y ahora sabemos que la pila era el problema, no el
+modelo. Ese A/B, con la base ya limpia, es el siguiente salto natural.
+

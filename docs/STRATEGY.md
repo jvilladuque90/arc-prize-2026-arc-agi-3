@@ -5,7 +5,19 @@
 > plan por fases) que se conserva porque su diagnóstico técnico sigue siendo válido, aunque
 > varias de sus conclusiones fueron **corregidas por medición** — cada corrección está marcada.
 
-## §0. Estado vigente (2026-09-08) — la base cambia
+## §0. Estado vigente (2026-09-09) — la base cambió, y funcionó
+
+**v21 = 1.15 en el set oculto**, empatando el récord del proyecto **a la primera** sobre un
+harness nuevo y **sin un solo parche de prompt**. Con n=1 no prueba superioridad sobre
+v16-config; lo que prueba es que retirar seis versiones de trabajo de prompt (~311 tokens de
+entrada por turno) **no costó nada** — su contribución neta era ≈0 y parte era dañina.
+
+**Prioridades, en valor esperado:** (1) segunda muestra de v21, coste cero; (2) **anim +
+Qwen3.8**, la receta exacta de LB-9 con la que 242 equipos puntúan 3-4 y de la que ya tenemos la
+mitad; (3) híbrido explorador re-montado (+12 niveles medidos, no depende del harness);
+(4) `nav` sobre `all_frames`, o retirado.
+
+## §0-ant. Estado del 2026-09-08 — la base cambia
 
 **El diagnóstico que reordena todo (`docs/AUDIT_2026-09-08.md`).** La banda 3-4 del leaderboard
 son 242 forks de un kernel público (LB-9) que **no modifica nada** del harness: cero injertos,

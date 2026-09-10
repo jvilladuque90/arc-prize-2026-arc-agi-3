@@ -1931,3 +1931,45 @@ sistemática, y ahí está el salto a la banda de 10.
 Secuencia completa del ciclo, para el registro: auditoría de tres pasadas → migración de base →
 descubrimiento de la métrica real → el modelo aislado como variable única. Cuatro días, cuatro
 envíos, de 0.48 a 1.59.
+
+### 8.43. El brazo NVFP4: 8 niveles y el primer cruce del nivel 2 en un banco (2026-09-10)
+
+Auditoría de la unión (14 agentes, 2,1 M tokens) tras el récord 1.59. El diagnóstico duro: en la
+corrida del récord **23 de 25 juegos completaron cero niveles**, y los dos que puntuaron quedaron
+**clavados en el tope 2.78** — la eficiencia rindiendo exactamente cero de más. Fallamos por
+**capacidad de cerrar niveles**, no por presupuesto ni por eficiencia. Verificado aparte sobre el
+leaderboard descargado: **178 equipos por encima de 3.52**, el techo del modo "sólo nivel 1".
+
+**El brazo.** Copia verbatim del kernel público `keithtyser/duck-qwen3-8-flash-next-nvfp4-mtp`
+con **una sola edición** (recortar la ventana offline: su `soft_end` son 8h50m y se comería la
+cuota entera de G4). Compuerta previa: exactamente una celda cambiada y sólo por el bloque
+añadido — la inferencia "este archivo exacto puntúa" se rompe con cada perilla que se añada.
+
+**Resultado en nuestro banco, bajo la métrica real:**
+
+| corrida | ventana | niveles | acciones | score medio |
+|---|---|---|---|---|
+| v21 (anim + Qwen3.6) | 15m13 | 2 | 321 | 0.200 |
+| v23 (anim + Qwen3.8) = récord 1.59 | 18m25 | 2 | 239 | 0.222 |
+| **NVFP4 + MTP** | **25 min** | **8** | **311** | **1.279** |
+
+**`ft09` cruzó el nivel 2** con 11 acciones contra un baseline de 43 (0,1×): 14.29 puntos en ese
+único juego, más que todo v23 junto. Es el primer cruce del nivel 2 registrado en un banco.
+
+**Mecánica confirmada en el log del servidor:** arquitectura `Qwen3_8FlashNextMTP`, **aceptación
+del borrador 64-76%** (la decodificación especulativa funciona — contraste con nuestro intento de
+n-gramas de §8.32, que apagó el planificador asíncrono y dio 0 acciones), generación mediana
+270 tok/s, prefill 4.037 tok/s, KV en bf16 (coherente con nuestra propia refutación del fp8-KV),
+`--max-num-seqs 8`, `--async-scheduling`, y un vigía que reinicia el servidor si cae.
+
+**El hallazgo que no esperaba, y que corrige la tesis de la migración.** 311 acciones en 25
+minutos son **12,4 acciones/minuto**, prácticamente iguales a las 13,0 de v23. **La ganancia no
+es throughput: es calidad por acción.** Mismo ritmo, cuatro veces los niveles. Lo que paga es el
+modelo (Qwen3.8-Flash-Next), no la velocidad del servicio — y eso deja el caso en pie
+independientemente de la atribución de puntajes del leaderboard, que **no pude verificar** (el CSV
+trae identificadores numéricos, no nombres).
+
+**Lo que esto implica para nuestra pila.** El bundle anim, los tres injertos y el mapa cognitivo
+recién construido quedan fuera de esta medición **a propósito**. La secuencia que ya funcionó una
+vez (v21 → v23: base limpia primero, variable única después) dice que el orden correcto es
+establecer la base y sólo entonces re-montar encima lo nuestro, de una pieza cada vez.

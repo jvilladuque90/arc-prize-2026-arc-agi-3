@@ -108,6 +108,20 @@ KERNELS = {
                  "default_datasets": ["thtennant/taaf-kaggle-source-share-fork",
                                       "driessmit1/arc3-vllm-h100-wheelhouse-v3",
                                       "driessmit1/vrfai-qwen3-6-27b-fp8-hf-snapshot"]},
+    # MIGRACION DE STACK DE SERVICIO (auditoria 2026-09-10). Copia VERBATIM del
+    # kernel publico de keithtyser "Duck Qwen3.8 Flash Next NVFP4 MTP" con UNA sola
+    # edicion: recortar la ventana de juego offline (su soft_end son 8h50m y se
+    # comeria la cuota de G4 entera). No lleva NADA nuestro a proposito: toda la
+    # evidencia externa es "este archivo exacto puntua", y cada perilla anadida
+    # rompe esa inferencia. Autoria: kaggle.com/code/keithtyser/duck-qwen3-8-flash-next-nvfp4-mtp
+    # Imagen docker propia (mas nueva que la nuestra): la exige su runtime NVFP4.
+    "nvfp4": {"notebook": "notebooks/nvfp4.ipynb", "slug": "arc-agi3-nvfp4",
+              "title": "arc agi3 nvfp4",
+              "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                   "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+              "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+              "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                               "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     "explorer054": {"notebook": "notebooks/explorer054.ipynb", "slug": "arc-agi3-explorer054",
                     "title": "arc agi3 explorer054"},
     # Fase 3 (NUESTRO agente): LLMAgent con features objetuales + fallback. REQUIERE --gpu.
@@ -163,7 +177,8 @@ def main() -> int:
         "competition_sources": [COMP],
         "model_sources": cfg.get("model_sources", []),
         "kernel_sources": [],
-        "docker_image": DOCKER_IMAGE,
+        # Algunos kernels traen su propio runtime y exigen otra imagen.
+        "docker_image": cfg.get("docker_image", DOCKER_IMAGE),
     }
     if args.gpu:
         meta["machine_shape"] = "NvidiaRtxPro6000"

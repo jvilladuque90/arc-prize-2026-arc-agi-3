@@ -175,6 +175,8 @@ print("run terminado")
 
 
 
+MAP_PATCH_TEMPLATE = '\n# MAPA COGNITIVO en la costura C. El anfitrion mantiene el grafo de estados del\n# nivel y lo resume en el prompt; el modelo no gasta ni un turno construyendolo.\n#\n# El registrador ENVUELVE el guardia de no-ops del harness en vez de observar los\n# fotogramas por su cuenta: asi hereda la correccion de animacion (una accion que\n# devolvio varios fotogramas NO es inerte aunque el tablero final sea identico) en\n# lugar de repetir el error del viejo helper de navegacion, que comparaba solo el frame final.\ntry:\n    import base64 as _b64m\n    import taaf_grafts.schema_helpers as _shm\n    import inference.agent.noop_guard as _ngm\n    _nsm = {}\n    exec(compile(_b64m.b64decode("__B64__").decode("utf-8"), "cognitive_map.py", "exec"), _nsm)\n    _MapRecorder = _nsm["MapRecorder"]\n    _render_map_note = _nsm["render_map_note"]\n\n    _orig_ensure_m = _shm.SchemaHelpersToolAgent._ensure_session\n    _orig_bup_m = _shm.SchemaHelpersToolAgent._build_user_prompt\n\n    def _ensure_with_map(self, state_path):\n        _orig_ensure_m(self, state_path)\n        try:\n            g = getattr(self, "_noop_guard", None)\n            if g is not None and not isinstance(g, _MapRecorder):\n                self._noop_guard = _MapRecorder(g)\n        except Exception:\n            pass\n\n    def _bup_with_map(self, action_num, **kw):\n        base = _orig_bup_m(self, action_num, **kw)\n        try:\n            rec = getattr(self, "_noop_guard", None)\n            if not isinstance(rec, _MapRecorder):\n                return base\n            fr = kw.get("current_frame")\n            nivel = fr.level if fr is not None else 1\n            firma = _ngm.board_signature(fr.grid) if fr is not None else None\n            nota = _render_map_note(rec.registros, nivel, firma, kw.get("valid_actions"))\n        except Exception:\n            return base\n        return base + "\\n" + nota if nota else base\n\n    _shm.SchemaHelpersToolAgent._ensure_session = _ensure_with_map\n    _shm.SchemaHelpersToolAgent._build_user_prompt = _bup_with_map\n    print("COGNITIVE_MAP injected on seam C:", len(_nsm), "symbols")\nexcept Exception as exc:\n    print("[cognitive_map] injection failed, running stock: %s: %s" % (type(exc).__name__, exc))\n'
+
 ANIM_GUARD = '\n# GUARD DE BASE ANIM: sin esto el log no distingue "adjunte el bundle" de "las\n# palancas del bundle estan encendidas". Los dos campos viajan dentro del pickle\n# del solver (capturados del entorno del autor al desplegar), asi que se afirman\n# aqui explicitamente en vez de confiar en el default.\nfor _flag in ("hard_noop_guard", "animation_awareness"):\n    if not hasattr(bm.solver, _flag):\n        raise RuntimeError("bundle equivocado: el solver no tiene " + _flag +\n                           " (adjunta jakobbrggen/taaf-kaggle-source-anim-20260807-anim)")\n    setattr(bm.solver, _flag, True)\nimport inference.utils.animation as _anim_mod\nimport inference.agent.noop_guard as _ng_mod\nprint("ANIM_BASE animation=%s noop_guard=%s hard_noop_guard=%s animation_awareness=%s" % (\n    _anim_mod.__file__, _ng_mod.__file__,\n    bm.solver.hard_noop_guard, bm.solver.animation_awareness))\n'
 
 
@@ -281,6 +283,21 @@ def main() -> int:
     # anim, asi que en un lote homogeneo >=2 borraria la evidencia de animacion
     # y _action_animated() la leeria como no-op -> el guard duro bloquearia
     # acciones que SI funcionaron. Verificado en scripts/verify_anim_compat.py.
+    # MAPA COGNITIVO (docs/DESIGN 8.43): grafo de estados calculado por el
+    # anfitrion e inyectado en el prompt. Motivacion: el 2o puesto del preview de
+    # ARC-AGI-3 (Blind Squirrel, 6.71%) construia exactamente esto y los agentes de
+    # lenguaje con vision se quedaron en 3.7-4.4% porque "carecen del seguimiento de
+    # estado fotograma a fotograma". Es tambien lo que hace un cerebro: se codifica
+    # la TRANSICION en el limite de evento, no cada fotograma.
+    #
+    # NO repite el error de nav: las aristas no se etiquetan comparando fotogramas
+    # finales, se toman del guardia de no-ops de anim, que ya recibe `animated` y
+    # por tanto nunca marca inerte una accion que solo tuvo efecto en la animacion.
+    # Coste ~80 tokens de ENTRADA por turno, CERO escritura exigida al modelo.
+    # Verificado en CPU con scripts/test_cognitive_map.py (25 comprobaciones).
+    ap.add_argument("--map", action="store_true",
+                    help="inyecta el grafo de estados del anfitrion en el prompt "
+                         "(requiere --anim: se apoya en el guardia de no-ops)")
     ap.add_argument("--anim", action="store_true",
                     help="base = bundle jakobbrggen animation-awareness "
                          "(adjunta los datasets con push_kernels duckanim)")
@@ -818,6 +835,24 @@ except Exception as exc:
                 break
         else:
             print("ERROR: no encontre la celda del install de grafts")
+            return 1
+
+    if args.map:
+        if not args.anim:
+            print("ERROR: --map requiere --anim (se apoya en el guardia de no-ops "
+                  "del bundle animation-awareness)")
+            return 1
+        import base64
+        src_map = (ROOT / "src" / "arc3" / "cognitive_map.py").read_text(encoding="utf-8")
+        b64_map = base64.b64encode(src_map.encode("utf-8")).decode("ascii")
+        patch_map = MAP_PATCH_TEMPLATE.replace("__B64__", b64_map)
+        for i, c in enumerate(cells):
+            if "taaf_grafts.composite import install" in c:
+                cells[i] = c.replace("\nimport arc_agi, taaf.game_api",
+                                     patch_map + "\nimport arc_agi, taaf.game_api")
+                break
+        else:
+            print("ERROR: no encontre la celda del install de grafts para el mapa")
             return 1
 
     if args.anim:

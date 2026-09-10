@@ -1895,3 +1895,39 @@ ambos 2.78). El objetivo real, entonces, tiene dos mitades:
 El híbrido fallaba por eficiencia. **Nosotros fallamos por profundidad**: llevamos meses
 saturando el tope del nivel 1. Ahí está la brecha con el 11.04 del líder, y ahí debe apuntar el
 próximo ciclo.
+
+### 8.42. v23 = 1.59, RÉCORD: el modelo era la mitad que faltaba (2026-09-10)
+
+Envío 56132772, COMPLETE, **1.59** — máximo histórico del proyecto, por encima del 1.15 que se
+había tocado dos veces. Y la comparación es la más limpia que hemos tenido nunca, porque entre
+las dos muestras **sólo cambió una variable**:
+
+| | base | modelo | injertos | parches de prompt | oculto |
+|---|---|---|---|---|---|
+| v21 (09-09) | anim | Qwen3.6 | 3 | ninguno | 1.15 |
+| **v23 (09-10)** | anim | **Qwen3.8** | 3 | ninguno | **1.59** |
+
+**+0.44 sobre una desviación típica de ~0.13**: unos 3σ, muy por encima del listón de ±0.30 que
+nos habíamos pre-registrado. Es el primer cambio del proyecto que supera ese listón de forma
+inequívoca.
+
+**Por qué v19 (0.48) no lo vio.** v19 ya era Qwen3.8 — pero sobre el harness viejo y con la pila
+de parches de prompt encima. Ese 0.48 se leyó como "el modelo nuevo rompe nuestra pila". La
+lectura correcta, ahora con las dos muestras limpias, es la inversa: **la pila de parches
+estropeaba al modelo nuevo más de lo que estropeaba al viejo.** Aislar variables no era pedantería
+metodológica; era la única forma de ver este resultado.
+
+**Una corrección a mi propio análisis del 09-09.** Al comparar las corridas offline avisé de que
+Qwen3.8 hacía un 38% menos de acciones por minuto (13,0 frente a 21,1) y presenté eso como un
+riesgo para la profundidad. Estaba equivocado, y el dato oculto lo dice: **la métrica no premia
+volumen de acciones sino acciones-por-nivel**, y v23 completó los mismos dos niveles del banco con
+239 acciones frente a las 321 de v21. Pensar más por acción y actuar mejor gana; el ritmo bruto
+era la variable equivocada, otra vez.
+
+**Dónde nos deja.** El techo del modo "sólo nivel 1" es 3.52. Con 1.59 estamos en el **45% de ese
+techo** (antes 33%). Sigue sin haber una sola muestra en la que crucemos el nivel 2 de forma
+sistemática, y ahí está el salto a la banda de 10.
+
+Secuencia completa del ciclo, para el registro: auditoría de tres pasadas → migración de base →
+descubrimiento de la métrica real → el modelo aislado como variable única. Cuatro días, cuatro
+envíos, de 0.48 a 1.59.

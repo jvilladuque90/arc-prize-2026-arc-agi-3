@@ -151,4 +151,14 @@ premios (milestone #2: 2026-09-30). Cumplimiento:
   - `notebooks/duck.ipynb`: réplica del harness TAAF de Tufa Labs (público, ganador milestone jun)
     en su variante fork pública de thtennant (`taaf-kaggle-source-share-fork`, con taaf-grafts),
     con wheels vLLM y snapshot Qwen3-27B-FP8 públicos de driessmit1.
+  - `notebooks/duck_anim.ipynb` y `notebooks/duck_map.ipynb`: mismo harness TAAF sobre el fork
+    público **`jakobbrggen/taaf-kaggle-source-anim-20260807-anim`** (rama `feature/animation-awareness`,
+    de donde vienen `animation.py` y `noop_guard.py`), con el modelo público Qwen3.8-27B-FP8
+    repacked de **foysalemonshanto**. Los injertos `taaf-grafts` siguen siendo los del fork de
+    thtennant; lo nuestro es el montaje, las compuertas y el mapa cognitivo (`src/arc3/cognitive_map.py`).
+  - `notebooks/nvfp4.ipynb`: **copia verbatim** del notebook público de **keithtyser**
+    (`kaggle.com/code/keithtyser/duck-qwen3-8-flash-next-nvfp4-mtp`, Qwen3.8-Flash-Next en NVFP4
+    con MTP), con **una única edición** documentada en la celda: recortar la ventana de juego
+    offline para no agotar la cuota de GPU en un Save & Run. Todo el mérito del stack de servicio
+    es suyo; el kernel derivado se publica igualmente abierto.
 - Los datos de la competencia **no** se redistribuyen en este repo (ver `.gitignore`).

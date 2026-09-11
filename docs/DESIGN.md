@@ -1973,3 +1973,53 @@ trae identificadores numéricos, no nombres).
 recién construido quedan fuera de esta medición **a propósito**. La secuencia que ya funcionó una
 vez (v21 → v23: base limpia primero, variable única después) dice que el orden correcto es
 establecer la base y sólo entonces re-montar encima lo nuestro, de una pieza cada vez.
+
+### 8.44. NVFP4 + injertos de v23: dirección negativa, tercera vez en el mismo sentido (2026-09-10)
+
+Brazo "base de más puntaje + lo nuestro", una variable: los tres injertos de v23 (`efficiency`,
+`retry_guard`, `schema_helpers`) sobre el stack NVFP4+MTP. Kernel de experimento aparte
+(`arc-agi3-nvfp4-grafts` v1), mismo bundle, mismo modelo, misma ventana que el control.
+
+**Dos hallazgos al inspeccionar el bundle NVFP4 antes de construir.** (1) Su harness es
+**byte-idéntico** en `inference/` al fork de thtennant contra el que se escribieron los injertos
+(`diff -rq` vacío): compatibilidad total, y `smoke_graft_install.py` ya prueba ese árbol.
+(2) Es el **harness original de junio** (`duck-harness-kaggle`, 2026-06-12): sin `noop_guard`,
+sin `animation.py`, sin `taaf-grafts`. Flash-Next sobre el harness *ciego a la animación* saca
+4× los niveles que anim + Qwen3.8 — el mérito es del modelo todavía más de lo que parecía.
+
+**Consecuencia honesta para el mapa cognitivo (§8.43 y commit `ee4677a`): no se monta aquí.**
+Sin guardia de no-ops ni `frame_count`, la única señal disponible sería `board_changed` del
+fotograma final — exactamente la que el módulo se niega a usar por diseño. Queda aparcado hasta
+que la base tenga la señal consciente de animación. Montarlo degradado "para tener brazo" habría
+sido el mismo reflejo de embarcar por embarcar.
+
+**Diseño del brazo.** Los injertos van **embebidos** (los 15 módulos `.py`, byte a byte) en una
+única celda insertada en el hueco documentado por el autor ("Customization hook … the safe place
+for one-off experiments"). No se adjunta ningún dataset extra: `_find_bundle_dir()` devuelve el
+primer marcador que encuentra y **ambos bundles llevan la misma etiqueta** `duck-harness-kaggle`,
+así que adjuntar el fork de thtennant podría hacer cargar el bundle equivocado. Compuertas
+gratis: exactamente una celda añadida y las 18 originales intactas; smoke ejecutando la celda
+exacta contra el árbol idéntico — PASS.
+
+**Resultado (25 juegos, 25 min, métrica real):**
+
+| | niveles | acciones | score medio | con score | ≥ nivel 2 |
+|---|---|---|---|---|---|
+| NVFP4 plano | **8** | 311 | **1.279** | 7 | 1 |
+| NVFP4 + injertos | 5 | 284 | 0.864 | 4 | 1 |
+
+**−3 niveles, −0.415 de media.** El montaje está probado por los transcriptos (el log del kernel
+vuelve vacío en estas corridas): `schema_helpers` en 25/25, nota de presupuesto en 25/25,
+**1.068 llamadas** a los helpers del prelude. Adopción masiva, menos acciones, menos niveles: la
+firma exacta de `nav` en agosto (726 llamadas a `plan_moves`, −18% acciones, 0 niveles de más).
+
+**Lectura.** Con n=1 en ventana corta no es veredicto. Pero es el **tercer dato en la misma
+dirección**: v19 (modelo nuevo + pila propia = 0.48 frente a 1.15 limpio), el diagnóstico de la
+auditoría (23 de 25 juegos en cero con la pila puesta), y ahora esto sobre la base nueva. Una
+regla de portafolio que ya escribimos en §8.40 se refuerza: cuando lo nuestro va encima de una
+base mejor, la base sola gana. **v24 va verbatim**, que es lo que está armado.
+
+**Nota sobre `efficiency` en esta corrida.** Localmente `base_actions_per_level` está disponible,
+así que la nota de presupuesto mostró baselines reales; en el rerun oculto la API los oculta y el
+injerto cae al proxy (100 frente a mediana real 30 — hallazgo de la auditoría). Este brazo, por
+tanto, es *más favorable* al injerto que producción, y aun así salió negativo.

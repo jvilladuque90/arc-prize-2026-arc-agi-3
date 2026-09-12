@@ -24,7 +24,15 @@ param(
 
 $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
-$py   = (Get-Command python).Source
+# El interprete: el de la instalacion de usuario, que tiene `kaggle`. La noche del
+# 2026-09-11 la accion quedo apuntando al python del .venv (asi lo resolvio
+# Get-Command en aquella sesion) y la tarea no dejo ni una linea de log.
+$py = Join-Path $env:LOCALAPPDATA "Programs\Python\Python312\python.exe"
+if (-not (Test-Path $py)) { $py = (Get-Command python).Source }
+# Sondear PRESENCIA sin importar: `import kaggle` autentica al importarse y sin
+# variables de entorno falla aunque el paquete este instalado.
+& $py -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec('kaggle') else 1)"
+if ($LASTEXITCODE -ne 0) { throw "el interprete $py no tiene el paquete kaggle" }
 $script = Join-Path $root "scripts\submit_at_reset.py"
 
 # La hora de arranque se da en UTC y se convierte a la hora LOCAL de Windows,
@@ -42,18 +50,27 @@ $inner = "import pathlib,subprocess,sys,os; " +
          "sys.exit(subprocess.run([sys.executable, r'$script', '$Kernel', m], cwd=r'$root').returncode)"
 
 $action  = New-ScheduledTaskAction -Execute $py -Argument "-c `"$inner`"" -WorkingDirectory $root
-$trigger = New-ScheduledTaskTrigger -Once -At $startLocal
-$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable `
+# TRES disparos por noche, no uno: si el primero se pierde (maquina dormida,
+# sesion cerrada), el segundo o el tercero recuperan el cupo. El script es
+# idempotente (si ya hay envio hoy UTC, no reenvia), asi que los extra no cuestan.
+$triggers = @(
+    (New-ScheduledTaskTrigger -Once -At $startLocal),
+    (New-ScheduledTaskTrigger -Once -At $startLocal.AddMinutes(45)),
+    (New-ScheduledTaskTrigger -Once -At $startLocal.AddHours(3))
+)
+$settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew `
               -ExecutionTimeLimit (New-TimeSpan -Minutes ($MaxMinutes + 30)) `
-              -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
+              -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+              -RestartCount 2 -RestartInterval (New-TimeSpan -Minutes 10)
 
 Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false -ErrorAction SilentlyContinue
-Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $trigger `
+Register-ScheduledTask -TaskName $TaskName -Action $action -Trigger $triggers `
     -Settings $settings -Description "Envio unico de $Kernel al abrir el cupo diario" | Out-Null
 
 $t = Get-ScheduledTask -TaskName $TaskName
 "tarea      : $TaskName  [$($t.State)]"
 "kernel     : $Kernel"
-"arranca    : $startLocal (local)  =  $StartUtc"
+"python     : $py"
+"disparos   : $startLocal, $($startLocal.AddMinutes(45)), $($startLocal.AddHours(3)) (local)  =  $StartUtc + 45m + 3h"
 "reintenta  : hasta $MaxMinutes min o hasta que el cupo abra"
 "log        : $(Join-Path $root 'daily_submit.log')"

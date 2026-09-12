@@ -121,6 +121,23 @@ KERNELS = {
     # Kernel de EXPERIMENTO: NVFP4 verbatim + UNA celda con la consolidacion al ganar
     # nivel (src/arc3/level_carry.py, scripts/build_nvfp4_carry.py). Apunta al muro
     # del nivel 2 que dejo v24 = 3.55. Mismos datasets, modelo e imagen que nvfp4.
+    # Corridas de 60 min en REGIMEN (scripts/build_nvfp4_long.py): el instrumento que
+    # discrimina profundidad. Control plano y brazo de consolidacion, en paralelo
+    # (Kaggle admite 2 sesiones GPU). Slugs propios: nunca el del envio.
+    "nvfp4long": {"notebook": "notebooks/nvfp4_long.ipynb", "slug": "arc-agi3-nvfp4-long",
+                  "title": "arc agi3 nvfp4 long",
+                  "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                       "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                  "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                  "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                   "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    "nvfp4carrylong": {"notebook": "notebooks/nvfp4_carry_long.ipynb", "slug": "arc-agi3-nvfp4-carry-long",
+                       "title": "arc agi3 nvfp4 carry long",
+                       "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                            "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                       "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                       "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                        "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     "nvfp4carry": {"notebook": "notebooks/nvfp4_carry.ipynb", "slug": "arc-agi3-nvfp4-carry",
                    "title": "arc agi3 nvfp4 carry",
                    "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",

@@ -46,6 +46,10 @@ def load_env() -> None:
 
 
 def main() -> int:
+    # Primera linea de log ANTES de cualquier import de terceros: la noche del
+    # 2026-09-11 la tarea no dejo ni una linea, y un ImportError de `kaggle` en
+    # un interprete sin el paquete habria dado exactamente ese sintoma.
+    log(f"arranque: {sys.executable} argv={sys.argv[1:3]}")
     args = [a for a in sys.argv[1:] if a != "--now"]
     wait = "--now" not in sys.argv
     kernel = args[0]
@@ -53,9 +57,26 @@ def main() -> int:
     version = json.loads((ROOT / "kernel_versions.json").read_text(encoding="utf-8"))[kernel]
 
     load_env()
-    from kaggle.api.kaggle_api_extended import KaggleApi
+    try:
+        from kaggle.api.kaggle_api_extended import KaggleApi
+    except Exception as exc:  # noqa: BLE001
+        log(f"ERROR importando kaggle en {sys.executable}: {type(exc).__name__}: {exc}")
+        return 1
     api = KaggleApi()
     api.authenticate()
+
+    # Idempotente: la tarea dispara varias veces por noche por robustez, y un
+    # segundo disparo tras un envio exitoso no debe gastar 240 min reintentando.
+    hoy = datetime.datetime.now(datetime.timezone.utc).date()
+    try:
+        for s in api.competition_submissions(COMP)[:5]:
+            fecha = getattr(s, "date", None)
+            if fecha is not None and getattr(fecha, "date", lambda: None)() == hoy:
+                log(f"ya hay envio hoy UTC (ref={getattr(s, 'ref', '?')}, "
+                    f"{fecha}); no se reenvia")
+                return 0
+    except Exception as exc:  # noqa: BLE001 — si la consulta falla, se intenta igual
+        log(f"aviso: no pude comprobar envios de hoy ({type(exc).__name__}); sigo")
 
     # NO se calcula el instante del reset: se INTENTA y se reintenta hasta que el
     # cupo abra. Asi el envio es inmune a la zona horaria de la maquina, al

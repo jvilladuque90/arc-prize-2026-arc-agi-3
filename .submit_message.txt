@@ -1,1 +1,1 @@
-﻿v24-b 2026-09-12: SEGUNDA MUESTRA del record 3.55. Mismo kernel NVFP4 verbatim de keithtyser (Qwen3.8-Flash-Next NVFP4 + MTP), sin cambios. El brazo NVFP4+consolidacion-al-ganar-nivel no cumplio la no-regresion pre-registrada (7 niveles / 1.119 vs 8 / 1.279; mismo unico cruce al nivel 2 al mismo coste), asi que se reenvia la base para caracterizar su varianza
+﻿v24-c 2026-09-13: TERCERA MUESTRA del record 3.55 (NVFP4 verbatim de keithtyser, sin cambios). Se sustituye por el brazo de consolidacion si la corrida de 60 min en regimen mejora sin regresion

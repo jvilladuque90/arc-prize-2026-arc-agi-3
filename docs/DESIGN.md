@@ -2067,3 +2067,41 @@ conservadores sus umbrales de pista. La palanca del nivel 2 probablemente no es 
 sino el propio modelo o el presupuesto de acciones en el rerun de 8 h, que la ventana de 25
 minutos no ejercita. Próximo instrumento válido: una corrida de 60 min en régimen (§8.9) antes de
 otro injerto de prompt.
+
+### 8.46. 60 minutos en régimen: la consolidación al ganar nivel pasa la compuerta (2026-09-12)
+
+El instrumento válido (§8.9), por fin sobre la base buena, y en paralelo: control NVFP4 plano y
+NVFP4 + consolidación, 60 minutos cada uno, en slugs de experimento.
+
+| 60 min | niveles | acciones | score medio | con score | en cero | ≥ nivel 2 | ≥ nivel 3 |
+|---|---|---|---|---|---|---|---|
+| control NVFP4 plano | 23 | 1.089 | 4.114 | 15 | 10 | 6 | 2 |
+| **NVFP4 + consolidación** | **26** | 1.219 | **4.392** | **19** | **6** | 4 | **3** |
+
+**Regla pre-registrada (fijada antes de ver los números):** no-regresión = niveles y score del
+brazo ≥ control; mejora = más cruces al nivel 2 **o** score claramente mayor (+0.10). **Se cumplen
+las dos** → se envía la mejora, según la instrucción de Julian.
+
+**Lectura honesta.** La señal es mixta en un punto: **menos cruces al nivel 2** (4 frente a 6;
+`ar25` y `ft09` no cruzaron esta vez, y `ft09` había cruzado en las dos corridas de 25 min, así
+que hay ruido de n=1 ahí). Todo lo demás va en la dirección del mecanismo, y con la firma exacta
+que predice: **el nivel 2 sale más barato en los cuatro juegos que ambos brazos cruzaron**
+(`lp85` 12/38 = 0,3× frente a 16/38 = 0,4×; `tu93` 15/16 = 0,9× frente a 21/16 = 1,3×; `vc33` 11/18
+frente a 12/18; `re86` 36/42 frente a 41/42), un cruce más al nivel 3, cuatro juegos más
+puntuando y cuatro menos en cero. La nota apareció en los 19 juegos que llegaron al nivel 2.
+
+**Por qué el nulo a 25 minutos no lo contradice.** A 25 minutos sólo un juego había cruzado al
+nivel 2 en cada brazo; el mecanismo dispara *desde* el nivel 2, así que aquella ventana no lo
+ejercitaba. A 60 minutos cruzan 4-6, y ahí es donde se mide. La lección metodológica es la de
+§8.9 otra vez, ahora en positivo: **una ventana corta sólo puede refutar mecanismos que disparan
+en la ventana corta.**
+
+**Contraste con los dos injertos anteriores sobre esta base.** Los tres de v23 (−3 niveles a
+25 min) y la consolidación (−1 a 25 min, +3 a 60) se diferencian en una cosa: los primeros añaden
+texto **en todos los turnos**; la consolidación sólo **desde el nivel 2 y sólo con contenido
+ganado**. Es coherente con la hipótesis de §8.45: en un modelo que ya juega bien, texto genérico
+compite con su plan; texto *específico y ganado* no.
+
+**Decisión:** v25 = `arc-agi3-nvfp4-carry-long` v1 (el artefacto exacto que produjo el 4.392; el
+camino del rerun es idéntico al de 25 min, la ventana offline es inerte allí). Armada con tres
+disparos. Cuota de G4: las 5 horas autorizadas, gastadas.

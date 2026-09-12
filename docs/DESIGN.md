@@ -2023,3 +2023,47 @@ base mejor, la base sola gana. **v24 va verbatim**, que es lo que está armado.
 así que la nota de presupuesto mostró baselines reales; en el rerun oculto la API los oculta y el
 injerto cae al proxy (100 frente a mediana real 30 — hallazgo de la auditoría). Este brazo, por
 tanto, es *más favorable* al injerto que producción, y aun así salió negativo.
+
+### 8.45. v24 = 3.55 (récord) y el primer injerto apuntado al nivel 2: montado bien, sin efecto (2026-09-11)
+
+**v24 = 3.55.** El kernel NVFP4 verbatim más que duplica el 1.59. Secuencia de cuatro días:
+0.48 → 1.15 → 1.59 → 3.55. Con la fórmula en la mano, 3.55 está **justo sobre el techo 3.52 del
+modo "sólo nivel 1"**: cerramos el nivel 1 casi en todas partes, y el muro es el **nivel 2**
+(techo de "niveles 1-2 en todas partes" = 10.57, donde vive Tufa con 11.04).
+
+**El injerto.** `src/arc3/level_carry.py`: el anfitrión detecta en el historial —acumulativo,
+nunca se vacía al cruzar nivel— qué acción subió cada nivel, cuántas acciones costó, qué color
+había bajo el click y qué celdas cambiaron (caja + censo de transiciones, leyenda verificada
+contra `grid_utils.ARC_COLOR_CHARS`), y lo inyecta como texto desde el nivel 2. ~93 tokens de
+entrada, cero escritura exigida, sin depender de la animación. Motivación: el informe oficial
+dice que la dificultad es *por composición*; un humano llega al nivel 2 con una regla, no con
+un transcripto (consolidación hipocampal). Montado sobre el NVFP4 verbatim en una sola celda,
+parche a nivel de clase sobre `ToolAgent`, con degradación probada byte a byte al prompt de
+fábrica si el código nuestro explota.
+
+**Criterios fijados ANTES de ver los números:** no-regresión (niveles ≥ 8 y score medio ≥ 1.279,
+lo que hizo el 3.55) y mejora (cruces al nivel 2 > 1 o score claramente mayor).
+
+| | niveles | acciones | score medio | con score | cruces nivel 2 |
+|---|---|---|---|---|---|
+| NVFP4 plano (control) | **8** | 311 | **1.279** | 7 | 1 (`ft09`, 7/12) |
+| NVFP4 + consolidación | 7 | 271 | 1.119 | 6 | 1 (`ft09`, 7/12) |
+
+**No cumple la no-regresión** (−1 nivel, −0.160) **y no mejora** (el mismo único cruce, al
+mismo coste exacto). La nota **sí apareció donde debía**: en los 6 juegos que llegaron a jugar el
+nivel 2 (`ar25 ft09 r11l re86 sb26 vc33`), verificado en los prompts. Es decir: el mecanismo
+funciona como se diseñó y **no cambió el juego del nivel 2** a este horizonte. La bajada cabe en
+el ruido de n=1 a 25 minutos, así que no se declara dañino; pero la regla era clara.
+
+**Decisión (regla de Julian: "si hay mejora, lanza la versión con la mejora"):** no hay mejora →
+esta noche se reenvía **v24**, segunda muestra del récord, que además empieza a caracterizar la
+varianza de la base que hay que batir.
+
+**Lo que enseña, más allá de este brazo.** Van dos injertos nuestros sobre la base nueva y ninguno
+paga (los tres de v23: −3 niveles; la consolidación: −1). Ambos se montaron bien y se usaron. La
+hipótesis que queda en pie es incómoda: en un modelo que ya juega bien, **texto extra en el
+prompt compite con su propio plan** —la misma razón que el autor de anim da para mantener
+conservadores sus umbrales de pista. La palanca del nivel 2 probablemente no es "decirle más",
+sino el propio modelo o el presupuesto de acciones en el rerun de 8 h, que la ventana de 25
+minutos no ejercita. Próximo instrumento válido: una corrida de 60 min en régimen (§8.9) antes de
+otro injerto de prompt.

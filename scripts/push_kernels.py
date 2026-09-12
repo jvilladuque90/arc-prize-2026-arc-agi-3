@@ -118,6 +118,16 @@ KERNELS = {
     # Kernel de EXPERIMENTO (nunca el del envio): el NVFP4 verbatim + UNA celda con
     # nuestros tres injertos de v23 embebidos (scripts/build_nvfp4_grafts.py).
     # Mismos datasets, modelo e imagen que nvfp4: la unica variable son los injertos.
+    # Kernel de EXPERIMENTO: NVFP4 verbatim + UNA celda con la consolidacion al ganar
+    # nivel (src/arc3/level_carry.py, scripts/build_nvfp4_carry.py). Apunta al muro
+    # del nivel 2 que dejo v24 = 3.55. Mismos datasets, modelo e imagen que nvfp4.
+    "nvfp4carry": {"notebook": "notebooks/nvfp4_carry.ipynb", "slug": "arc-agi3-nvfp4-carry",
+                   "title": "arc agi3 nvfp4 carry",
+                   "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                        "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                   "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                   "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                    "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     "nvfp4grafts": {"notebook": "notebooks/nvfp4_grafts.ipynb", "slug": "arc-agi3-nvfp4-grafts",
                     "title": "arc agi3 nvfp4 grafts",
                     "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",

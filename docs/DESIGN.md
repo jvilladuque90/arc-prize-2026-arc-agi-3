@@ -2199,3 +2199,34 @@ WorldLLM — https://arxiv.org/abs/2506.06725 · Test-Time Adaptation via Enviro
 (ICLR 2026) — https://arxiv.org/abs/2511.04847 · Strategy-Guided Exploration —
 https://arxiv.org/abs/2603.02045 · "100% on the ARC-AGI-3 public set" (Agno, ago. 2026) —
 https://www.agno.com/articles/arc-agi-arcade
+
+### 8.49. El manual del juego, a 60 min: peor que la consolidación y que el control (2026-09-14)
+
+| 60 min en régimen | niveles | acciones | score medio | con score | en cero | ≥ nivel 2 | ≥ nivel 3 |
+|---|---|---|---|---|---|---|---|
+| control NVFP4 plano | 23 | 1.089 | 4.114 | 15 | 10 | 6 | 2 |
+| **consolidación** (palanca vigente) | **26** | 1.219 | **4.392** | **19** | **6** | 4 | 3 |
+| manual del juego | 20 | 1.187 | 3.940 | 15 | 10 | 3 | 1 |
+
+**No pasa la compuerta** (fijada antes de mirar: superar a la consolidación): −6 niveles y −0.452
+frente a ella, y **por debajo del control plano** (−3 niveles). El manual apareció en los 15
+juegos que llegaron al nivel 2, así que el mecanismo se montó; lo que falló es el contenido.
+
+**Qué separa al manual de la consolidación.** El manual es *exactamente* la nota de consolidación
+(~93 tokens) más tres piezas (~70 tokens): dónde está ahora el objeto del color ganador, la lista de
+controles y clicks con efecto probado, y una instrucción de un paso. Esa suma lo hunde por debajo
+incluso de no decir nada. Con n=1 no se puede aislar cuál de las tres daña; pero la serie ya tiene
+tres puntos en el mismo sentido sobre esta base: injertos de v23 en todos los turnos (−3 niveles a
+25 min), manual (−6 a 60 min frente a la consolidación), y la consolidación sola (+3). **Sobre
+Flash-Next, cuanto más texto en el prompt, peor; sólo la nota mínima y basada en evidencia paga.**
+Es coherente con el autor de anim ("la pista gasta tokens de prompt y compite con el plan del
+modelo") y con el propio agente del 100% público, cuyo manual lo escribe el modelo *para sí*, no un
+tercero para él.
+
+**Consecuencias.** (1) La consolidación queda como palanca vigente y armada; no se toca su texto.
+(2) La rama "más texto del anfitrión" se cierra sobre esta base, con dato. (3) La siguiente palanca
+no debe ser texto: mandos **mecánicos** del harness que dan más ejecución por turno sin añadir un
+token al prompt — `LOCAL_ANALYZER_YIELD_SECONDS` 60 → 180 y `LOCAL_ANALYZER_TOOL_STEPS` 0 → 5, que la
+auditoría del 09-10 dejó estimados en +0.25 sobre la base anim con métrica primaria "fracción de
+turnos que ejecutan". (4) El manual escrito por el modelo (ranking (b) de §8.48) baja un puesto:
+exige escritura, y ahora sabemos además que el modelo lee mal el manual ajeno.

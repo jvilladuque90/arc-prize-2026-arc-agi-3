@@ -2230,3 +2230,46 @@ token al prompt — `LOCAL_ANALYZER_YIELD_SECONDS` 60 → 180 y `LOCAL_ANALYZER_
 auditoría del 09-10 dejó estimados en +0.25 sobre la base anim con métrica primaria "fracción de
 turnos que ejecutan". (4) El manual escrito por el modelo (ranking (b) de §8.48) baja un puesto:
 exige escritura, y ahora sabemos además que el modelo lee mal el manual ajeno.
+
+### 8.50. El cuello mecánico: el 45-49% de los turnos se cortan antes de actuar (2026-09-14)
+
+Medido en las tres corridas de 60 minutos sobre la base NVFP4, leyendo el bloque `ANALYZER STATUS`
+de cada turno en los transcriptos:
+
+| 60 min | turnos | ejecutan | cortados por `turn_time_budget` | llamadas a herramienta / turno |
+|---|---|---|---|---|
+| control plano | 546 | 301 (55%) | **220 (40%)** | 1,1 |
+| consolidación | 597 | 318 (53%) | **254 (43%)** | 1,1 |
+| manual | 568 | 292 (51%) | **251 (44%)** | 1,1 |
+
+Casi la mitad de los turnos terminan en `Yielded control to solver: turn_time_budget`: el modelo
+agota los **60 segundos** de presupuesto de turno (`LOCAL_ANALYZER_YIELD_SECONDS = 60`, exportado
+por el entorno del bundle, verificado en `taaf_setup_env.json` y en el `ANALYZER STATUS` vivo) y el
+harness lo corta **antes de que actúe**. No es dispersión con herramientas —1,1 llamadas por turno—:
+es el pensamiento de Flash-Next (thinking ON, ~1.190 tokens por acción, ≈2 min por acción según
+la auditoría del 09-10) chocando con el límite. Cada turno cortado es generación y prefill tirados
+sin acción, y el turno siguiente vuelve a leer todo el contexto y a pensar desde cero.
+
+**Es la palanca opuesta a las que fallaron.** Las tres últimas (injertos de v23, manual) añadían
+texto al prompt; ésta no toca un solo token: cambia un mando **mecánico** del harness. En
+`tool_agent.py` el global `_LOCAL_ANALYZER_YIELD_SECONDS` se lee en `ToolAgent.__init__`, y los
+agentes se construyen al jugar, después del hook — reasignarlo en la celda del hook llega a todos.
+`TOOL_STEPS` (0 = ilimitado en el bundle) **no se toca**: no es el cuello, y es la disciplina de una
+variable.
+
+**Brazo:** consolidación + `YIELD_SECONDS` 60 → 180, 60 min en régimen
+(`arc-agi3-nvfp4-carry-yield-long`). Pre-registrado antes de correr: **primario** = fracción de
+turnos que ejecutan ≥ 65% (control 53%); no-regresión y mejora contra la consolidación
+(26 / 4.392); guarda: `yield_seconds: 180.0` en el `ANALYZER STATUS` (si dice 60, la corrida no lleva
+el parche y no se lee nada más). Riesgo declarado: turnos más largos = menos turnos en 8 h; pero un
+turno cortado es pérdida pura, así que convertirlos en turnos que actúan es neto positivo salvo que
+el pensamiento extra sea improductivo — eso es lo que mide el banco.
+
+**Incidente de infraestructura, registrado para no re-diagnosticarlo:** el primer push del brazo
+(v1) fue `QUEUED → ERROR` en un minuto, con el fallo en la **celda 2 de keithtyser, intacta**
+(`pip install --no-index … arc-agi` desde el wheelhouse de la competencia, exit 1), que había
+corrido bien cinco veces esta semana; mi celda ni llegó a ejecutarse. Fallo de arranque de Kaggle
+al asignar un slot recién liberado. Además, los dos slots GPU de la cuenta los ocupa otro proyecto
+(límite por cuenta, no por kernel): el reintento es automático cada 5 min. Si el banco no cierra
+antes del primer disparo (23:40Z), esta noche sale la consolidación —la última palanca bancada— y
+el yield, si pasa, va la noche siguiente. En ningún caso sale la base.

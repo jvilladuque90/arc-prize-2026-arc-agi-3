@@ -124,6 +124,22 @@ KERNELS = {
     # Corridas de 60 min en REGIMEN (scripts/build_nvfp4_long.py): el instrumento que
     # discrimina profundidad. Control plano y brazo de consolidacion, en paralelo
     # (Kaggle admite 2 sesiones GPU). Slugs propios: nunca el del envio.
+    # MANUAL DEL JUEGO (build_nvfp4_manual.py): consolidacion + localizacion del objeto
+    # ganador + afordancias positivas. La version long (60 min) es la que se banca.
+    "nvfp4manual": {"notebook": "notebooks/nvfp4_manual.ipynb", "slug": "arc-agi3-nvfp4-manual",
+                    "title": "arc agi3 nvfp4 manual",
+                    "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                         "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                    "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                    "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                     "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    "nvfp4manuallong": {"notebook": "notebooks/nvfp4_manual_long.ipynb", "slug": "arc-agi3-nvfp4-manual-long",
+                        "title": "arc agi3 nvfp4 manual long",
+                        "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                             "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                        "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                        "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                         "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     "nvfp4long": {"notebook": "notebooks/nvfp4_long.ipynb", "slug": "arc-agi3-nvfp4-long",
                   "title": "arc agi3 nvfp4 long",
                   "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",

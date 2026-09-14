@@ -19,7 +19,13 @@ param(
   [Parameter(Mandatory=$true)][string]$Message,
   [Parameter(Mandatory=$true)][string]$StartUtc,
   [string]$TaskName = "ARC-AGI3-SubmitOneShot",
-  [int]$MaxMinutes = 240
+  [int]$MaxMinutes = 240,
+  # -Daily: los tres disparos se repiten CADA noche. Un solo disparo cubre una
+  # noche y la del 2026-09-13 no habia nada armado: el cupo del 14 se salvo a
+  # mano con 3h51m de margen. El script es idempotente (no reenvia si ya hay
+  # envio del dia UTC), asi que repetir no cuesta; y se apaga con
+  # Disable-ScheduledTask -TaskName ARC-AGI3-SubmitOneShot.
+  [switch]$Daily
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,11 +59,19 @@ $action  = New-ScheduledTaskAction -Execute $py -Argument "-c `"$inner`"" -Worki
 # TRES disparos por noche, no uno: si el primero se pierde (maquina dormida,
 # sesion cerrada), el segundo o el tercero recuperan el cupo. El script es
 # idempotente (si ya hay envio hoy UTC, no reenvia), asi que los extra no cuestan.
-$triggers = @(
-    (New-ScheduledTaskTrigger -Once -At $startLocal),
-    (New-ScheduledTaskTrigger -Once -At $startLocal.AddMinutes(45)),
-    (New-ScheduledTaskTrigger -Once -At $startLocal.AddHours(3))
-)
+if ($Daily) {
+    $triggers = @(
+        (New-ScheduledTaskTrigger -Daily -At $startLocal),
+        (New-ScheduledTaskTrigger -Daily -At $startLocal.AddMinutes(45)),
+        (New-ScheduledTaskTrigger -Daily -At $startLocal.AddHours(3))
+    )
+} else {
+    $triggers = @(
+        (New-ScheduledTaskTrigger -Once -At $startLocal),
+        (New-ScheduledTaskTrigger -Once -At $startLocal.AddMinutes(45)),
+        (New-ScheduledTaskTrigger -Once -At $startLocal.AddHours(3))
+    )
+}
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew `
               -ExecutionTimeLimit (New-TimeSpan -Minutes ($MaxMinutes + 30)) `
               -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
@@ -71,6 +85,6 @@ $t = Get-ScheduledTask -TaskName $TaskName
 "tarea      : $TaskName  [$($t.State)]"
 "kernel     : $Kernel"
 "python     : $py"
-"disparos   : $startLocal, $($startLocal.AddMinutes(45)), $($startLocal.AddHours(3)) (local)  =  $StartUtc + 45m + 3h"
+"disparos   : $startLocal, $($startLocal.AddMinutes(45)), $($startLocal.AddHours(3)) (local)  =  $StartUtc + 45m + 3h" + $(if ($Daily) { "  [CADA NOCHE]" } else { "  [una sola noche]" })
 "reintenta  : hasta $MaxMinutes min o hasta que el cupo abra"
 "log        : $(Join-Path $root 'daily_submit.log')"

@@ -2105,3 +2105,37 @@ compite con su plan; texto *específico y ganado* no.
 **Decisión:** v25 = `arc-agi3-nvfp4-carry-long` v1 (el artefacto exacto que produjo el 4.392; el
 camino del rerun es idéntico al de 25 min, la ventana offline es inerte allí). Armada con tres
 disparos. Cuota de G4: las 5 horas autorizadas, gastadas.
+
+### 8.47. Dos muestras más del set oculto: la base es {3.55, 2.69} y la consolidación da 2.66 (2026-09-14)
+
+| envío | config | oculto |
+|---|---|---|
+| v24 (09-11) | NVFP4 verbatim | **3.55** |
+| v24-b (09-12) | NVFP4 verbatim, segunda muestra | **2.69** |
+| v25 (09-13) | NVFP4 + consolidación al ganar nivel | **2.66** |
+
+**La base tiene varianza grande.** Dos muestras de la misma configuración a 0.86 de distancia:
+el 3.55 fue la tirada alta (media 3.12). La σ≈0.13 que medimos en la base vieja **no aplica
+aquí** — con más niveles en juego, la cola es más ancha. Consecuencia: el listón de ±0.30 para
+"un cambio se distingue" también queda corto para esta base; harán falta más muestras por config
+de las que asumíamos.
+
+**La consolidación, en oculto: ni mejora ni daño a n=1.** 2.66 cae dentro del rango observado de
+la base y a 0.03 de su muestra baja. El +0.277 del banco de 60 minutos **no se tradujo** — o no
+existe en el set oculto, o queda enterrado bajo la varianza. Por la regla vigente (revertir con n=1
+sólo si la muestra cae fuera del rango de la alternativa) **no se declara dañina**; por la regla de
+Julian ("si hay mejora, lanza la mejora") **no se envía por defecto**: vuelve la base.
+
+**Lo que sí funcionó sin intervención:** la tarea endurecida. Tres disparos: el primero dijo "ya
+hay envío hoy" (correcto: v24-b había salido a mano ese día UTC), el segundo —tras el reset—
+**envió v25**, el tercero volvió a no reenviar. Cero intervención humana, cero envíos dobles.
+
+**Lo que casi falla otra vez:** la tarea era de **una sola noche**. La del 13 no tenía nada armado
+y el cupo del 14 se salvó a mano con 3h51m de margen. Desde hoy el disparador es **diario**
+(`arm_submit_task.ps1 -Daily`): las mismas tres horas cada noche, idempotente, apuntando al kernel
+que diga `kernel_versions.json`. Se apaga con una línea. Es automatización de coste cero
+(STRATEGY §11, regla 1), y perder un cupo es irrecuperable.
+
+**Estado:** base NVFP4 media 3.12 (n=2), consolidación 2.66 (n=1). La decisión de dar una segunda
+muestra a la consolidación es de Julian: es el único injerto que ha pasado una compuerta en
+régimen, y con n=1 dentro del rango no se puede cerrar.

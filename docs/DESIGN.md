@@ -2139,3 +2139,63 @@ que diga `kernel_versions.json`. Se apaga con una línea. Es automatización de 
 **Estado:** base NVFP4 media 3.12 (n=2), consolidación 2.66 (n=1). La decisión de dar una segunda
 muestra a la consolidación es de Julian: es el único injerto que ha pasado una compuerta en
 régimen, y con n=1 dentro del rango no se puede cerrar.
+
+### 8.48. Auditoría de estrategias de razonamiento e "intuición" implementables, y regla operativa corregida (2026-09-14)
+
+**Regla operativa (corrección de Julian, vigente desde hoy).** No hay envío por defecto ni muestreo
+de varianza: la varianza se asume, cada envío lleva una palanca nueva, y el bucle es
+**investigación → banco en GPU (60 min en régimen) → submit esa noche**. El disparador diario apunta
+siempre al kernel con la última palanca que pasó banco, nunca a la base. Hoy lo violé dos veces
+(v24-c y el disparador apuntando a la base); corregido y guardado en memoria.
+
+**Research (fuentes al final), lo que aporta cada una y qué mecanismo deja:**
+
+1. **"Intuitive Gamer" (Tenenbaum y col., 2024-25).** Ante un juego *nuevo*, los humanos no hacen
+   búsqueda profunda: simulación **plana de un paso**, 5-7 muestras estocásticas, y **heurísticas
+   simples orientadas a la meta**. El modelo plano ajusta mejor a los datos humanos que los
+   profundos. → Mecanismo: cerrar cada nota del anfitrión con **una instrucción de un paso** ("aplica
+   la mecánica ganadora al objeto de arriba y mira qué cambia"), no con un plan. Implementado en el
+   manual. Segunda derivada, sin implementar: estructurar el turno como "3 candidatos → efecto
+   previsto en una línea → elige"; cuesta tokens de salida, la clase que ha fallado dos veces.
+2. **WorldLLM (2025) / adaptación en tiempo de prueba por interacción (ICLR 2026).** Hipótesis
+   explícitas en lenguaje natural sobre regularidades de transición, actualizadas con la evidencia;
+   una fase de sondeo causal *antes* de ejecutar. → Mecanismo: **afordancias positivas** ("estos
+   controles y clicks SÍ han tenido efecto en este juego"), calculadas por el anfitrión sobre todo el
+   historial. Implementado en el manual. Nunca negativas: etiquetar "inerte" por el fotograma final
+   fue el error de `nav`.
+3. **El agente que hizo el 100% del set público (agosto 2026).** Escribe un **manual por juego**
+   durante los niveles 1-7 en un *learning store* persistente —reglas de comportamiento, peligros, y
+   **autocorrecciones** ("no confíes en la nota anterior; el fotograma muestra la columna libre")—
+   y al llegar al nivel 8 juega con el manual que escribió. Sembrado en Gemini Flash: **2,6× mejor y
+   3× más barato** (65K tokens/juego frente a 195K en frío). El juego más duro: `lf52`, donde hasta
+   con manual Gemini se atasca en el nivel 6. → Mecanismo: el manual es la representación que
+   transfiere entre niveles. Nuestra versión (**escrita por el anfitrión desde la evidencia**, no por
+   el modelo) es la que se banca hoy: gratis en tokens de salida y sin poder equivocarse en los
+   hechos. La versión escrita por el modelo con autocorrección es la **siguiente palanca**, con un
+   riesgo conocido: exigir escritura costó acciones en v13/v14.
+4. **Objetualidad + analogía estructural** (core knowledge de Chollet; *structure mapping*). Un
+   humano llega al nivel 2 buscando "el mismo objeto de antes, en otro sitio". → Mecanismo: el
+   anfitrión localiza en el tablero actual las componentes conexas del **color que ganó el nivel
+   anterior** y las nombra con caja y tamaño. Implementado en el manual. Es la pieza nueva de hoy.
+5. **Mapa cognitivo / grafo de estados** (Blind Squirrel; segmentación de eventos). Sigue aparcado
+   sobre la base NVFP4 por la razón de §8.44: sin señal consciente de animación, sólo quedaría el
+   fotograma final. Volverá si la base incorpora `animation.py` + `noop_guard.py`.
+
+**Ranking para lo que sigue** (mecanismo × implementable × coste de salida cero):
+(a) manual del anfitrión — *en banco ahora*; (b) manual escrito por el modelo con autocorrección
+en el *learning store* que el harness ya tiene (las ranuras persisten entre niveles, verificado) —
+sin exigir escritura cada turno, sólo al ganar o al refutar; (c) estructura de un paso en el turno;
+(d) mapa cognitivo cuando haya señal de animación. Fuera con dato: texto genérico en todos los
+turnos (dos injertos, ambos negativos sobre esta base).
+
+**Sobre el manual que se banca hoy** (`src/arc3/game_manual.py`, sobre `level_carry.py`): desde el
+nivel 2, ~160 tokens de entrada: cómo se ganó el último nivel; dónde está AHORA el objeto de ese
+color; controles y clicks con efecto probado; una instrucción de un paso. Degrada byte a byte al
+prompt de fábrica. Compuerta pre-registrada: para embarcarse esta noche debe **superar a la
+consolidación** (26 niveles / 4.392), no al control plano.
+
+Fuentes: Intuitive Gamer — https://arxiv.org/abs/2407.14095 y https://arxiv.org/abs/2510.11503 ·
+WorldLLM — https://arxiv.org/abs/2506.06725 · Test-Time Adaptation via Environment Interaction
+(ICLR 2026) — https://arxiv.org/abs/2511.04847 · Strategy-Guided Exploration —
+https://arxiv.org/abs/2603.02045 · "100% on the ARC-AGI-3 public set" (Agno, ago. 2026) —
+https://www.agno.com/articles/arc-agi-arcade

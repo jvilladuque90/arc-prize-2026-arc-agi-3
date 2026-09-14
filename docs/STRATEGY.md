@@ -5,7 +5,17 @@
 > plan por fases) que se conserva porque su diagnóstico técnico sigue siendo válido, aunque
 > varias de sus conclusiones fueron **corregidas por medición** — cada corrección está marcada.
 
-## §0. Estado vigente (2026-09-09) — la base cambió, y funcionó
+## §0. Regla operativa vigente (2026-09-14)
+
+**No hay envío por defecto ni muestreo de varianza.** La varianza se asume. Cada envío diario lleva
+una palanca nueva que haya pasado el banco de 60 minutos en régimen; el bucle es **investigación →
+banco en GPU → submit esa noche**. El disparador diario apunta siempre al kernel con la última
+palanca bancada, nunca a la base. Si un cupo se abre sin palanca nueva, se dice y se propone; no se
+reenvía la base en silencio. Base actual: NVFP4 verbatim de keithtyser (oculto {3.55, 2.69});
+palanca vigente: consolidación al ganar nivel (banco 26 / 4.392, oculto 2.66); en banco: manual
+del juego. Detalle en DESIGN §8.47-8.48.
+
+## §0-ant2. Estado del 2026-09-09 — la base cambió, y funcionó
 
 **v21 = 1.15 en el set oculto**, empatando el récord del proyecto **a la primera** sobre un
 harness nuevo y **sin un solo parche de prompt**. Con n=1 no prueba superioridad sobre

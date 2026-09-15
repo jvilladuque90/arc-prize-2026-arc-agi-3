@@ -2541,3 +2541,59 @@ contra ese mismo muro. Lo que queda en este eje es fino (KV 5 → 8 GiB, o prefi
 de KV), con efecto esperado modesto y un autor que ya barrió estos mandos y publicó el ganador.
 
 **Coste:** ~10 min de GPU (el brazo murió en el arranque, no llegó a jugar).
+
+### 8.57. Descarga a RAM de CPU y disco: ya se hace, y el resto esta cerrado (2026-09-15)
+
+Julian pregunta si se puede usar RAM de CPU y disco para lo que sea posible y dejar la GPU
+para lo necesario. Respuesta verificada en el bundle, **sin gastar GPU**.
+
+**1. Ya se descarga.** `serving_setup.py:1410` fija `VLLM_PLE_CPU_OFFLOAD = "1"` y el autor
+aplica un parche propio (`radixark_nvfp4_ple_fp8.patch`) que mueve la tabla de n-gramas de la
+capa 2 a RAM de CPU en `float8_e4m3fn` (`ple_layer_ids = [2]`, verificado contra el sha256 del
+config del modelo en las lineas 738-739 y 1501-1506). El arranque lo confirma:
+`Found N PleOffloadLayer(s)` -> `Worker ready`.
+
+**Consecuencia para leer la seccion 8.56: los 81,8 GiB de pesos residentes son la cifra
+POSTERIOR a la descarga.** No es un recurso sin explorar; es el punto de partida.
+
+**2. RAM libre real:** 145,06 GiB al inicio, 135,37 GiB tras arrancar el trabajador de descarga.
+
+**3. Las tres vias y por que mueren:**
+
+- *Pesos a RAM (`--cpu-offload-gb`)*: transmite pesos por PCIe en cada paso adelante, limitado
+  por ancho de banda. A 195-270 tok/s con turno de 60 s es comprar capacidad vendiendo
+  velocidad: el patron que ya fallo dos veces (pensamiento 0 s -> 12 niveles, <=60 -> 26,
+  <=180 -> 17; el optimo es INTERIOR).
+- *KV a RAM (`--swap-space`)*: la mecanicamente interesante -- la patologia es desalojo y
+  recalculo a 3,21x de concurrencia, y la KV en CPU no cuesta memoria de tarjeta. **Muerta por
+  version**: vLLM V1 elimino el intercambio a memoria de anfitrion y el desalojo por defecto
+  paso a recalculo. El bundle corre `0.1.dev20073+g8e685d198`, muy posterior. El conector
+  moderno de descarga de KV existe pero exige `--kv-transfer-config`.
+- *Disco*: el checkpoint ya vive en NFS y vLLM avisa que **se salta la precarga automatica**
+  porque los 125,91 GiB rozan el limite contra la RAM. El disco ya es el origen y ya es el
+  cuello (181,48 s de carga). Empujar estado de ejecucion alli va en direccion contraria.
+
+**4. El cerrojo, que aplica a las tres por igual.** No es elegir la mejor: ninguna se puede
+pasar al servidor.
+
+  a. **Lista blanca de banderas.** `serving_setup.py:1754-1790` ejecuta `vllm serve --help=all`
+     y comprueba un conjunto CERRADO de 19 banderas. `--cpu-offload-gb`, `--swap-space` y
+     `--kv-transfer-config` no estan.
+  b. **Argumentos fijos.** El comando se arma con `command.extend([...])` literal entre 2289 y
+     2373. Sin paso de argumentos extra: `EXTRA`, `extra_args`, `ADDITIONAL`, `VLLM_ARGS`,
+     `passthrough` -> nada.
+  c. **Huella de los argumentos.** Calcula `argv_sha256` (1885, 2441) y lo contrasta contra la
+     linea de comandos VIVA del proceso raiz y de cada trabajador leida de `/proc`
+     (2018, 2088-2099, 2119). Un argumento a mano lo caza tambien el perro guardian en cada
+     reinicio.
+
+Y los mandos del perfil son exactamente **dieciseis** `TAAF_*` (dtype de KV, bytes de KV,
+num_seqs, tokens por lote, prefix caching, moe_backend, tres de MTP, captura de grafos, hilos):
+**ninguno toca descarga**. La unica ruta seria parchear el `serving_setup.py` vendido, lo que
+rompe la inferencia que justifico copiarlo caracter a caracter: *este archivo exacto puntua 3,55*.
+
+**Cierre.** El eje de memoria del stack de servicio esta cerrado por tres mecanismos
+independientes: version del motor, lista blanca y verificacion de identidad. Lo unico dentro de
+presupuesto es KV 5 -> 8-9 GiB (concurrencia 3,21x -> ~5x, aun lejos de los 28 del harness),
+sobre un mando que el autor ya barrio. **Coste: 0 min de GPU** -- diagnosticado antes de gastar,
+no despues, a diferencia de la seccion 8.56.

@@ -168,6 +168,24 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # MODELO OBJETIVO (build_nvfp4_moe.py): nucleo fusionado de expertos de Blackwell.
+    # TAAF_VLLM_MOE_BACKEND tampoco esta en el perfil ganador y acepta exactamente un
+    # valor no nulo: flashinfer_b12x (serving_setup.py:404). El modelo tiene 512 expertos
+    # en 48 capas, asi que la ruta de expertos es el grueso del computo del modelo
+    # OBJETIVO; el brazo anterior (IndexShare, DESIGN 8.58) actuaba sobre la cabeza
+    # borradora de MTP, de UNA capa, y rindio +0,3%. Y b12x es el nucleo de Blackwell,
+    # que es nuestra tarjeta exacta (TORCH_CUDA_ARCH_LIST="12.0", RTX PRO 6000).
+    # RIESGO: --moe-backend NO esta en la lista blanca de banderas que el setup verifica
+    # contra `vllm serve --help=all` (serving_setup.py:1771-1790). Si la version pineada
+    # no la reconoce, el servidor muere en el arranque (~10 min).
+    "nvfp4moelong": {"notebook": "notebooks/nvfp4_carry_moe_long.ipynb",
+                     "slug": "arc-agi3-nvfp4-moe-long",
+                     "title": "arc agi3 nvfp4 moe long",
+                     "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                          "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                     "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                     "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                      "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v3 (build_nvfp4_carry.py 3): DECAIMIENTO de la memoria vieja.
     # Hipotesis de Julian: arrastrar detalle de niveles pasados sesga las decisiones.
     # Detalle solo del ultimo nivel; lo anterior colapsa a una linea de esencia; sin

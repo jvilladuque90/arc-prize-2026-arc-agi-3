@@ -2346,3 +2346,54 @@ incluso con manual. Cuota G4 de la semana usada ≈ 6 h de 30 compartidas.
 
 **Envío:** el automático sigue apagado por orden de Julian ("hasta ver los resultados"). Los
 resultados están; la decisión de qué sale es suya.
+
+### 8.53. Dos hechos estructurales: los juegos en cero SÍ actúan, y no existe señal parcial (2026-09-15)
+
+Antes de gastar más GPU, autopsia de los `events.jsonl` de las dos corridas de 60 min. Dos
+hallazgos que reordenan lo que queda por intentar.
+
+**1. En los juegos que nunca puntúan, casi todas las acciones SÍ cambian el tablero.**
+
+| juego (0 niveles en ambas corridas) | acciones | cambian el tablero | final de la partida |
+|---|---|---|---|
+| `bp35` | 60 | **100%** | barrido de clics fila 15, cols 33/39/45/51 → `LEFT RIGHT LEFT RIGHT` |
+| `sp80` | 74 | **100%** | `SPACE SPACE SPACE SPACE SPACE` |
+| `tr87` | 19 | **100%** | `UP UP UP UP UP UP UP` |
+| `g50t` | 39 | 87% | `DOWN DOWN DOWN DOWN DOWN` |
+| `sk48` | 70 | 79% | `LEFT LEFT RIGHT RIGHT DOWN DOWN UP UP` |
+| `sc25` | 29 | 79% | clics dispersos, 11 celdas distintas |
+
+No es un agente atascado repitiendo cosas inertes: **actúa, el mundo responde, y aun así nunca
+encuentra la condición de victoria.** Los finales son barridos sistemáticos sin hipótesis
+(oscilación direccional, repetición de una tecla, rejilla de clics con paso regular). Esto refuta
+la premisa del guard de no-ops como palanca — y el margen medido lo confirma: **repeticiones
+exactas de un no-op ya visto = 22 de 1.115 acciones (2,0%)**, 9 de 979 (0,9%) en el control.
+Flash-Next casi no repite. El componente queda construido y verificado, pero no se banca solo.
+
+**2. La recompensa es estrictamente dispersa: no hay ninguna señal parcial que amplificar.**
+
+Sobre 1.219 acciones (carry) y 1.089 (control): el `score` sube **26 y 23 veces**
+respectivamente, y **cero de esas subidas ocurre sin completar un nivel**. Las acciones con
+`reward != 0` son exactamente esas mismas. El entorno no da nada hasta que ganas un nivel: no hay
+gradiente, no hay "te estás acercando".
+
+**Lo que esto implica, y es la lectura útil de toda la semana.** La única señal que el entorno
+concede es la **finalización de un nivel**, y por eso la consolidación —que convierte esa señal
+en guía para el nivel siguiente— es lo único que ha pagado (+3 niveles, +0.28). Todo lo demás que
+probamos añadía *texto* o cambiaba *presupuesto*, sin tocar señal. La regla que emerge de los
+cinco brazos no es "el texto falla", sino: **texto mínimo, ganado y raro paga; texto genérico,
+abundante o de cada turno, no.** La consolidación cumple las tres; el manual rompía las tres.
+
+**Consecuencia para los seis juegos en cero:** dentro de un nivel que nunca se completa no existe
+señal que el anfitrión pueda amplificar. Con este presupuesto están fuera de alcance, y el margen
+real está en la **profundidad de los 19 juegos que sí puntúan** — que es exactamente donde actúa
+la consolidación.
+
+**Sobre el eje del modelo** (el que produjo el salto 1.59 → 3.55): revisados los modelos públicos
+de Kaggle hoy, no hay uno claramente mejor. Estamos en la generación más nueva (3.8) con la
+arquitectura más rápida (Flash-Next) y MTP nativo; las alternativas NVFP4
+(`michaelpoluektov/qwen3-8-27b-nvfp4`, `impactganyu/qwen38-27b-radixark-nvfp4`,
+`michaelpoluektov/qwen3-6-35b-a3b-nvfp4`) son de la misma generación o anteriores y **sin MTP**,
+y `serving_setup.py` está construido alrededor de MTP (`TAAF_VLLM_MTP_TOKENS`,
+`mtp_dynamic_batch_schedule`). Cambiar de checkpoint es un experimento de stack entero, no una
+variable.

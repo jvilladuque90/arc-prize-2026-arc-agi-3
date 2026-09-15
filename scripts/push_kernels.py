@@ -136,6 +136,19 @@ KERNELS = {
     # ganador + afordancias positivas. La version long (60 min) es la que se banca.
     # PRESUPUESTO DE TURNO (build_nvfp4_yield.py): consolidacion + YIELD_SECONDS 60->180.
     # Mecanica, cero tokens de prompt: el 45-49% de los turnos se cortaban antes de actuar.
+    # STACK DE SERVICIO (build_nvfp4_kv.py): alinear vLLM con la concurrencia del
+    # harness. El log de TODAS nuestras corridas NVFP4 dice "Maximum concurrency for
+    # 32768 tokens per request: 3.21x" mientras el harness lanza 28 juegos, con 75 GB
+    # de la tarjeta sin usar y max_num_seqs=8 (el propio serving_setup trae 28 de
+    # defecto). KV 5 -> 46 GiB y seqs 8 -> 28. Modelo, MTP y dtype intactos.
+    "nvfp4carrykvlong": {"notebook": "notebooks/nvfp4_carry_kv_long.ipynb",
+                         "slug": "arc-agi3-nvfp4-carry-kv-long",
+                         "title": "arc agi3 nvfp4 carry kv long",
+                         "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                              "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                         "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                         "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                          "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v3 (build_nvfp4_carry.py 3): DECAIMIENTO de la memoria vieja.
     # Hipotesis de Julian: arrastrar detalle de niveles pasados sesga las decisiones.
     # Detalle solo del ultimo nivel; lo anterior colapsa a una linea de esencia; sin

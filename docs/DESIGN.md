@@ -2657,3 +2657,71 @@ palanca que esta pero sobre el modelo OBJETIVO completo en vez de una cabeza bor
 capa: tres ordenes de magnitud mas de computo bajo el mando.
 
 **Coste:** 61 min de GPU. **No se envio nada** (orden vigente de Julian).
+
+### 8.59. Nucleo fusionado de expertos: incompatible con este checkpoint (2026-09-15)
+
+Brazo `arc-agi3-nvfp4-moe-long`, un mando: `TAAF_VLLM_MOE_BACKEND` ausente(`None`) ->
+`"flashinfer_b12x"`, el unico valor no nulo que el setup acepta (`serving_setup.py:404`).
+Elegido porque el modelo tiene **512 expertos en 48 capas** y `b12x` es el nucleo de Blackwell,
+que es nuestra tarjeta exacta: tres ordenes de magnitud mas de computo bajo el mando que la
+cabeza borradora de una capa de 8.58.
+
+**El mando era valido y se selecciono.** No murio por argumento desconocido, que era mi
+prediccion:
+
+```
+INFO [nvfp4.py:244] Using 'FLASHINFER_B12X' NvFp4 MoE backend out of potential backends:
+['FLASHINFER_TRTLLM', 'FLASHINFER_CUTEDSL', 'FLASHINFER_CUTEDSL_BATCHED',
+ 'FLASHINFER_CUTLASS', 'VLLM_CUTLASS', 'MARLIN', 'HUMMING', 'EMULATION']
+```
+
+Cargo los 206 fragmentos de pesos, completo la descarga PLE, y rompio construyendo las capas:
+
+```
+self.mlp = Qwen3_8FlashNextSparseMoeBlock(
+  self.experts = FusedMoEFactory(
+    routed_experts.py:203 _get_quant_method
+      quant_method = UnquantizedFusedMoEMethod(moe_config)
+ValueError: moe_backend='flashinfer_b12x' is not supported for unquantized MoE.
+Expected one of ['triton', 'batched_triton', 'flashinfer_trtllm', 'flashinfer_cutlass', 'aiter'].
+```
+
+**La causa.** El checkpoint tiene bloques de expertos **mixtos**: la mayoria cuantizados en
+NVFP4 y al menos uno **sin cuantizar** (la config excluye modulos de la cuantizacion:
+`exclude_modules=["*.ple.*"]`). vLLM aplica el mismo `moe_backend` global a los **dos** caminos
+de seleccion, el cuantizado y el no cuantizado, y `flashinfer_b12x` solo existe en el primero.
+Asi que el mando es **estructuralmente inservible en este checkpoint**, no un fallo de ajuste.
+
+**Y la salida esta bloqueada aguas arriba.** Las dos listas de backends se cortan en
+`flashinfer_trtllm` y `flashinfer_cutlass`: ambos aparecen en la lista NVFP4 **y** en la lista
+sin cuantizar, asi que cualquiera de los dos satisfaria los dos caminos. Pero el propio
+`serving_setup.py:404` lo impide:
+
+```python
+if moe_backend not in {None, "flashinfer_b12x"}:
+    raise RuntimeError(f"{MOE_BACKEND_ENV} must be 'flashinfer_b12x' when set, ...")
+```
+
+El unico valor que el validador permite es justo el unico que el checkpoint no admite. Pasar
+`flashinfer_trtllm` exigiria parchear el `serving_setup.py` vendido — descartado en 8.57 porque
+rompe la inferencia que justifico copiarlo caracter a caracter.
+
+**Correccion de mi prediccion de riesgo.** Dije "muere en el arranque por argumento desconocido,
+~10 min". Fue otra cosa y costo **~30 min**: la bandera era valida, el fallo llego tarde en la
+inicializacion del motor y el setup espera 1500 s antes de rendirse
+(`Timed out waiting for vLLM after 1500s`).
+
+**Con esto el stack de servicio queda cerrado entero, cada parte con su numero:**
+
+| eje | estado | evidencia |
+|---|---|---|
+| memoria (RAM/disco/KV) | cerrado | 8.57: ya descarga PLE; lista blanca + `argv_sha256` |
+| decodificacion especulativa | cerrado | 8.58: +0,3%, acotado por cabeza borradora de 1 capa |
+| nucleo de expertos | cerrado | 8.59: el unico valor permitido es incompatible |
+
+Los mandos que quedan del perfil o estan en el nombre que el autor barrio
+(`kv5-bf16-mtp3-c8-cg32` = KV, dtype, MTP, concurrencia, grafos) o se explican por el muro de
+memoria (`enable_prefix_caching=0`). Sin barrer quedan solo `MAX_NUM_BATCHED_TOKENS` (8192) y
+`OMP_THREADS` (1), ambos de efecto esperado pequeno segun el patron de los tres brazos.
+
+**Coste:** ~30 min de GPU. **No se envio nada.**

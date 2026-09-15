@@ -34,6 +34,14 @@ DOCKER_IMAGE = ("gcr.io/kaggle-private-byod/python@sha256:"
 KERNELS = {
     "features": {"notebook": "notebooks/features.ipynb", "slug": "arc-agi3-features",
                  "title": "arc agi3 features"},
+    # SONDA de montajes (CPU, cero cuota): lista donde monta Kaggle la competencia y los
+    # datasets. Creada el 2026-09-14 cuando dos corridas murieron porque la ruta
+    # /kaggle/input/competitions/<comp>/arc_agi_3_wheels no existia. Lleva los mismos
+    # datasets que los kernels NVFP4 para ver el layout exacto que reciben.
+    "probe": {"notebook": "notebooks/probe_mounts.ipynb", "slug": "arc-agi3-probe-mounts",
+              "title": "arc agi3 probe mounts",
+              "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                   "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"]},
     # Submission dual-mode (gateway en rerun / offline en Save & Run). CPU: no gasta cuota G4.
     "submit": {"notebook": "notebooks/submit.ipynb", "slug": "arc-agi3-submit",
                "title": "arc agi3 submit"},
@@ -128,6 +136,17 @@ KERNELS = {
     # ganador + afordancias positivas. La version long (60 min) es la que se banca.
     # PRESUPUESTO DE TURNO (build_nvfp4_yield.py): consolidacion + YIELD_SECONDS 60->180.
     # Mecanica, cero tokens de prompt: el 45-49% de los turnos se cortaban antes de actuar.
+    # Slug NUEVO (-2): el anterior perdio el adjunto de la competencia en sus dos sesiones
+    # (publicado justo tras rechazos por "2 sesiones GPU"); la sonda demostro que un kernel
+    # limpio si monta el wheelhouse. Mismo notebook, push limpio.
+    "nvfp4carryyieldlong2": {"notebook": "notebooks/nvfp4_carry_yield_long.ipynb",
+                             "slug": "arc-agi3-nvfp4-carry-yield-long-2",
+                             "title": "arc agi3 nvfp4 carry yield long 2",
+                             "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                                  "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                             "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                             "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                              "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     "nvfp4carryyieldlong": {"notebook": "notebooks/nvfp4_carry_yield_long.ipynb",
                             "slug": "arc-agi3-nvfp4-carry-yield-long",
                             "title": "arc agi3 nvfp4 carry yield long",

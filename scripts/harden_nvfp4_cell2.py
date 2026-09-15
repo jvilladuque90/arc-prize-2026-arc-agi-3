@@ -37,8 +37,25 @@ VIEJO = '''subprocess.check_call(
     stdout=subprocess.DEVNULL,
 )'''
 
-NUEVO = '''# --- ENDURECIDO (kernel de experimento): reintento + stderr visible. El 2026-09-14 esta
-# celda murio con exit 1 y sin diagnostico (stdout a DEVNULL, stderr sin capturar).
+NUEVO = '''# --- ENDURECIDO (kernel de experimento): localizar el wheelhouse recorriendo
+# /kaggle/input (no fiarse de la ruta fija), reintento y stderr visible. El 2026-09-14
+# esta celda murio dos veces con exit 1 porque la competencia no estaba montada en la
+# ruta fija; la sonda arc-agi3-probe-mounts confirmo que en un kernel limpio si lo esta.
+def _locate_wheelhouse():
+    import os as _o
+    _fijo = "/kaggle/input/competitions/arc-prize-2026-arc-agi-3/arc_agi_3_wheels"
+    _hits = []
+    for _dp, _dn, _fn in _o.walk("/kaggle/input"):
+        if _dp.count(_o.sep) - "/kaggle/input".count(_o.sep) > 4:
+            _dn[:] = []
+            continue
+        if "arc_agi_3_wheels" in _dn:
+            _hits.append(_o.path.join(_dp, "arc_agi_3_wheels"))
+    _elegido = _hits[0] if _hits else _fijo
+    print(f"WHEELHOUSE_LOCATE hits={_hits} usado={_elegido} existe={_o.path.isdir(_elegido)}", flush=True)
+    return _elegido
+
+
 def _pip_install_retry(cmd, tries=3, wait_s=20):
     import time as _t
     last = None
@@ -72,7 +89,7 @@ _pip_install_retry(
         "--no-warn-conflicts",
         "--disable-pip-version-check",
         "--find-links",
-        "/kaggle/input/competitions/arc-prize-2026-arc-agi-3/arc_agi_3_wheels",
+        _locate_wheelhouse(),
         "arc-agi",
     ]
 )'''

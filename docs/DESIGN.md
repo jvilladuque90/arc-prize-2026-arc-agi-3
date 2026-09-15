@@ -2273,3 +2273,33 @@ al asignar un slot recién liberado. Además, los dos slots GPU de la cuenta los
 (límite por cuenta, no por kernel): el reintento es automático cada 5 min. Si el banco no cierra
 antes del primer disparo (23:40Z), esta noche sale la consolidación —la última palanca bancada— y
 el yield, si pasa, va la noche siguiente. En ningún caso sale la base.
+
+### 8.51. Yield 180: mecánica confirmada, efecto refutado — el corte a 60 s es un límite útil (2026-09-15)
+
+Tras dos arranques fallidos del slug original (la competencia no se montó en sus sesiones; la sonda
+`arc-agi3-probe-mounts` demostró que un kernel limpio sí la monta en la ruta fija, y la celda 2 de los
+kernels de experimento ahora **localiza** el wheelhouse recorriendo `/kaggle/input` y reintenta con
+`stderr` visible), el brazo corrió limpio bajo slug nuevo: 25/25 juegos, `yield_seconds: 180.0` en
+los 395 bloques de estado, ninguno con 60.
+
+| 60 min | niveles | acciones | score | con score | en cero | turnos | ejecutan | cortados |
+|---|---|---|---|---|---|---|---|---|
+| consolidación (palanca vigente) | **26** | 1.219 | **4.392** | 19 | 6 | 597 | 53% | 43% |
+| consolidación + `YIELD_SECONDS` 180 | 17 | 971 | 3.063 | 13 | 12 | 417 | **69%** | **25%** |
+
+**El primario pre-registrado pasó** (turnos que ejecutan 53% → 69%; cortados 43% → 25%): la mecánica
+es exactamente la prevista. **Y el resultado es peor en todo lo que puntúa**: −30% de turnos en la
+misma hora, −248 acciones, −9 niveles, −1.33 de score medio, el doble de juegos en cero.
+
+**Lo que enseña.** Mi supuesto —"un turno cortado es pérdida pura, convertirlo en turno que actúa
+es neto positivo"— era falso. El corte a 60 segundos funciona como **límite forzoso del
+pensamiento**: re-preguntar con el contexto fresco resulta más barato que dejar al modelo pensar tres
+minutos, y el pensamiento marginal más allá del primer minuto casi no compra acciones mejores. Con
+dos puntos en la curva (60 s → 26 niveles; 180 s → 17) la pendiente es clara: **menos pensamiento
+por turno, no más.** El siguiente punto natural es `ENABLE_THINKING=false` sobre Flash-Next, nunca
+medido en esta base (en la base vieja fue neutro con Qwen3.6 y quedó confundido con la pila de
+prompt en v19), mecánico y de una variable.
+
+**Estado de la palanca vigente.** La consolidación (26 / 4.392) sigue siendo la única que ha pasado
+banco sobre NVFP4. Cerradas con dato en esta base: los tres injertos de v23, el manual del anfitrión,
+y el yield 180. El envío automático está apagado por orden de Julian hasta que vea estos resultados.

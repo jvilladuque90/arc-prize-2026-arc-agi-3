@@ -2442,3 +2442,53 @@ contenido" con dato, no con opinión.
 
 **Coste:** ~1 h de GPU de las 2 autorizadas (la corrida esperó 130 min en cola, que no consume
 cuota, y corrió 61 min). Queda ~1 h sin gastar.
+
+### 8.55. CORRECCIÓN: la media del banco es mala estadística, y mi "curva de la nota" no se sostiene (2026-09-15)
+
+La hipótesis de Julian —"¿y si ya estamos cargando mucha memoria que le da sesgo al modelo? mantener
+la esencia sin que genere sesgo; lo intuido muy del pasado ya no importa tanto"— estaba bien fundada
+y el dato de v2 la respaldaba (`n2↑ n3↓`). Se implementó **v3 = decaimiento**: detalle sólo del
+último nivel, lo anterior colapsado a una línea de esencia, sin receta literal, conservando el
+invariante. Medido antes de construir: el 76% de las notas llevan un solo nivel, el 24% restante
+son los juegos profundos y llegan a 200 tokens. v3 recorta un 34% ahí y queda en ~93 tokens en el
+caso mayoritario.
+
+**v3: 18 niveles / 3.225** frente a v1 26 / 4.392. No pasa. Pero v2 dio **3.221** y v3 **3.225** —
+dos notas muy distintas con el mismo resultado. Esa coincidencia obligó a mirar de qué depende el
+número, y ahí está el hallazgo de verdad.
+
+**La media de 25 juegos está dominada por 2-3 colas.** El top-3 aporta **la mitad** de la media en
+las cuatro corridas, y **13 de 25 juegos oscilan más de 3 puntos** entre ellas. `ft09` vale
+**28,57 en control y v3** y **4,76 en v1 y v2**: un solo juego mueve ~1,0 de media. `vc33` va de
+21,3 a 1,75. Construir una "curva del presupuesto de nota" sobre esas medias fue leer ruido.
+
+**Lectura correcta: comparación pareada juego a juego** (mismos 25 juegos) con prueba de signos, y
+recuento de juegos que puntúan, que no lo dominan las colas:
+
+| brazo | gana v1 | gana el brazo | empates | p | niveles | juegos con score>0 | mediana |
+|---|---|---|---|---|---|---|---|
+| **v1 (base)** | — | — | — | — | **26** | **19** | **2.78** |
+| control (sin nota) | 8 | 4 | 13 | **0.388** | 23 | 15 | 1.82 |
+| v2 (receta) | 8 | 4 | 13 | **0.388** | 21 | 16 | 2.78 |
+| v3 (decaimiento) | 10 | 3 | 12 | 0.092 | 18 | 12 | 0.00 |
+| yield 180 | 11 | 3 | 11 | **0.057** | 17 | 13 | 1.64 |
+| sin pensamiento | **16** | 1 | 8 | **0.000** | 12 | 9 | 0.00 |
+
+**Qué sobrevive y qué no.**
+- **El eje del pensamiento aguanta**: `sin pensamiento` es peor de forma contundente (16-1,
+  p = 0,000) y `yield 180` peor al borde (11-3, p = 0,057). §8.51 y §8.52 siguen en pie.
+- **El eje de la nota NO**: **v1 frente a no poner nada no está establecido** (8-4, p = 0,388), y v2
+  tampoco se distingue de v1. Sólo v3 se inclina a peor. Queda **retirada** la afirmación de §8.46
+  ("la consolidación pasa la compuerta") y la mitad de §8.54 que hablaba de una curva con óptimo
+  interior en el presupuesto de nota: ambas se apoyaban en diferencias de media dentro del ruido.
+- Lo único que se sostiene a favor de v1 es el estadístico robusto: **19 juegos puntúan con v1
+  frente a 15 sin nota**, y es la mejor mediana. Sugerente, no probado.
+
+**Consecuencia para los envíos, y encaja con lo observado:** que v25 (consolidación) diera **2.66**
+en oculto, dentro del rango de la base {3.55, 2.69}, es exactamente lo que predice "no hay
+diferencia establecida". No teníamos una palanca probada; teníamos una candidata.
+
+**Regla de banco, desde ahora.** El primario deja de ser la media. Se usa **comparación pareada con
+prueba de signos** más **recuento de juegos que puntúan**; la media se reporta como contexto. Con
+25 juegos y colas así, un cambio necesita ~12 juegos no empatados a favor para distinguirse, o
+repetir la corrida. Presupuesto gastado: las 2 h autorizadas (v2 ~1 h, v3 ~1 h).

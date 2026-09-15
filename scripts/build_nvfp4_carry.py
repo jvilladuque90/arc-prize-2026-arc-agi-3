@@ -18,7 +18,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "notebooks" / "nvfp4.ipynb"
-OUT = ROOT / "notebooks" / "nvfp4_carry.ipynb"
+# Sufijo opcional para no pisar el notebook de referencia: build_nvfp4_carry.py v2
+_SUF = sys.argv[1] if len(sys.argv) > 1 else ""
+OUT = ROOT / "notebooks" / f"nvfp4_carry{_SUF}.ipynb"
 MOD = ROOT / "src" / "arc3" / "level_carry.py"
 HOOK_ANCHOR = "PUBLIC25_SETTINGS budget_s="
 

@@ -136,6 +136,18 @@ KERNELS = {
     # ganador + afordancias positivas. La version long (60 min) es la que se banca.
     # PRESUPUESTO DE TURNO (build_nvfp4_yield.py): consolidacion + YIELD_SECONDS 60->180.
     # Mecanica, cero tokens de prompt: el 45-49% de los turnos se cortaban antes de actuar.
+    # CONSOLIDACION v2 (build_nvfp4_carry.py 2): receta comprimida del ultimo nivel
+    # ganado + eje comun de sus clics + invariante cuando dos niveles se ganan igual.
+    # Amplifica la UNICA senal que da el entorno (completar nivel), que es lo unico
+    # que ha pagado. ~126 tokens frente a ~93 de v1.
+    "nvfp4carry2long": {"notebook": "notebooks/nvfp4_carry2_long.ipynb",
+                        "slug": "arc-agi3-nvfp4-carry2-long",
+                        "title": "arc agi3 nvfp4 carry2 long",
+                        "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                             "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                        "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                        "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                         "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # GUARD DE NO-OPS DEL ANFITRION (build_nvfp4_noopguard.py): consolidacion + bloqueo de
     # repetir una accion ya probada inerte sobre el mismo tablero. Cognicion sin texto.
     "nvfp4carrynoopguardlong": {"notebook": "notebooks/nvfp4_carry_noopguard_long.ipynb",

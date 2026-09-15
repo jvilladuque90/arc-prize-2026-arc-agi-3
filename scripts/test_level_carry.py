@@ -9,6 +9,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from arc3.level_carry import (  # noqa: E402
+    comprimir_racha,
     describir_cambio,
     render_carry_note,
     transiciones_ganadoras,
@@ -101,6 +102,56 @@ def main() -> int:
     check("no lo interpretes como accion inerte" in nota3,
           "sin cambio visible la nota lo dice y NO marca la accion como inerte",
           "es el error de nav que este modulo no repite")
+
+    # --- v2: receta comprimida, eje de clics, invariante -------------------
+    check(comprimir_racha(["A", "A", "A", "B"]) == "A x3 -> B", "comprime rachas",
+          comprimir_racha(["A", "A", "A", "B"]))
+    check(comprimir_racha([]) == "" and comprimir_racha(["", " "]) == "", "racha vacia")
+
+    # receta real: las ultimas 5 acciones del nivel, con repeticion explicita
+    t0b = con(tablero(4), [(2, 3, 11)])
+    h4 = [H("UP", F(t0b, 1, 1)), H("LEFT", F(t0b, 2, 1)),
+          H("MOUSE(row=9, col=43)", F(t0b, 3, 1)), H("MOUSE(row=9, col=43)", F(t0b, 4, 1)),
+          H("MOUSE(row=31, col=43)", F(con(t0b, [(2, 3, 4)]), 5, 2))]
+    tr4 = transiciones_ganadoras(h4)
+    check(tr4[0]["receta"] == ["UP", "LEFT", "MOUSE(row=9, col=43)", "MOUSE(row=9, col=43)",
+                              "MOUSE(row=31, col=43)"],
+          "la receta son las ultimas 5 acciones del nivel", str(len(tr4[0]["receta"])))
+    check(tr4[0]["receta_completa"] is True, "marca que la receta cubre el nivel entero")
+    n4 = render_carry_note(2, tr4)
+    check("RECETA del nivel 1 (asi se gano)" in n4, "la nota lleva la receta del ultimo nivel")
+    check("MOUSE(row=9, col=43) x2" in n4, "la repeticion sale comprimida", n4.splitlines()[1][:80])
+    check("todos en la columna 43" in n4, "detecta el eje comun de los clics de la receta")
+
+    # receta recortada cuando el nivel fue largo
+    largo = [H(f"A{i}", F(t0b, i, 1)) for i in range(8)] + [H("SPACE", F(con(t0b, [(0, 0, 9)]), 9, 2))]
+    trl = transiciones_ganadoras(largo)
+    check(len(trl[0]["receta"]) == 5 and trl[0]["receta_completa"] is False,
+          "en un nivel largo la receta se recorta a 5 y se marca como parcial")
+    check("ultimas acciones antes de ganar" in render_carry_note(2, trl),
+          "y la nota lo dice, no finge que sea la receta entera")
+
+    # invariante: dos niveles ganados con el mismo tipo de accion Y el mismo color.
+    # El color se lee del tablero ANTERIOR a la accion ganadora, asi que la entrada
+    # previa a cada cruce debe tener Y (11) en la celda que se clica.
+    amarillo = con(tablero(4), [(2, 2, 11)])
+    hi = [H("inicio", F(amarillo, 1, 1)),                               # nivel 1, Y en (2,2)
+          H("MOUSE(row=2, col=2)", F(tablero(4), 2, 2)),                # cruce: gana nivel 1
+          H("ruido", F(amarillo, 3, 2)),                                # nivel 2, Y en (2,2)
+          H("MOUSE(row=2, col=2)", F(tablero(4), 4, 3))]                # cruce: gana nivel 2
+    tri = transiciones_ganadoras(hi)
+    check([t["color_bajo_click"] for t in tri] == ["Y", "Y"],
+          "ambos cruces leen color Y bajo el click", str([t["color_bajo_click"] for t in tri]))
+    ni = render_carry_note(3, tri)
+    check("INVARIANTE" in ni and "niveles 1, 2" in ni,
+          "declara el invariante cuando dos niveles se ganan igual", ni)
+    check("no una casualidad" in ni, "y lo nombra como mecanica del juego")
+    # con un solo nivel ganado no hay invariante
+    check("INVARIANTE" not in render_carry_note(2, tr4), "con un solo nivel no hay invariante")
+
+    ap = len(n4) // 4
+    check(ap <= 170, f"la nota v2 sigue en presupuesto (~{ap} tokens)",
+          "v1 eran ~93; el manual que fallo, ~160 de contenido no ganado")
 
     # 5. basura: no revienta
     check(transiciones_ganadoras(None) == [], "historial None -> vacio")

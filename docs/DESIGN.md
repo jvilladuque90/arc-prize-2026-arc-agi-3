@@ -2397,3 +2397,48 @@ arquitectura más rápida (Flash-Next) y MTP nativo; las alternativas NVFP4
 y `serving_setup.py` está construido alrededor de MTP (`TAAF_VLLM_MTP_TOKENS`,
 `mtp_dynamic_batch_schedule`). Cambiar de checkpoint es un experimento de stack entero, no una
 variable.
+
+### 8.54. Amplificar la señal de nivel completado: la v2 no pasa, y aparece la segunda curva (2026-09-15)
+
+Encargo de Julian: amplificar la única señal que el entorno concede, con tope de 2 h de GPU.
+Diseño sacado de dos medidas propias: el modelo ve **~10 mensajes** de historia y un nivel cuesta
+**19 acciones de mediana** (4-89), así que la victoria se le sale del contexto; y sobre **49 cruces
+reales** la acción final sola pierde la señal (las recetas de verdad son `LEFT x5`,
+`UP UP RIGHT MOUSE(4,37) SPACE`, el mismo clic ×4, clics con columna fija 43).
+
+**v2 = v1 + receta comprimida del último nivel + eje común de sus clics + invariante** cuando dos
+niveles se ganan con la misma acción y color. ~126 tokens frente a ~93.
+
+| 60 min | niveles | acciones | score | con score | ≥ n2 | ≥ n3 | en cero |
+|---|---|---|---|---|---|---|---|
+| consolidación v1 | **26** | 1.219 | **4.392** | 19 | 4 | **3** | 6 |
+| consolidación v2 | 21 | 1.190 | 3.221 | 16 | **5** | **0** | 9 |
+
+La guarda pasó: la nota salió en 16 juegos, la receta en los 16, el invariante en 2 (`r11l`,
+`vc33`). El mecanismo se montó y se mostró. **No pasa la compuerta**: −5 niveles, −1.17.
+
+**El patrón interno es más informativo que el total.** v2 lleva **más** juegos al nivel 2 (5 frente
+a 4) y **ninguno** al 3 (frente a 3), y el nivel 2 le sale **más caro** (`tu93` 1,8× el baseline
+frente a 0,9×; `vc33` 0,9× frente a 0,6×; `re86` 1,0× frente a 0,9×). Es la firma del **anclaje
+literal**: decirle "así ganaste, `LEFT x5`" le hace repetir esa secuencia, que sirve para cruzar
+una vez más y le impide adaptarse después. La receta es concreta y por eso ata; la nota v1, que
+sólo nombra la acción y el cambio, deja al modelo generalizar.
+
+**La segunda curva.** Con esto tenemos medido el eje del **presupuesto de nota**, y tiene óptimo
+interior, igual que el del pensamiento:
+
+| tokens de nota | 0 (control) | **~93 (v1)** | ~126 (v2) | ~160 (manual) |
+|---|---|---|---|---|
+| niveles | 23 | **26** | 21 | 20 |
+
+| presupuesto de pensamiento | 0 s | **≤60 s** | ≤180 s |
+|---|---|---|---|
+| niveles | 12 | **26** | 17 |
+
+**Dos ejes independientes, la misma forma: un máximo donde ya estamos.** No es que "el texto
+falle" ni que "pensar falle": es que la configuración actual está en el pico de ambas curvas, y
+moverse en cualquier dirección cuesta niveles. Esto cierra la dirección "amplificar con más
+contenido" con dato, no con opinión.
+
+**Coste:** ~1 h de GPU de las 2 autorizadas (la corrida esperó 130 min en cola, que no consume
+cuota, y corrió 61 min). Queda ~1 h sin gastar.

@@ -2492,3 +2492,52 @@ diferencia establecida". No teníamos una palanca probada; teníamos una candida
 prueba de signos** más **recuento de juegos que puntúan**; la media se reporta como contexto. Con
 25 juegos y colas así, un cambio necesita ~12 juegos no empatados a favor para distinguirse, o
 repetir la corrida. Presupuesto gastado: las 2 h autorizadas (v2 ~1 h, v3 ~1 h).
+
+### 8.56. Stack de servicio y modelo: el muro de memoria, y una corrección mía (2026-09-15)
+
+Julian: enfocarse en el modelo y el stack de servicio, nada de medir ruido. El primer candidato
+salió del log de **todas** nuestras corridas NVFP4:
+
+```
+Initial free memory 94.43 GiB, reserved 5.0 GiB memory for KV Cache
+GPU KV cache size: 105,202 tokens
+Maximum concurrency for 32,768 tokens per request: 3.21x
+```
+
+El harness lanza `concurrency = 28` y la caché KV da para **3,21**. Leí eso como "8,7× de
+sobresuscripción con ~75 GB de tarjeta sin usar" y monté el brazo: KV 5 → 46 GiB y
+`max_num_seqs` 8 → 28.
+
+**El brazo aplicó exactamente lo pedido** —`kv_cache_memory_bytes: 49392123904`,
+`max_num_seqs: 28`, **969.242 tokens de KV, concurrencia máxima 29,58×**— y el motor **murió
+cargando pesos al 88%**: `RuntimeError: Engine core initialization failed`.
+
+**La causa, en el log de una corrida que sí arranca:**
+
+```
+Filesystem type for checkpoints: NFS. Checkpoint size: 125.91 GiB
+Model loading took 81.8 GiB memory and 181.48 seconds
+```
+
+**Los 94,43 GiB libres se miden ANTES de cargar el modelo.** Los pesos residentes ocupan
+**81,8 GiB** y dejan **12,6 GiB** para KV, activaciones y grafos. Los 5 GiB del perfil no son una
+elección perezosa: están **cerca del techo**. Mi lectura de "75 GB sin usar" era falsa, y con ella
+cae el diagnóstico de que el perfil dejaba dinero en la mesa.
+
+**Lo que esto cierra, con número:**
+
+1. **La sobresuscripción de KV es estructural, no un error de ajuste.** Cabría subir KV de 5 a
+   ~8-9 GiB como mucho: la concurrencia pasaría de 3,21× a ~5×, lejos de los 28 del harness.
+   Y explica por qué `max_num_seqs = 8`: servir más con esa KV sería desalojar sin parar.
+2. **`enable_prefix_caching = 0` también se entiende**: con 12,6 GiB de margen no hay sitio.
+3. **El eje del modelo, por arriba, está cerrado por memoria.** Propuse mirar
+   `nemotron-3-super-120b-a12b-nvfp4` o `qwen3-5-122b-a10b-nvfp4`: **no caben**. Ya estamos
+   corriendo un modelo de 125,91 GiB de checkpoint con descarga PLE a CPU que deja la tarjeta
+   al 87%. El salto 1.59 → 3.55 fue justamente eso: pasar de un 27B denso a este.
+
+**Consecuencia estratégica.** Los dos ejes que sí produjeron saltos están ahora **acotados por el
+hardware**, no por falta de ideas: el modelo ya llena la tarjeta y el servicio está ajustado
+contra ese mismo muro. Lo que queda en este eje es fino (KV 5 → 8 GiB, o prefix caching a costa
+de KV), con efecto esperado modesto y un autor que ya barrió estos mandos y publicó el ganador.
+
+**Coste:** ~10 min de GPU (el brazo murió en el arranque, no llegó a jugar).

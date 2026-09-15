@@ -2597,3 +2597,63 @@ independientes: version del motor, lista blanca y verificacion de identidad. Lo 
 presupuesto es KV 5 -> 8-9 GiB (concurrencia 3,21x -> ~5x, aun lejos de los 28 del harness),
 sobre un mando que el autor ya barrio. **Coste: 0 min de GPU** -- diagnosticado antes de gastar,
 no despues, a diferencia de la seccion 8.56.
+
+### 8.58. Decodificacion especulativa: IndexShare aplicado, medido, y el eje cerrado (2026-09-15)
+
+Brazo `arc-agi3-nvfp4-mtpshare-long`, 61 min, un solo mando:
+`TAAF_VLLM_MTP_INDEX_SHARE_FOR_ITERATION` ausente(=0) -> `"1"`.
+
+**Por que se eligio.** De los tres mandos de MTP que `serving_setup.py` expone, el perfil
+ganador solo fija `MTP_TOKENS=3`; los otros dos corren apagados por defecto. Y la fuente
+vendida en el propio bundle dice que este deberia ir encendido para esta arquitectura:
+`src/sglang-rtxpro6000/.../configs/qwen4_exp.py` trae `index_share_for_mtp_iteration=True`
+como valor por defecto del constructor, con el comentario *"MTP draft decode steps reuse the
+draft-extend indexer selection (GLM-5.2 IndexShare); default on for Qwen4-Exp"*. Nuestro
+modelo es exactamente `qwen4_exp` (`serving_setup.py:724-726` lo exige).
+
+**El mando se aplico.** A diferencia del brazo de KV, aqui hay que verificar y verifica bien:
+
+```
+--speculative-config {"method":"mtp","num_speculative_tokens":3,"index_share_for_mtp_iteration":true}
+```
+
+con `kv_cache_memory_bytes`, `max_num_seqs`, `mtp_speculative_tokens` y
+`mtp_dynamic_batch_schedule` identicos al base.
+
+**El efecto, medido por dos vias independientes:**
+
+| | base | brazo | |
+|---|---|---|---|
+| tok/s (reloj del harness) | 10,38 | 10,41 | **+0,3%** |
+| tokens generados (contadores de vLLM) | 766.584 | 769.649 | +0,4% |
+| tokens de borrador aceptados | 491.215 | 493.678 | +0,5% |
+| **aceptacion del borrador** | **59,40%** | **59,56%** | +0,16 pp |
+
+**El mando funciona y no cuesta nada: simplemente no ahorra nada.** Yo esperaba 10-20%.
+
+**Por que es tan pequeno, y por que eso generaliza.** La cabeza borradora de MTP tiene **una
+sola capa** (`mtp_num_hidden_layers: 1`, verificado por `serving_setup.py:740-741`). IndexShare
+ahorra recalcular la seleccion del indexador de atencion dentro de **esa unica capa** a lo largo
+de 3 pasos de borrador. Y solo 12 de las 48 capas del modelo son `full_attention` (las otras 36
+son `linear_attention`). El ahorro es una fraccion de una capa dentro de un paso hacia adelante
+de 48. **Esto acota TODO el eje de decodificacion especulativa, no solo este mando**: el que
+queda (`MTP_DYNAMIC_BATCH_SCHEDULE`) esta limitado por la misma cabeza de una capa, y
+`MTP_TOKENS` ya lo barrio el autor (esta en el nombre del perfil).
+
+**Sobre el puntaje: no se le atribuye al mando.** Niveles 26 -> 21, media 4,392 -> 3,199,
+pareado **3-8-14 empates, p = 0,227**, juegos que puntuan 19 -> 16. Pero la decodificacion
+especulativa es **sin perdida por construccion** (el muestreo de rechazo verifica cada token del
+borrador contra el modelo objetivo: la distribucion de salida no cambia), y su unico canal
+posible —la velocidad— se movio 0,3%. Ademas **14 de 25 juegos empatan exactamente** y los que
+se mueven son justo las colas conocidas: `ft09` 4,76 -> 14,29, `vc33` 21,31 -> 8,82, `tu93`
+6,67 -> 0,33. Es la varianza del banco descrita en 8.55; no se investiga mas, por acuerdo.
+
+**Consecuencia.** El eje de decodificacion especulativa queda cerrado con numero. Lo que NO
+queda cerrado, y es el hallazgo lateral de este brazo: `TAAF_VLLM_MOE_BACKEND` **tampoco esta en
+el perfil ganador** y acepta exactamente un valor, `flashinfer_b12x` (`serving_setup.py:404`).
+El modelo tiene **512 expertos en 48 capas** y `b12x` es el nucleo fusionado de Blackwell, que es
+literalmente nuestra tarjeta (`TORCH_CUDA_ARCH_LIST = "12.0"`, RTX PRO 6000). Misma clase de
+palanca que esta pero sobre el modelo OBJETIVO completo en vez de una cabeza borradora de una
+capa: tres ordenes de magnitud mas de computo bajo el mando.
+
+**Coste:** 61 min de GPU. **No se envio nada** (orden vigente de Julian).

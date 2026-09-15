@@ -2303,3 +2303,46 @@ prompt en v19), mecánico y de una variable.
 **Estado de la palanca vigente.** La consolidación (26 / 4.392) sigue siendo la única que ha pasado
 banco sobre NVFP4. Cerradas con dato en esta base: los tres injertos de v23, el manual del anfitrión,
 y el yield 180. El envío automático está apagado por orden de Julian hasta que vea estos resultados.
+
+### 8.52. Pensamiento apagado: el peor de la serie — y el eje queda cerrado en ambas direcciones (2026-09-15)
+
+| 60 min en régimen | niveles | acciones | score | con score | en cero | turnos | ejecutan | coste nivel 2 |
+|---|---|---|---|---|---|---|---|---|
+| consolidación (palanca vigente) | **26** | 1.219 | **4.392** | 19 | 6 | 597 | 53% | 0,3–0,9× |
+| consolidación + `ENABLE_THINKING=false` | 12 | **4.324** | 0.780 | 9 | 16 | 1.098 | 76% | **2,2–5,5×** |
+
+La guarda pasó (0 bloques `[THINKING]` con contenido frente a 639 del control: el parche llegó a
+cada petición). Y el resultado es el peor de toda la serie sobre esta base: **3,5× más acciones, la
+mitad de niveles, −3.6 de score medio**. La calidad por acción se desploma —el nivel 2 costó de 2,2 a
+5,5 veces el baseline donde antes costaba menos que el baseline— y la métrica, que castiga
+acciones-por-nivel **al cuadrado**, lo aniquila. Es la demostración más limpia que tenemos de por qué
+"comprar acciones vendiendo calidad" es la dirección equivocada (§8.9, §8.41), ahora en Flash-Next.
+
+**La curva del presupuesto de pensamiento por turno, con tres puntos:** 0 s → 12 niveles;
+≤ 60 s → 26; ≤ 180 s → 17. El óptimo está donde ya estaba la base. **Eje cerrado con dato en las dos
+direcciones.** El corte forzoso a 60 s no es un defecto del harness: es un buen regulador.
+
+**Balance de la noche** (todo contra la consolidación, 26 / 4.392, con compuertas pre-registradas):
+
+| brazo | eje | resultado |
+|---|---|---|
+| manual del anfitrión | más texto | 20 / 3.940 — fuera |
+| `YIELD_SECONDS` 180 | más pensamiento | 17 / 3.063 — fuera |
+| `ENABLE_THINKING=false` | sin pensamiento | 12 / 0.780 — fuera |
+
+Tres ejes cerrados sobre NVFP4 en dos días: "más texto del anfitrión" (dos injertos), "más
+pensamiento", "sin pensamiento". Lo único que ha pasado banco sigue siendo la **nota mínima basada
+en evidencia** de la consolidación (+3 niveles, +0.28), y en oculto dio 2.66 a n=1 dentro del rango
+de la base {3.55, 2.69}.
+
+**Qué queda abierto, con mecanismo y sin dato:** (a) el manual **escrito por el modelo** con
+autocorrección en el *learning store* del harness (§8.48), que es cómo lo hace el agente del 100% —
+pero exige escritura y el modelo lee mal el manual ajeno, así que su prior bajó; (b) la
+**cognición sin texto**: mecanismos del anfitrión que cambien *qué acciones se ejecutan* y no *qué
+lee el modelo* — por ejemplo bloquear en el host la repetición exacta de una acción ya probada en el
+mismo tablero (el `noop_guard` de anim, que la base NVFP4 no tiene y que no cuesta un token); (c) el
+**modelo**: el salto 1.59 → 3.55 vino de cambiar el modelo, y `lf52` sigue siendo el juego duro
+incluso con manual. Cuota G4 de la semana usada ≈ 6 h de 30 compartidas.
+
+**Envío:** el automático sigue apagado por orden de Julian ("hasta ver los resultados"). Los
+resultados están; la decisión de qué sale es suya.

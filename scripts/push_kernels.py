@@ -149,6 +149,25 @@ KERNELS = {
                          "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                          "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                           "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # DECODIFICACION ESPECULATIVA (build_nvfp4_mtpshare.py): encender IndexShare entre
+    # iteraciones de MTP. De los tres mandos de MTP que expone serving_setup.py, el perfil
+    # ganador solo fija MTP_TOKENS=3; los otros dos corren en su defecto APAGADO. La fuente
+    # vendida en el propio bundle dice que este deberia ir ENCENDIDO para esta arquitectura:
+    # src/sglang-rtxpro6000/.../configs/qwen4_exp.py trae index_share_for_mtp_iteration=True
+    # de defecto con el comentario "default on for Qwen4-Exp", y nuestro modelo es
+    # exactamente qwen4_exp (serving_setup.py:724-726 lo exige). Mecanica: reutiliza la
+    # seleccion del indexador del draft-extend en los 3 pasos de borrador en vez de
+    # recalcularla. Calidad intacta por construccion (el muestreo de rechazo verifica cada
+    # token); solo mueve velocidad. Y la velocidad suma porque el presupuesto de pensamiento
+    # es POR TIEMPO (<=60 s/turno): mas tokens/s = mas razonamiento dentro del mismo turno.
+    "nvfp4mtpsharelong": {"notebook": "notebooks/nvfp4_carry_mtpshare_long.ipynb",
+                          "slug": "arc-agi3-nvfp4-mtpshare-long",
+                          "title": "arc agi3 nvfp4 mtpshare long",
+                          "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                               "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                          "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                          "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                           "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v3 (build_nvfp4_carry.py 3): DECAIMIENTO de la memoria vieja.
     # Hipotesis de Julian: arrastrar detalle de niveles pasados sesga las decisiones.
     # Detalle solo del ultimo nivel; lo anterior colapsa a una linea de esencia; sin

@@ -43,7 +43,7 @@ try:
         try:
             fr = kw.get("current_frame")
             nivel = int(getattr(fr, "level", 1) or 1) if fr is not None else 1
-            nota = _render_carry(nivel, _transiciones(kw.get("history_entries") or []))
+            nota = _render_carry(nivel, _transiciones(kw.get("history_entries") or []), __DECAY__)
         except Exception:
             return base
         return base + "\\n" + nota if nota else base
@@ -57,7 +57,9 @@ except Exception as exc:
 
 def main() -> int:
     b64 = base64.b64encode(MOD.read_bytes()).decode("ascii")
-    cell_src = CELL_TEMPLATE.replace("__B64__", b64)
+    # v3: decaimiento de la memoria vieja (sufijo "3" -> True)
+    decay = "True" if _SUF == "3" else "False"
+    cell_src = CELL_TEMPLATE.replace("__B64__", b64).replace("__DECAY__", decay)
     compile(cell_src, "<celda-carry>", "exec")
 
     nb = json.loads(SRC.read_text(encoding="utf-8"))

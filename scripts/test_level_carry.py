@@ -153,6 +153,40 @@ def main() -> int:
     check(ap <= 170, f"la nota v2 sigue en presupuesto (~{ap} tokens)",
           "v1 eran ~93; el manual que fallo, ~160 de contenido no ganado")
 
+    # --- v3: decaimiento (hipotesis de Julian: la memoria vieja sesga) -------
+    am = con(tablero(4), [(2, 2, 11)])
+    hd = [H("ini", F(am, 1, 1)), H("MOUSE(row=2, col=2)", F(tablero(4), 2, 2)),
+          H("x", F(am, 3, 2)), H("MOUSE(row=2, col=2)", F(tablero(4), 4, 3)),
+          H("y", F(am, 5, 3)), H("MOUSE(row=2, col=2)", F(tablero(4), 6, 4))]
+    trd = transiciones_ganadoras(hd)
+    check(len(trd) == 3, "tres cruces en el juego profundo", str(len(trd)))
+    sin_dec = render_carry_note(4, trd)
+    con_dec = render_carry_note(4, trd, decaimiento=True)
+    check(sin_dec.count("- nivel ") == 3, "sin decaimiento: detalle de los 3 niveles",
+          str(sin_dec.count("- nivel ")))
+    check(con_dec.count("- nivel ") == 1, "con decaimiento: detalle SOLO del ultimo",
+          str(con_dec.count("- nivel ")))
+    check("- nivel 3:" in con_dec and "- nivel 1:" not in con_dec,
+          "el detallado es el mas reciente, no el mas viejo")
+    check("antes ganaste los niveles 1, 2, todos con MOUSE sobre color Y" in con_dec,
+          "lo viejo se colapsa a UNA linea de esencia (tipo de mecanica, sin celdas)")
+    check("RECETA" not in con_dec, "el decaimiento quita la receta literal (el anclaje medido)")
+    check("INVARIANTE" in con_dec, "pero conserva el invariante, que es la generalizacion")
+    check(len(con_dec) < len(sin_dec) * 0.75,
+          f"recorta >=25% en juego profundo ({100*(1-len(con_dec)/len(sin_dec)):.0f}%)")
+    # caso mayoritario medido (76% de las notas): un solo nivel ganado
+    uno = render_carry_note(2, trd[:1], decaimiento=True)
+    check("antes ganaste" not in uno, "con un solo nivel no inventa linea de esencia")
+    check(len(uno) // 4 <= 100, f"y la nota queda en ~{len(uno)//4} tokens (v1 medida: ~93)")
+    # esencia con mecanicas distintas: no finge un invariante que no existe
+    hm = [H("ini", F(am, 1, 1)), H("MOUSE(row=2, col=2)", F(tablero(4), 2, 2)),
+          H("z", F(tablero(4), 3, 2)), H("UP", F(con(tablero(4), [(0, 0, 9)]), 4, 3)),
+          H("w", F(tablero(4), 5, 3)), H("LEFT", F(con(tablero(4), [(1, 1, 9)]), 6, 4))]
+    trm = transiciones_ganadoras(hm)
+    nm = render_carry_note(4, trm, decaimiento=True)
+    check("mecanicas distintas" in nm, "si las mecanicas viejas difieren, lo dice", nm.splitlines()[1][:90])
+    check("INVARIANTE" not in nm, "y no declara invariante donde no lo hay")
+
     # 5. basura: no revienta
     check(transiciones_ganadoras(None) == [], "historial None -> vacio")
     check(transiciones_ganadoras([H("X", None)]) == [], "entrada sin frame -> se ignora")

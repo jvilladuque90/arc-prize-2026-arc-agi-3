@@ -136,6 +136,19 @@ KERNELS = {
     # ganador + afordancias positivas. La version long (60 min) es la que se banca.
     # PRESUPUESTO DE TURNO (build_nvfp4_yield.py): consolidacion + YIELD_SECONDS 60->180.
     # Mecanica, cero tokens de prompt: el 45-49% de los turnos se cortaban antes de actuar.
+    # CONSOLIDACION v3 (build_nvfp4_carry.py 3): DECAIMIENTO de la memoria vieja.
+    # Hipotesis de Julian: arrastrar detalle de niveles pasados sesga las decisiones.
+    # Detalle solo del ultimo nivel; lo anterior colapsa a una linea de esencia; sin
+    # receta literal (el anclaje medido en v2); conserva el invariante. Mas pequena
+    # que v1 en todas partes: ~93 tok con 1 nivel (igual que v1) y -34% en profundos.
+    "nvfp4carry3long": {"notebook": "notebooks/nvfp4_carry3_long.ipynb",
+                        "slug": "arc-agi3-nvfp4-carry3-long",
+                        "title": "arc agi3 nvfp4 carry3 long",
+                        "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                             "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                        "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                        "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                         "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v2 (build_nvfp4_carry.py 2): receta comprimida del ultimo nivel
     # ganado + eje comun de sus clics + invariante cuando dos niveles se ganan igual.
     # Amplifica la UNICA senal que da el entorno (completar nivel), que es lo unico

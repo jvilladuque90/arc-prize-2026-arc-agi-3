@@ -172,8 +172,44 @@ def _color_bajo_click(accion: str, antes):
         return None
 
 
-def render_carry_note(nivel_actual: int, transiciones: list[dict]) -> str:
-    """Nota para el prompt. Vacia en el nivel 1 o sin niveles ganados."""
+def _esencia_vieja(transiciones) -> str:
+    """UNA linea para todo lo anterior al ultimo nivel: solo el TIPO de mecanica, sin
+    celdas, sin conteos, sin censo de colores.
+
+    Hipotesis de Julian (2026-09-15): arrastrar el detalle de niveles viejos sesga las
+    decisiones. El dato la respalda — en v2, dar la receta literal del nivel anterior
+    llevo a MAS juegos al nivel 2 y a NINGUNO al 3. Lo intuido hace mucho ya no manda;
+    su esencia si. Medido en produccion: el 76% de las notas llevan un solo nivel (nada
+    que decaer), pero el 24% restante son los juegos profundos y llegan a 200 tokens.
+    """
+    if not transiciones:
+        return ""
+    tipos: dict = {}
+    for t in transiciones:
+        clave = (_nombre(t.get("accion", "")), t.get("color_bajo_click"))
+        if clave[0]:
+            tipos.setdefault(clave, []).append(t["nivel_ganado"])
+    niveles = sorted(n for v in tipos.values() for n in v)
+    if not niveles:
+        return ""
+    lista = ", ".join(str(n) for n in niveles)
+    if len(tipos) == 1:
+        (nombre, color), _ns = next(iter(tipos.items()))
+        detalle = nombre + (f" sobre color {color}" if color else "")
+        return f"- antes ganaste los niveles {lista}, todos con {detalle}"
+    partes = [f"{nom}{f' sobre {col}' if col else ''} (nivel {', '.join(str(n) for n in ns)})"
+              for (nom, col), ns in list(tipos.items())[:3]]
+    return f"- antes ganaste los niveles {lista}, con mecanicas distintas: " + "; ".join(partes)
+
+
+def render_carry_note(nivel_actual: int, transiciones: list[dict],
+                      decaimiento: bool = False) -> str:
+    """Nota para el prompt. Vacia en el nivel 1 o sin niveles ganados.
+
+    ``decaimiento=True`` (v3): detalle SOLO del ultimo nivel ganado; todo lo anterior se
+    colapsa a una linea de esencia. Recorta justo donde la nota se hincha (juegos
+    profundos) y quita el anclaje de lo viejo, sin perder la mecanica.
+    """
     try:
         nivel_actual = int(nivel_actual)
     except (TypeError, ValueError):
@@ -182,18 +218,25 @@ def render_carry_note(nivel_actual: int, transiciones: list[dict]) -> str:
         return ""
     lineas = [f"MECANICAS GANADORAS (calculadas por el anfitrion; vas por el nivel "
               f"{nivel_actual}, llevas {len(transiciones)} ganados):"]
-    # v2: la RECETA del ultimo nivel ganado, comprimida por rachas. Solo del ultimo:
-    # es el mas relevante y anadir las de todos romperia la regla de "minimo".
+    # v2: la RECETA del ultimo nivel ganado, comprimida por rachas. En modo decaimiento
+    # NO se incluye: es justo el contenido literal que medimos como anclaje (n2 arriba,
+    # n3 a cero).
     ult = transiciones[-1]
-    receta = comprimir_racha(ult.get("receta") or [])
-    if receta:
-        prefijo = "asi se gano" if ult.get("receta_completa") else "ultimas acciones antes de ganar"
-        lineas.append(f"- RECETA del nivel {ult['nivel_ganado']} ({prefijo}): {receta}")
-        celdas = [c for c in (_celda(a) for a in (ult.get("receta") or [])) if c]
-        eje = _eje_comun(celdas)
-        if eje:
-            lineas.append(f"  (los clics de esa receta: {eje})")
-    for t in transiciones[-MAX_NIVELES_EN_NOTA:]:
+    if not decaimiento:
+        receta = comprimir_racha(ult.get("receta") or [])
+        if receta:
+            prefijo = "asi se gano" if ult.get("receta_completa") else "ultimas acciones antes de ganar"
+            lineas.append(f"- RECETA del nivel {ult['nivel_ganado']} ({prefijo}): {receta}")
+            celdas = [c for c in (_celda(a) for a in (ult.get("receta") or [])) if c]
+            eje = _eje_comun(celdas)
+            if eje:
+                lineas.append(f"  (los clics de esa receta: {eje})")
+    detallados = transiciones[-1:] if decaimiento else transiciones[-MAX_NIVELES_EN_NOTA:]
+    if decaimiento and len(transiciones) > 1:
+        esencia = _esencia_vieja(transiciones[:-1])
+        if esencia:
+            lineas.append(esencia)
+    for t in detallados:
         partes = [f"- nivel {t['nivel_ganado']}: subio con {t['accion'] or '?'} "
                   f"tras {t['acciones_en_nivel']} acciones en ese nivel"]
         if t.get("color_bajo_click"):

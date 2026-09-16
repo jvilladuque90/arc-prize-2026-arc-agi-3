@@ -2886,3 +2886,68 @@ Todo eso ya lo tiene el anfitrion — `describir_cambio` calcula la caja y el ce
 falta expresarlo como relacion entre objetos y no como conteo de celdas.
 
 **Coste: 0 min de GPU.** Nada enviado.
+
+### 8.62. v4 en objetos: el mecanismo SI se mueve (p=0,021), y aparece un fallo de origen (2026-09-16)
+
+Brazo `arc-agi3-nvfp4-carryobj-long`, 60 min. Un solo cambio frente a v1: **el vocabulario**
+(objetos y relaciones en vez de nombres de tecla), mismo presupuesto (~90 tokens), misma costura,
+mismo disparador. La nota aparecio **213 veces en 17 juegos**.
+
+**Juzgado por MECANISMO, como exigia 8.60** (el puntaje no puede resolver este eje: 3-6 eventos
+de nivel 2 por corrida frente a los 11-12 pares que pide el signo).
+
+#### El resultado: primera medida bien potenciada que se mueve en todo el proyecto
+
+| corrida | turnos con nota | el razonamiento **menciona la nota** | usa hash / segmentacion / desaparicion |
+|---|---|---|---|
+| v1 (A) | 202 | 11,9% | 41,6% |
+| v1 (replica) | 175 | 10,9% | 42,9% |
+| v2 | 191 | 14,7% | 47,6% |
+| v3 decaimiento | 154 | 14,9% | 39,6% |
+| **v4 OBJETOS** | **191** | **30,9%** | **58,6%** |
+
+La **vara de ruido de esta medida** la da el par v1/replica: **11,9% contra 10,9%, un solo punto**.
+v4 esta **16 puntos por encima** del mejor de los cuatro. Y no viene de un juego: pareado juego a
+juego contra v1, **v4 engancha mas en 13 y menos en 3 de 16, p = 0,0213**.
+
+Es exactamente lo que 8.60 predijo: midiendo el mecanismo (191 turnos, 16 juegos) en vez de las
+transiciones de nivel (3-6 eventos) hay potencia de sobra. **La hipotesis de vocabulario de 8.61
+queda confirmada: el modelo SI lee una nota escrita en objetos, y no leia la escrita en teclas.**
+
+*Salvedad honesta:* con una sola corrida no puedo separar "habla el idioma correcto" de "la nota
+es nueva y por eso llama la atencion". Se separaria repitiendo v4 mas adelante.
+
+#### El puntaje, como estaba previsto, no se mueve
+
+22 niveles, media 3,556, 17 juegos que puntuan, 4 al nivel 2+. Todo dentro de la vara de 8.60
+(5 niveles / 1,19 de media). **Esto no es un fracaso del brazo: es la prediccion cumpliendose.**
+
+#### Y el hallazgo que vale para el siguiente paso: la nota lleva mal el contenido DESDE v1
+
+Auditando lo que v4 dijo realmente en produccion:
+
+```
+desaparecio      208        tamanos citados: mediana 44 celdas, max 650
+se movio         112        objetos citados de >=100 celdas: 153/393 = 39%
++ relacion nueva  55        (el tablero es 64x64 = 4096)
+```
+
+Ejemplos reales: `vc33` -> *"desaparecio el objeto W de 624 celdas"*; `ar25` -> *"desaparecio el
+objeto S de 189 celdas"*. Eso no son piezas del juego, son **regiones**.
+
+**La causa es estructural y estaba ahi desde v1.** `transiciones_objeto` (igual que
+`transiciones_ganadoras`) marca la transicion cuando el fotograma **posterior** a la accion ya
+tiene el nivel incrementado. Es decir, el "antes" es el ultimo tablero del nivel N y el "despues"
+es **el primer tablero del nivel N+1**. La diferencia que se describe no es el efecto de la
+jugada ganadora: **es el redibujado del cambio de nivel**. Por eso domina "desaparecio" (al
+cambiar de nivel desaparece todo el reparto anterior) y por eso salen objetos de 600 celdas.
+
+Esto explica tambien el `cambiaron 722 celdas en filas 0-62, cols 3-63` que v1 escribia en `ar25`:
+el mismo artefacto, sin detectar durante cinco brazos.
+
+**El efecto causal de la jugada ganadora es INOBSERVABLE** con este historial: el entorno no
+entrega un fotograma intermedio entre "aplique la accion" y "estoy en el nivel siguiente". Lo que
+si es observable y transfiere es la **precondicion**: la configuracion del ultimo tablero del
+nivel N y donde apuntaba la accion ganadora. Ese es el contenido correcto para v5.
+
+**Coste:** 60 min de GPU. **Nada enviado.**

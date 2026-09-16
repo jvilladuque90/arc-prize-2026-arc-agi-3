@@ -168,6 +168,26 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # CONSOLIDACION v7 (build_nvfp4_carrynow.py): la nota ANCLADA EN LA VISTA ACTUAL.
+    # Ultima hipotesis distinta del eje (DESIGN 8.64). Enganche medido en cuatro brazos:
+    # v1 16,8% | v2 18,8% | v3 19,5% | v4 37,2% | v5 14,9% | v6 15,6%. Solo v4 se movio
+    # (14-2 vs v1, p=0,0042), y han caido las tres explicaciones: vocabulario (v5 lo conserva
+    # y pierde), forma (v6 la restaura y sigue perdido) y novedad (v5/v6 son igual de nuevas
+    # y no movieron nada). Lo que queda con mecanismo: el "despues" que v4 describia ES EL
+    # TABLERO QUE EL MODELO MIRA -- la nota era verificable contra su propia vista -- mientras
+    # v5/v6 citan piezas del nivel anterior (mediana 10 celdas) que ya no estan en pantalla.
+    # v7 segmenta current_frame y cita SOLO objetos que existen ahora, con su posicion actual;
+    # si no se resuelve ninguno, nota vacia. Extraccion byte a byte la de v5 (tests lo fijan).
+    # SI ESTE NO MUEVE EL MECANISMO, SE CIERRA EL EJE: en siete brazos el puntaje no ha salido
+    # nunca de la vara de ruido de 8.60 (5 niveles / 1,19 de media).
+    "nvfp4carrynowlong": {"notebook": "notebooks/nvfp4_carrynow_long.ipynb",
+                          "slug": "arc-agi3-nvfp4-carrynow-long",
+                          "title": "arc agi3 nvfp4 carrynow long",
+                          "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                               "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                          "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                          "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                           "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v6 (build_nvfp4_carrynar.py): el CONTENIDO de v5 con la FORMA de v4.
     # La unica prueba que zanja DESIGN 8.63. v4 (contenido erroneo, forma narrativa) subio la
     # mencion de la nota en el razonamiento al 31,9% frente al 11-15% de v1-v3, pareado 13-3

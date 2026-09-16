@@ -2725,3 +2725,81 @@ memoria (`enable_prefix_caching=0`). Sin barrer quedan solo `MAX_NUM_BATCHED_TOK
 `OMP_THREADS` (1), ambos de efecto esperado pequeno segun el patron de los tres brazos.
 
 **Coste:** ~30 min de GPU. **No se envio nada.**
+
+### 8.60. Auditoria del eje de memoria: el veredicto se RETIRA (2026-09-15)
+
+Julian pide auditar la idea de la memoria y su gestion y verificar el veredicto, diciendo que
+sigue pensando que es una buena palanca. **Tiene razon, y mi veredicto era invalido.** Cero GPU:
+todo sale de corridas que ya teniamos.
+
+**La pieza nueva: por fin hay una REPLICA.** El brazo de IndexShare (8.58) movio la velocidad
+**+0,3%** y la decodificacion especulativa es sin perdida por construccion. O sea que
+`nvfp4_carry_mtpshare_long` es, a efectos de comportamiento, **la misma configuracion que
+`nvfp4_carry_long` corrida dos veces**. Su diferencia es ruido puro medido:
+
+| mismo sistema, dos pases | corrida A | corrida B |
+|---|---|---|
+| niveles | 26 | 21 |
+| media del banco | 4,392 | 3,199 |
+| juegos que puntuan | 19 | 16 |
+| pareado | \multicolumn{2}{c}{3 / 8 / 14 empates, p = 0,227} |
+
+**La vara de ruido es de 5 niveles y 1,19 de media.** Ahora releemos todo con ella.
+
+**Todos los brazos de nota caben dentro de la vara, y el signo depende de con cual de las dos
+corridas de v1 se compare:**
+
+| brazo | vs v1 corrida A | vs v1 corrida B (replica) |
+|---|---|---|
+| sin nota (base) | v1 gana, d(media) **+0,277** | v1 **pierde**, d(media) **−0,916** |
+| v2 receta+invariante | v1 gana, **+1,171** | empate, **−0,022** |
+| v3 decaimiento | v1 gana, **+1,167** | empate, **−0,026** |
+| manual (160 tok) | v1 gana, **+0,452** | v1 **pierde**, **−0,741** |
+
+Ningun p baja de 0,092. **La curva de presupuesto de nota que escribi en 8.51-8.54
+(0 -> 23 niveles, 93 -> 26, 126 -> 21, 160 -> 20) es un artefacto de haber elegido una corrida.**
+Queda retirada, y con ella la afirmacion de que estabamos en un optimo interior.
+
+**Pero la auditoria encuentra ademas DONDE vive la palanca, y por que no se veia.**
+
+*Primero: el nivel 1 ya esta al tope.* Sobre los juegos que lo completan, la eficiencia mediana
+es **0,65-0,83x el baseline** — el agente usa **menos** acciones que la referencia. Como el
+puntaje de nivel es `(baseline/acciones)^2 * 100` con tope 115, esos niveles valen ~100-115.
+**No queda practicamente nada que ganar afinando el nivel 1.**
+
+*Segundo: todo el hueco esta en llegar al nivel 2.* Completar solo el nivel 1 topa el juego en
+~3,52 (techo calculado sobre los 25 juegos). Estamos en 3,2-4,4 justo porque 3-6 juegos pasan
+del 1.
+
+*Tercero, y esto explica seis semanas de medidas mudas:* **la nota de consolidacion solo existe
+despues de completar un nivel.** Su unico efecto posible es sobre el paso 1 -> 2. Y ese paso
+ocurre en **3 a 6 juegos de 25** por corrida:
+
+```
+eventos de nivel 2+ por corrida: [6, 4, 4, 5, 5, 3]
+```
+
+Una prueba de signos necesita ~11-12 pares no empatados a favor para p<0,05. **Con 3-6 eventos,
+ningun brazo de un solo pase puede alcanzar significancia, haga lo que haga la nota.** No es
+mala suerte: es un techo estructural del diseno del banco. El panel de McNemar lo confirma —
+pareando solo juegos que completan el nivel 1 en ambos brazos, las celdas discordantes son de
+1-3 contra 0-2 en todas las comparaciones, incluida la vara de ruido (1 contra 1).
+
+**El unico patron direccionalmente estable de toda la auditoria, y va contra la nota.** Pareando
+por dificultad, **`sin nota` alcanza el nivel 2 en 2 juegos donde v1 no, y v1 nunca al reves** —
+y sale igual contra las DOS corridas de v1 (2-0 y 2-0; agrupado 4-0, p ~ 0,125). Es lo unico que
+no cambia de signo al cambiar de corrida de referencia. **No esta establecido**, pero es la unica
+senal limpia y apunta a que la nota no ayuda al paso 1 -> 2.
+
+**Consecuencia para el trabajo.** La palanca sigue viva —Julian tiene razon— pero **el siguiente
+paso no es otra variante de nota**: es arreglar el instrumento, porque hoy el banco no puede
+distinguir nada en este eje. Lo mas barato (cero GPU) es una **comprobacion de mecanismo sobre
+las transcripciones que ya tenemos**: cuando la nota aparece, cambia la conducta del agente en
+la direccion que la nota senala? Eso da cientos de eventos en vez de cinco, y separa dos fallos
+hoy indistinguibles: "la nota se ignora" frente a "la nota se lee y no ayuda".
+
+**Sobre la otra lectura de 'memoria' (la de hardware, 8.57): no se revisa nada.** Aquel veredicto
+se apoya en una pata que no depende de la version de vLLM — no existe mando para pasar la opcion,
+el comando se arma de una lista fija y `argv_sha256` se contrasta contra `/proc`. Sigue en pie.
+
+**Coste: 0 min de GPU.** Nada enviado.

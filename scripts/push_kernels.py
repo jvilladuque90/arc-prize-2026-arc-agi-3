@@ -168,6 +168,26 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # CONSOLIDACION v5 (build_nvfp4_carrypre.py): la POSICION GANADORA (precondicion).
+    # v4 abrio el canal: la mencion de la nota en el razonamiento subio de 11-15% (v1/v2/v3,
+    # vara de ruido de UN punto) a 30,9%, pareado 13-3 de 16 juegos, p=0,0213 (DESIGN 8.62).
+    # Pero su contenido era erroneo DESDE v1: la transicion se marcaba con el fotograma
+    # POSTERIOR a la accion, que ya es el primer tablero del nivel siguiente, asi que la nota
+    # describia el REDIBUJADO DEL CAMBIO DE NIVEL -- 208 "desaparecio" contra 112 "se movio",
+    # y 39% de los objetos citados con >=100 celdas (max 650 de 4096; "desaparecio el objeto
+    # W de 624 celdas" en vc33). El efecto de la jugada es INOBSERVABLE: no hay fotograma
+    # intermedio entre aplicarla y estar en el nivel siguiente. v5 cuenta lo que SI se
+    # observa y transfiere, leyendo SOLO fotogramas del nivel que se gana: que pieza
+    # respondia a las jugadas, sobre que objeto se apunto, y con que estaba en contacto.
+    # Se juzga por MECANISMO (8.60), no por la media del banco.
+    "nvfp4carryprelong": {"notebook": "notebooks/nvfp4_carrypre_long.ipynb",
+                          "slug": "arc-agi3-nvfp4-carrypre-long",
+                          "title": "arc agi3 nvfp4 carrypre long",
+                          "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                               "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                          "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                          "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                           "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v4 (build_nvfp4_carryobj.py): la mecanica ganadora en OBJETOS.
     # v1/v2/v3 nombraban la ACCION ganadora. Medido sobre 722 turnos (DESIGN 8.61): el
     # reuso de esa accion es 55,2% y 43,9% en dos replicas CON nota y 47,5% SIN nota (las

@@ -3235,3 +3235,67 @@ que ya sabiamos de las victorias reales: las recetas ganadoras son repetitivas (
 no nos gana por eficiencia, nos gana porque **llega**.
 
 **Coste:** 0 min de GPU.
+
+### 8.67. El agrupamiento de acciones paga: +28% de presupuesto, sin coste (2026-09-16)
+
+Brazo `arc-agi3-nvfp4-batch-long`, 60 min, sobre la base **del envio** (`nvfp4`, sin nota).
+Control directo: `arc-agi3-nvfp4-long`. Primer brazo que ataca la restriccion demostrada en
+8.66 en vez de decorar el prompt.
+
+#### La medida primaria, pre-registrada, se mueve
+
+| | sin nota (base) | **batch** |
+|---|---|---|
+| acciones por turno | 3,34 | **4,38** |
+| acciones totales | 1.089 | **1.398 (+28,4%)** |
+| acciones por juego | 43,6 | **55,9** |
+
+**Pareado juego a juego: agrupa mas en 18, menos en 7, de 25. p = 0,0433.**
+
+Casos grandes: `ka59` 21 -> 75 acciones, `lf52` 28 -> 74, `cd82` 28 -> 101, `m0r0` 21 -> 68,
+`lp85` 35 -> 87, `tr87` 5 -> 26. Los que bajan (`dc22` 87 -> 47, `re86` 118 -> 60) son justo
+los que ya agrupaban bien, donde la nota **callaba**.
+
+#### Y no costo eficiencia, que era el riesgo declarado
+
+La metrica es `(baseline/acciones)^2` por nivel, asi que gastar acciones de mas podria salir caro.
+No paso:
+
+```
+eficiencia mediana del nivel 1   0,81x -> 0,73x   (mejora)
+mas caro en 5, mas barato en 6 de 13              p = 1,000
+juegos que se pasan de 1,00x      4 -> 2
+```
+
+Por debajo de 1,00x el nivel topa igual en 115, asi que encarecer dentro de ese margen **no
+cuesta nada**. El trade que temiamos no existe en la practica.
+
+#### Aguas abajo: todo en la buena direccion, pero DENTRO de la vara
+
+| | base | batch |
+|---|---|---|
+| alcanzan baseline n1+n2 | 5/25 | **7/25** |
+| completan nivel 1 | 15 | **17** |
+| llegan a nivel 2+ | 6 | **7** |
+| niveles | 23 | **26** |
+| media del banco | 4,114 | **4,620** |
+
+**4,620 es la media mas alta de cualquier brazo medido** (v1 daba 4,392). Pero 3 niveles y 0,51
+de media **caben en la vara de ruido de 8.60** (5 niveles / 1,19). **El puntaje NO esta
+establecido**; lo establecido es el mecanismo, y es el mecanismo que 8.66 demostro vinculante.
+
+#### Un matiz honesto sobre el diseno
+
+Quise que la nota fuera "ganada y rara" y **aparecio en el 73,9% de los turnos**: el ratio
+acumulado tarda en subir de 3,0, asi que en la practica es casi de cada turno. **Y aun asi
+funciono.** Eso obliga a matizar la regla destilada de 8.41: no es que *el texto de cada turno*
+falle, es que falla el **generico**. Esta nota es de cada turno pero **especifica y accionable**:
+lleva los numeros vivos de esa partida y una instruccion mecanica concreta.
+
+#### Consecuencia
+
+Es la primera palanca del proyecto que mueve su medida primaria con significancia, sin coste
+medido, y con todo lo de aguas abajo apuntando igual. Por el criterio de Julian —cada envio lleva
+una palanca nueva, la varianza se asume— **este brazo se gana un envio**.
+
+**Coste:** 60 min de GPU.

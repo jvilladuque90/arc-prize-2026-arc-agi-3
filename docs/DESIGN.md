@@ -3022,3 +3022,68 @@ con forma de v4 (narrativa causal, sin la salvedad)**. Si el enganche vuelve al 
 la FORMA y no el vocabulario ni la exactitud. Si no vuelve, lo de v4 era novedad y el eje se cierra.
 
 **Coste:** 60 min de GPU. **Nada enviado.**
+
+### 8.64. v6: la forma tampoco era. Y la novedad queda descartada (2026-09-16)
+
+Brazo `arc-agi3-nvfp4-carrynar-long`, 60 min, 191 notas en 16 juegos. Contenido de v5 **byte a
+byte** (modulo generado sustituyendo solo la funcion que redacta; dos tests de equivalencia) con
+la forma de v4: secuencia sujeto-verbo-consecuencia, sin la salvedad epistemica, cierre
+imperativo. 61 palabras contra las 60 de v5.
+
+**Nota de medida.** Se amplio el juego de marcadores y se remidieron **todas** las ramas con el
+mismo, y se anade una segunda medida **sin cabeceras** (solo marcadores genericos en ingles,
+identicos para las siete ramas) que es inmune a que cada nota se llame distinto. Las dos dan lo
+mismo.
+
+| corrida | turnos | con cabeceras | sin cabeceras |
+|---|---|---|---|
+| v1 (A) | 202 | 16,8% | 16,8% |
+| v1 (replica) | 175 | 14,3% | 14,3% |
+| v2 | 191 | 18,8% | 18,8% |
+| v3 | 154 | 19,5% | 19,5% |
+| **v4 efecto** | 191 | **37,2%** | **35,1%** |
+| v5 precondicion | 181 | 14,9% | 11,6% |
+| **v6 narrativa** | 173 | **15,6%** | **14,5%** |
+
+```
+v4 vs v1     mas 14 / menos  2 de 16   p = 0,0042   <- se mantiene
+v6 vs v1     mas  8 / menos  4 de 14   p = 0,3877   <- indistinguible de v1
+v6 vs v4     mas  2 / menos 10 de 13   p = 0,0386   <- peor que v4
+v6 vs v5     mas  5 / menos  8 de 14   p = 0,5811   <- igual que v5
+```
+
+**Devolverle la forma de v4 no devolvio el enganche.** Con esto caen las dos explicaciones que
+habia sobre la mesa:
+
+- **el vocabulario de objetos**: v5 lo conserva y pierde el efecto (8.63);
+- **la forma narrativa**: v6 la restaura y sigue perdido.
+
+**Y la NOVEDAD queda muy debilitada**, que es la ganancia inferencial de este brazo. v5 y v6 son
+tan nuevas como v4 —cabecera distinta, redaccion distinta, nunca vistas por el modelo— y **ninguna
+de las dos movio nada**. Si bastara con que la nota fuese rara, habrian subido. No subieron.
+
+Luego **algo especifico del contenido de v4** produjo el efecto.
+
+#### La hipotesis que queda, y tiene mecanismo
+
+v4 describia la diferencia **cruzando la frontera de nivel**. Eso era un error factual (8.62), pero
+tiene una consecuencia que no habiamos visto: el "despues" que v4 describia **es el tablero que el
+modelo esta mirando en ese momento**. Cuando la nota decia *"desaparecio el objeto W de 624
+celdas"*, el modelo podia **comprobarlo contra su vista actual**: efectivamente, respecto al nivel
+anterior, ya no esta.
+
+v5 y v6, en cambio, describen objetos del **nivel anterior**, que **ya no estan en pantalla**: piezas
+de 10 celdas de mediana que el modelo no puede encontrar por mas que la nota le diga "busca ese
+hash". La nota le pide referirse a cosas inexistentes, y desengancha.
+
+**Prediccion comprobable (v7): la nota tiene que estar anclada en la vista ACTUAL.** El injerto ya
+recibe `current_frame`; se puede segmentar el tablero de ahora y citar **solo objetos que existen
+en el**, ligandolos a la relacion que gano. Es la ultima hipotesis distinta que queda con mecanismo.
+
+#### Puntaje
+
+21 niveles, media 3,253, 16 juegos que puntuan, 4 al nivel 2+. Dentro de la vara de 8.60. **En
+siete brazos de este eje el puntaje no ha salido nunca de la vara de ruido**, y eso tambien es un
+dato: si v7 no mueve el mecanismo, el eje se cierra.
+
+**Coste:** 60 min de GPU. **Nada enviado.**

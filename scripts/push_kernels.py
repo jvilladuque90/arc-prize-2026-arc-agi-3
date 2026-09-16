@@ -168,6 +168,26 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # PRESUPUESTO DE ACCIONES (build_nvfp4_batch.py): empujar el agrupamiento donde hay hueco.
+    # Eje NUEVO, y el primero que ataca la restriccion demostrada aritmeticamente (DESIGN 8.66):
+    # de 140 juegos que completan el nivel 1 y se atascan, el 76,4% APENAS INTENTO el siguiente
+    # (mediana 0,16x su baseline) y solo el 2,1% se perdio; el nivel 1 lo resuelven POR DEBAJO
+    # del baseline (0,73x). Las 225 partidas acaban en 'cancelled'. Acciones disponibles por
+    # juego: 46 de mediana contra un baseline de nivel 1+2 de 83 -> en 22 de 25 juegos es
+    # ARITMETICAMENTE imposible llegar al nivel 2. El coste esta en los tokens por accion y el
+    # rendimiento del servicio ya esta cerrado (+0,3%), pero el agente YA agrupa acciones con
+    # dispersion de 1,2 a 10,4 por turno: llevar la mediana de 3,5 a 7 duplica el presupuesto
+    # sin recortar el razonamiento. La nota solo aparece por debajo de 3,0 acciones/turno, asi
+    # que no es texto de cada turno (lo unico que sabemos que no paga, 8.41).
+    # BASE: nvfp4 (la del ENVIO, sin nota). Comparacion contra arc-agi3-nvfp4-long.
+    "nvfp4batchlong": {"notebook": "notebooks/nvfp4_batch_long.ipynb",
+                       "slug": "arc-agi3-nvfp4-batch-long",
+                       "title": "arc agi3 nvfp4 batch long",
+                       "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                            "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                       "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                       "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                        "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v7 (build_nvfp4_carrynow.py): la nota ANCLADA EN LA VISTA ACTUAL.
     # Ultima hipotesis distinta del eje (DESIGN 8.64). Enganche medido en cuatro brazos:
     # v1 16,8% | v2 18,8% | v3 19,5% | v4 37,2% | v5 14,9% | v6 15,6%. Solo v4 se movio

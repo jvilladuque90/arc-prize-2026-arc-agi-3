@@ -143,8 +143,25 @@ Las reglas del ARC Prize exigen que **todo el código y métodos sean open sourc
 premios (milestone #2: 2026-09-30). Cumplimiento:
 
 - **Repo público**: https://github.com/jvilladuque90/arc-prize-2026-arc-agi-3 (licencia [MIT](LICENSE)).
-- **Kernels públicos** en Kaggle: `arc-agi3-duck`, `arc-agi3-explorer054`, `arc-agi3-llm`,
-  `arc-agi3-submit`, `arc-agi3-features` (usuario `juliancamilovilla`).
+- **El kernel del envío puntuado** es
+  [`juliancamilovilla/arc-agi3-nvfp4`](https://www.kaggle.com/code/juliancamilovilla/arc-agi3-nvfp4),
+  público. Mejor puntaje público **3,55** (2026-09-11); el mismo kernel remuestreado dio 2,69 y
+  3,54, así que el rango de la base en el set oculto es ~2,7-3,6.
+- **Todos los kernels ARC-AGI-3 son públicos** (usuario `juliancamilovilla`). Verificado el
+  2026-09-16 pidiendo cada URL **sin credenciales**: las diez responden 200 con su título, y un
+  slug inexistente responde 404 (control). Generados por [`scripts/push_kernels.py`](scripts/push_kernels.py),
+  que fija `is_private: False`.
+  - Envío: `arc-agi3-nvfp4`.
+  - Brazos de experimento sobre esa base: `arc-agi3-nvfp4-carry`, `-carry-long`, `-carry2-long`,
+    `-carry3-long`, `-carryobj-long`, `-carrypre-long`, `-carrynar-long`, `-carrynow-long`,
+    `-carry-nothink-long`, `-carry-yield-long-2`, `-carry-kv-long`, `-mtpshare-long`, `-moe-long`,
+    `-manual-long`, `-grafts`, `-long`.
+  - Bases anteriores: `arc-agi3-duck*`, `arc-agi3-explorer054`, `arc-agi3-llm`, `arc-agi3-features`,
+    `arc-agi3-bench27b`, `arc-agi3-probe-mounts`.
+- **Métodos y resultados escritos**: [`docs/DESIGN.md`](docs/DESIGN.md) lleva el registro completo
+  (incluidos los brazos refutados y las correcciones de errores propios) y
+  [`paper/working_note_es.md`](paper/working_note_es.md) / [`_en.md`](paper/working_note_en.md) son
+  la nota de trabajo en ambos idiomas.
 - **Atribución de código de terceros** (todo público, de la propia competencia):
   - `vendor/my_agent_v47.py`: vendorizado del notebook público de poby7722 (LB 0.54 en junio),
     que a su vez porta técnicas de Occam (MIT) y la solución 3rd-place "just-explore" (MIT).

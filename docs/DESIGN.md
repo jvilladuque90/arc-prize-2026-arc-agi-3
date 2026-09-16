@@ -3153,3 +3153,85 @@ mediana 0,65-0,83x el baseline) y **todo el hueco esta en resolver el nivel 2**,
 de capacidad de razonamiento, no de decorar el prompt.
 
 **Coste:** 60 min de GPU. **Nada enviado.**
+
+### 8.66. El nivel 2 no se pierde: se queda sin acciones (2026-09-16)
+
+Diagnostico sobre las **nueve corridas de 60 min** ya descargadas (225 partidas). Cero GPU.
+
+#### El hallazgo
+
+De los 140 casos en que un juego completa el nivel 1 y se queda en el siguiente:
+
+```
+ratio acciones/baseline en el nivel atascado:  mediana 0,16x
+  < 0,5x  (apenas lo intentaron)        107   76,4%
+  0,5-2x  (lo intentaron en serio)       30   21,4%
+  >= 2x   (lo intentaron y se perdieron)   3    2,1%
+```
+
+**El agente no se pierde en el nivel 2: casi nunca llega a jugarlo.** Y cuando resuelve el
+nivel 1 lo hace **por debajo del baseline** (mediana 0,73x). No es que juegue mal; es que se
+queda sin turnos. **Las 225 partidas terminan en `cancelled`**: siempre se acaba el reloj.
+
+#### La aritmetica, que es implacable
+
+| | |
+|---|---|
+| acciones disponibles por juego (mediana) | **46** |
+| baseline de nivel 1 + nivel 2 (mediana) | **83** |
+| juegos donde las acciones ALCANZAN ese baseline | **3 de 25** |
+
+En **22 de 25 juegos es aritmeticamente imposible** completar el nivel 2 cerca del baseline:
+no hay jugadas suficientes en la ventana. Casos extremos: `g50t` necesita 253 y tuvo 39;
+`lf52` necesita 113 y tuvo 20; `ka59` necesita 137 y tuvo 32.
+
+Y con mas presupuesto la cosa cambia de forma (condicion **necesaria**, no suficiente):
+
+```
+x1 acciones ->  3/25 juegos alcanzan el baseline n1+n2
+x2 acciones -> 13/25
+x3 acciones -> 18/25
+```
+
+#### De donde sale el coste
+
+```
+tokens generados por accion   ~582-744
+acciones por turno             3,3 - 4,0   (el agente YA agrupa)
+rendimiento por juego          ~10 tok/s
+```
+
+Cada turno genera ~2.000 tokens y rinde ~3,5 acciones. **El cuello no es el tiempo de
+pensamiento por turno (<=60 s) sino los TOKENS POR ACCION**, y el rendimiento del servicio esta
+cerrado (8.57-8.59: +0,3% fue todo lo que se pudo arrancar).
+
+#### La palanca que aparece, y nunca se ha tocado
+
+El agente **ya agrupa acciones** —`action(['LEFT','LEFT','DOWN'])` es legal y lo usa— pero con
+una dispersion enorme entre juegos:
+
+```
+v1 (A)   mejores: re86 10,4 | ls20 5,9 | dc22 5,6      peores: sc25 2,1 | lf52 1,8 | su15 1,4
+sin nota mejores: re86  9,8 | sp80 5,4 | dc22 5,1      peores: ka59 1,5 | tr87 1,2 | r11l 1,2
+v5       mejores: tn36  9,5 | m0r0 8,6 | sp80 8,2      peores: ka59 2,2 | su15 2,2 | vc33 2,2
+```
+
+**Llevar la mediana de 3,5 a 7 duplicaria el presupuesto de acciones sin tocar la calidad de cada
+decision**, porque no reduce el razonamiento: reparte su coste entre mas jugadas. Y encaja con lo
+que ya sabiamos de las victorias reales: las recetas ganadoras son repetitivas ("LEFT x5",
+"el mismo clic x4"), justo lo agrupable.
+
+#### Por que este eje si merece GPU, a diferencia del de la nota
+
+1. **Ataca la restriccion que manda**, demostrada aritmeticamente, no una hipotesis sobre lo que
+   el modelo atiende.
+2. **Se mide con potencia**: acciones por turno son cientos de eventos por corrida, no 3-6.
+3. **El signo esta razonado.** La metrica es `(baseline/acciones)^2` por nivel completado, asi que
+   gastar mas acciones abarata el nivel 1 — pero completar solo el nivel 1 topa el juego en
+   **3,52**, y ahi estamos ya (envio: **3,55**). Cambiar eficiencia del nivel 1 por ALCANCE del
+   nivel 2 es el trade correcto: el techo de niveles 1-2 es **10,57**.
+
+**Y explica el leaderboard.** El lider esta en 11,04, justo por encima del techo de niveles 1-2:
+no nos gana por eficiencia, nos gana porque **llega**.
+
+**Coste:** 0 min de GPU.

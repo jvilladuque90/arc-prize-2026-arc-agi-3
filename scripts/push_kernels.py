@@ -168,6 +168,26 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # CONSOLIDACION v4 (build_nvfp4_carryobj.py): la mecanica ganadora en OBJETOS.
+    # v1/v2/v3 nombraban la ACCION ganadora. Medido sobre 722 turnos (DESIGN 8.61): el
+    # reuso de esa accion es 55,2% y 43,9% en dos replicas CON nota y 47,5% SIN nota (las
+    # replicas encierran al control, pareado 5/3/4 p=0,727); en 85-89% de los turnos el
+    # razonamiento no menciona la nota; y en 8 de 19 juegos la accion "ganadora" ya era
+    # >=80% de TODAS las acciones (seis al 100%): informacion cero. El modelo consolida
+    # solo, pero en objetos ("charcoal piece overlapped the yellow target"). v4 le habla
+    # en ese idioma con los MISMOS hash de current_frame.segmentation (se llama a
+    # segment_layer del propio harness). Cambia el VOCABULARIO, no la cantidad (~90 tok).
+    # OJO AL LEER EL RESULTADO: DESIGN 8.60 probo que el PUNTAJE no puede resolver este
+    # eje (3-6 eventos de nivel 2 por corrida frente a los 11-12 que pide el signo). Esta
+    # corrida se juzga por MECANISMO (cientos de eventos), no por la media del banco.
+    "nvfp4carryobjlong": {"notebook": "notebooks/nvfp4_carryobj_long.ipynb",
+                          "slug": "arc-agi3-nvfp4-carryobj-long",
+                          "title": "arc agi3 nvfp4 carryobj long",
+                          "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                               "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                          "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                          "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                           "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # MODELO OBJETIVO (build_nvfp4_moe.py): nucleo fusionado de expertos de Blackwell.
     # TAAF_VLLM_MOE_BACKEND tampoco esta en el perfil ganador y acepta exactamente un
     # valor no nulo: flashinfer_b12x (serving_setup.py:404). El modelo tiene 512 expertos

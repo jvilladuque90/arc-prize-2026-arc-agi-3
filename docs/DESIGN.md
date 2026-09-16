@@ -2803,3 +2803,86 @@ se apoya en una pata que no depende de la version de vLLM — no existe mando pa
 el comando se arma de una lista fija y `argv_sha256` se contrasta contra `/proc`. Sigue en pie.
 
 **Coste: 0 min de GPU.** Nada enviado.
+
+### 8.61. Mecanismo de la nota: 722 eventos dicen que el problema es el VOCABULARIO (2026-09-15)
+
+Continuacion directa de 8.60: alli quedo probado que el banco no puede medir este eje (3-6
+eventos por corrida frente a los 11-12 que pide una prueba de signos). La salida propuesta era
+medir el MECANISMO donde es denso. Hecho, con cero GPU, sobre transcripciones y `benchmark.json`
+ya descargados. **722 turnos con nota analizados** en cuatro corridas.
+
+#### A. Conductual: la nota no cambia la conducta hacia donde apunta
+
+La nota ordena literalmente *"la mecanica que gano el anterior suele seguir valiendo aqui...
+Pruebala primero, en pocas acciones"*. Medida directa: tras ganar el nivel 1, que fraccion de
+las acciones son del mismo tipo que la que gano ese nivel.
+
+| corrida | acciones tras nivel 1 | reusa la ganadora |
+|---|---|---|
+| CON nota v1 (A) | 431 | **55,2%** |
+| CON nota v1 (replica) | 371 | **43,9%** |
+| CON nota v2 | 497 | 43,1% |
+| CON nota v3 decaimiento | 322 | 45,3% |
+| **SIN nota (base)** | 406 | **47,5%** |
+
+**Las dos corridas del MISMO sistema con nota (55,2% y 43,9%) encierran a la corrida sin nota
+(47,5%).** El efecto de la nota es menor que el ruido entre replicas. Pareado juego a juego:
+5 mas / 3 menos / 4 iguales, **p = 0,727**. Y la orden literal ("pruebala primero"): de las 5
+primeras acciones tras ganar el nivel 1, son la ganadora el 65,2% (v1 A), 62,3% (replica),
+57,3% **(base, sin nota)**, 54,1% (v2), 67,3% (v3). Todo dentro de la misma banda.
+
+#### B. Atencional: en 85-89% de los turnos la nota no deja rastro en el razonamiento
+
+| corrida | turnos con nota | el razonamiento nombra la accion | menciona la nota |
+|---|---|---|---|
+| v1 (A) | 202 | 38,1% | **11,9%** |
+| v1 (replica) | 175 | 29,7% | **10,9%** |
+| v2 | 191 | 40,3% | **14,7%** |
+| v3 decaimiento | 154 | 24,0% | **14,9%** |
+
+Y el control: en turnos **sin** nota del mismo juego, el razonamiento nombra esa misma accion el
+**50,4% / 43,2% / 48,2% / 33,0%** — es decir, **mas** que cuando la nota la nombra. (El control
+tiene sesgo: los turnos sin nota son del nivel 1, donde el agente esta usando esa accion para
+ganar. No prueba causalidad, pero descarta que la nota dirija la atencion.)
+
+#### C. La causa: la mitad del contenido es tautologico
+
+La nota nombra el TIPO de accion ganadora. Cuanto pesa ese tipo en el juego entero:
+
+```
+tn36 ACTION6 100.0%   lp85 ACTION6 100.0%   r11l ACTION6 100.0%   vc33 ACTION6 100.0%
+s5i5 ACTION6 100.0%   su15 ACTION6 100.0%   ft09 ACTION6  98.0%   lf52 ACTION6  85.0%
+```
+
+**En 8 de 19 juegos la accion "ganadora" ya es >=80% de TODAS las acciones del juego, seis de
+ellos al 100%.** La nota les dice "ganaste con ACTION6" en partidas donde ACTION6 es literalmente
+cada accion que se toma. **Informacion cero.** En los otros 11 la cuota es del 11-32%: senal
+debil, no nula.
+
+#### D. Lo que el modelo SI usa
+
+Mirando el razonamiento en el turno en que llega la primera nota de `ar25` — la nota decia
+*"nivel 1: subio con LEFT tras 30 acciones"* — el modelo escribe:
+
+> *"Level 1 solved: charcoal piece overlapped the yellow target. Now level 2."*
+
+El modelo **ya habia consolidado la mecanica**, pero en vocabulario de OBJETOS y RELACIONES
+(que pieza, sobre que objetivo), no en vocabulario de NOMBRES DE ACCION. La nota habla en el
+idioma equivocado: nombra la tecla, cuando el modelo razona en objetos — que es, ademas, lo que
+el propio anfitrion le da como vista primaria (`current_frame.segmentation`: nodos con `color`,
+`pixels`, `hash`, `children`, `adjacency_list`).
+
+#### Conclusion, y por que la palanca mejora en vez de cerrarse
+
+Las tres variantes que probamos (v1 nombre de accion, v2 + receta literal, v3 decaimiento)
+**variaban la CANTIDAD del mismo contenido equivocado**. Ninguna cambio el tipo de contenido.
+Asi que el eje de la memoria **no esta refutado: esta sin probar**, y ahora con un diagnostico
+concreto de por que no pagaba. Julian llevaba razon en 8.60 al insistir, y el mecanismo lo
+confirma por una via distinta a la estadistica.
+
+**La siguiente nota debe hablar en objetos, no en teclas**: que objeto (por `hash` y color) entro
+en que relacion (solapamiento, adyacencia, contencion) con que otro en la transicion ganadora.
+Todo eso ya lo tiene el anfitrion — `describir_cambio` calcula la caja y el censo de colores;
+falta expresarlo como relacion entre objetos y no como conteo de celdas.
+
+**Coste: 0 min de GPU.** Nada enviado.

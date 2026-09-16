@@ -2951,3 +2951,74 @@ si es observable y transfiere es la **precondicion**: la configuracion del ultim
 nivel N y donde apuntaba la accion ganadora. Ese es el contenido correcto para v5.
 
 **Coste:** 60 min de GPU. **Nada enviado.**
+
+### 8.63. v5: el contenido queda arreglado y el enganche se hunde (2026-09-16)
+
+Brazo `arc-agi3-nvfp4-carrypre-long`, 60 min, 201 notas en 16 juegos. Un solo cambio frente a
+v4: **el contenido** pasa del efecto (inobservable, contaminado por el cambio de nivel) a la
+**precondicion**, leida solo en fotogramas del nivel que se gana.
+
+#### El arreglo funciono, y se nota en el dato
+
+| | n | mediana | max | >=100 celdas | >=300 |
+|---|---|---|---|---|---|
+| v4 (efecto) | 393 | 44 celdas | 650 | **38,9%** | 18,3% |
+| **v5 (precondicion)** | 469 | **10 celdas** | 750 | **6,6%** | **1,1%** |
+
+v5 cita **piezas de verdad** (mediana 10 celdas), no regiones. El fallo estructural de 8.62
+—cruzar la frontera de nivel— queda cerrado, y con un test que lo fija
+(`test_nunca_cruza_la_frontera_de_nivel`).
+
+#### Y el enganche se cayo al suelo
+
+| corrida | turnos con nota | **menciona la nota** | usa hash/segmentacion |
+|---|---|---|---|
+| v1 (A) | 202 | 11,9% | 41,6% |
+| v1 (replica) | 175 | 10,9% | 42,9% |
+| v2 | 191 | 14,7% | 47,6% |
+| v3 | 154 | 14,9% | 39,6% |
+| **v4 (efecto)** | 191 | **31,9%** | 58,6% |
+| **v5 (precondicion)** | 181 | **9,4%** | 53,0% |
+
+Pareado juego a juego:
+
+```
+v4 vs v1      mas 13 / menos  3 de 16   p = 0,0213
+v5 vs v1      mas  5 / menos  7 de 15   p = 0,7744
+v5 vs v4      mas  1 / menos 13 de 14   p = 0,0018
+```
+
+**v5 es indistinguible de v1 y decisivamente peor que v4.** Dos pruebas significativas en
+sentidos opuestos y coherentes entre si: lo de v4 no fue casualidad, y lo de v5 tampoco.
+
+#### La lectura, que corrige mi propia hipotesis
+
+Yo atribui el salto de v4 al **vocabulario de objetos**. v5 mantiene ese vocabulario —y ademas
+lo dice con datos correctos— y pierde el efecto entero. Luego **no era solo el vocabulario**.
+Lo que v5 quito respecto a v4, y son los sospechosos:
+
+1. **La narrativa causal.** v4 decia *"se movio el objeto X y paso a tocar Y"*: una historia con
+   sujeto, verbo y consecuencia. v5 dice *"respondia a tus jugadas: objeto X; en contacto con
+   Y"*: un inventario.
+2. **La salvedad epistemica que anadi por honestidad.** v5 termina con *"Lo de justo despues no
+   se puede observar"*. Le estoy diciendo al modelo, explicitamente, que la nota esta incompleta.
+   Es el candidato mas fuerte: es lo unico que v5 anade en vez de quitar.
+3. **La saliencia.** v4 hablaba de cambios grandes y visibles (aunque fueran artefacto); v5 habla
+   de piezas de 10 celdas.
+
+Nota: `usa hash/segmentacion` se mantiene alto en v5 (53,0% frente a 39-48% de v1-v3), asi que el
+vocabulario de objetos **si** sigue empujando algo. Lo que se desploma es la mencion explicita de
+la nota como fuente.
+
+#### Puntaje: sin conclusion, como siempre en este eje
+
+23 niveles, media 3,790, 16 juegos que puntuan, **6 al nivel 2+** (empatado con el maximo, que lo
+tiene `sin nota`). Dentro de la vara de 8.60.
+
+#### Lo que esto deja montado
+
+La pregunta pasa a estar bien planteada y es barata de responder: **v6 = contenido de v5 (correcto)
+con forma de v4 (narrativa causal, sin la salvedad)**. Si el enganche vuelve al 30%, lo que paga es
+la FORMA y no el vocabulario ni la exactitud. Si no vuelve, lo de v4 era novedad y el eje se cierra.
+
+**Coste:** 60 min de GPU. **Nada enviado.**

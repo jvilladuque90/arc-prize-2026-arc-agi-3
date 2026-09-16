@@ -3087,3 +3087,69 @@ siete brazos de este eje el puntaje no ha salido nunca de la vara de ruido**, y 
 dato: si v7 no mueve el mecanismo, el eje se cierra.
 
 **Coste:** 60 min de GPU. **Nada enviado.**
+
+### 8.65. v7 y el CIERRE del eje de la nota (2026-09-16)
+
+Brazo `arc-agi3-nvfp4-carrynow-long`, 60 min. La nota resuelve la referencia contra
+`current_frame` y cita solo objetos presentes, con su posicion actual.
+
+#### Un dato estructural que sale gratis
+
+**La nota v7 solo aparecio 93 veces en 10 juegos**, frente a 173-213 en las demas versiones,
+porque calla cuando no resuelve nada. Es decir: **en aproximadamente la mitad de los turnos, nada
+de la configuracion que gano el nivel 1 existe en el tablero que el modelo mira**. Cuando si
+resuelve, casi siempre es el objeto literal (109 "el mismo" contra 31 "uno igual").
+
+Eso confirma la premisa del diagnostico de 8.64 —v5/v6 mandaban a buscar cosas inexistentes— y a
+la vez **pone techo a la palanca**: no puede actuar en la mitad de las ocasiones.
+
+#### El resultado
+
+| corrida | turnos | con cabeceras | sin cabeceras |
+|---|---|---|---|
+| v1 (A) / replica | 202 / 175 | 16,8% / 14,3% | igual |
+| v2 / v3 | 191 / 154 | 18,8% / 19,5% | igual |
+| **v4 efecto** | 191 | **37,2%** | **35,1%** |
+| v5 precondicion | 181 | 14,9% | 11,6% |
+| v6 narrativa | 173 | 15,6% | 14,5% |
+| **v7 vista actual** | **84** | **26,2%** | **25,0%** |
+
+```
+v4 vs v1     mas 14 / menos  2 de 16   p = 0,0042
+v7 vs v1     mas  6 / menos  2 de  9   p = 0,2891   <- direccion buena, SIN significancia
+v7 vs v4     mas  1 / menos  8 de  9   p = 0,0391   <- por debajo de v4
+v7 vs v5     mas  5 / menos  3 de  9   p = 0,7266
+v7 vs v6     mas  5 / menos  2 de  9   p = 0,4531
+```
+
+**v7 es la segunda tasa mas alta de siete brazos y la unica, ademas de v4, que sale de la banda
+14-19,5%. Pero no alcanza significancia** (9 juegos pareados, porque la nota calla la mitad del
+tiempo) y sigue por debajo de v4. Por el criterio pre-registrado —"si v7 no mueve el mecanismo, se
+cierra el eje"— **p = 0,289 no es un movimiento. El eje se cierra.**
+
+#### Puntaje: 18 niveles, media 3,027, 13 juegos que puntuan, 4 al nivel 2+
+
+El peor de los siete en niveles y juegos que puntuan; frente a la **replica** de v1 (21 / 3,199) la
+diferencia cabe en la vara. **En siete brazos el puntaje no ha salido NUNCA de la vara de ruido.**
+
+#### Lo que queda aprendido, que no es poco
+
+1. **El banco no puede medir este eje por puntaje** (3-6 eventos de nivel 2 por corrida frente a
+   los 11-12 pares que pide el signo). Medir el mecanismo si tiene potencia: 8.60-8.61.
+2. **La nota llevaba contenido erroneo desde v1**: el "despues" de la transicion es el primer
+   tablero del nivel siguiente, asi que se describia el redibujado del cambio de nivel (8.62).
+3. **El unico brazo que movio el enganche (v4) es el unico cuyo contenido era FALSO.** Y no fue por
+   vocabulario (v5 lo conserva y pierde), ni por forma (v6 la restaura y sigue perdido), ni por
+   novedad (v5 y v6 son igual de nuevas). El anclaje en la vista actual (v7) recupera parte del
+   efecto pero no llega.
+4. **Y esa es la razon de fondo para cerrar, mas alla del umbral.** Lo que el enganche premia
+   parece ser **saliencia, no utilidad**: v4 enganchaba mas con datos falsos, v7 engancha menos
+   con datos verdaderos, y el puntaje no se mueve en ninguno de los siete. Seguir optimizando esa
+   metrica seria optimizar que la nota llame la atencion, no que sirva.
+
+**El eje de la memoria del agente queda cerrado**, como el de servicio (8.57-8.59) y el del modelo
+por arriba (8.56). Lo que la metrica dice que queda: **el nivel 1 esta al tope** (eficiencia
+mediana 0,65-0,83x el baseline) y **todo el hueco esta en resolver el nivel 2**, que es un problema
+de capacidad de razonamiento, no de decorar el prompt.
+
+**Coste:** 60 min de GPU. **Nada enviado.**

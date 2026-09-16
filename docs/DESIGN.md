@@ -3299,3 +3299,28 @@ medido, y con todo lo de aguas abajo apuntando igual. Por el criterio de Julian 
 una palanca nueva, la varianza se asume— **este brazo se gana un envio**.
 
 **Coste:** 60 min de GPU.
+
+### 8.68. Envio v26: presupuesto de acciones (2026-09-16)
+
+`juliancamilovilla/arc-agi3-nvfp4-batch-long` v1, enviado a las 22:33Z, **ref 56288268**.
+Primer envio desde el 14-sep, y el primero en mucho tiempo que cumple la regla de Julian
+—*cada submit lleva una palanca nueva*— con algo medido y no solo con una hipotesis.
+
+**Que lleva:** la nota de presupuesto (`src/arc3/action_budget.py`) sobre la base NVFP4
+verbatim de keithtyser. Hace explicito el unico hecho que el agente no puede ver —la partida
+se corta por RELOJ y el turno cuesta igual lleve una accion o cinco— con los numeros vivos de
+esa partida, y **solo aparece por debajo de 3,0 acciones por turno**.
+
+**Lo medido (8.67):** acciones por turno 3,34 -> 4,38; totales 1.089 -> 1.398 (+28,4%);
+pareado 18-7 de 25, **p = 0,0433**; sin coste de eficiencia (nivel 1 de 0,81x a 0,73x, y los
+juegos por encima del baseline bajan de 4 a 2). Aguas abajo, todo en la misma direccion pero
+dentro de la vara: niveles 23 -> 26, nivel 2+ 6 -> 7, media 4,114 -> **4,620**.
+
+**Nota tecnica sobre el kernel elegido.** Se envia la variante `-long` (ventana offline de 60
+min) y **es equivalente a la de 25 en un envio real**: el recorte vive bajo
+`if not TRUE_SUBMISSION`, asi que en el rerun de competicion el presupuesto queda intacto.
+Verificado en la celda antes de mandar, no asumido.
+
+**Referencia a batir: 3,55** (v24, la misma base sin la nota). Remuestreada dio 3,54 y 2,69,
+asi que el rango de la base en el set oculto es ~2,7-3,6: **un solo envio no podra distinguir
+una mejora pequena**, y eso ya se asume por acuerdo.

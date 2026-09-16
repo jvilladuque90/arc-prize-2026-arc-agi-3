@@ -168,6 +168,25 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # CONSOLIDACION v6 (build_nvfp4_carrynar.py): el CONTENIDO de v5 con la FORMA de v4.
+    # La unica prueba que zanja DESIGN 8.63. v4 (contenido erroneo, forma narrativa) subio la
+    # mencion de la nota en el razonamiento al 31,9% frente al 11-15% de v1-v3, pareado 13-3
+    # de 16 juegos (p=0,0213). v5 (contenido CORRECTO -- mediana 10 celdas en vez de 44, 6,6%
+    # de objetos >=100 celdas en vez de 38,9% -- pero en forma de inventario y con salvedad
+    # epistemica) la hundio al 9,4%: pareado 1-13 de 14 contra v4, p=0,0018, e indistinguible
+    # de v1. Como v5 CONSERVA el vocabulario de objetos, lo que pagaba en v4 no era eso.
+    # v6 deja el contenido de v5 byte a byte (el modulo se genero sustituyendo SOLO la funcion
+    # que redacta; hay test de equivalencia de codigo y de salida) y le devuelve la sintaxis de
+    # v4. Si el enganche vuelve al 30%, lo que paga es la FORMA; si no vuelve, lo de v4 era
+    # novedad y el eje se cierra. Se juzga por MECANISMO (8.60), no por la media del banco.
+    "nvfp4carrynarlong": {"notebook": "notebooks/nvfp4_carrynar_long.ipynb",
+                          "slug": "arc-agi3-nvfp4-carrynar-long",
+                          "title": "arc agi3 nvfp4 carrynar long",
+                          "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                               "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                          "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                          "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                           "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # CONSOLIDACION v5 (build_nvfp4_carrypre.py): la POSICION GANADORA (precondicion).
     # v4 abrio el canal: la mencion de la nota en el razonamiento subio de 11-15% (v1/v2/v3,
     # vara de ruido de UN punto) a 30,9%, pareado 13-3 de 16 juegos, p=0,0213 (DESIGN 8.62).

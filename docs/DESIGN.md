@@ -3373,3 +3373,79 @@ memoria del agente 8.60-8.65), el cuarto —presupuesto de acciones— produjo u
 que no transfirio, y quedan **13 dias** para el milestone del 30 de septiembre.
 
 **Coste:** 0 min de GPU (el envio no gasta cuota propia).
+
+### 8.70. Review del research: dos razones por las que casi nada estaba refutado (2026-09-17)
+
+Pregunta de Julian: si el hallazgo sobre **como** se le habla al modelo invalida palancas que
+descartamos por sintaxis y no por idea, hay que revisarlas. Es correcto, y al revisar aparece una
+**segunda** razon, independiente y mas grave.
+
+#### 1. La sintaxis que SI funciona, destilada de siete brazos medidos
+
+La unica nota que movio conducta (presupuesto de acciones, 8.67) contra las seis que no:
+
+| funciona | no funciona |
+|---|---|
+| segunda persona ("**llevas** 14 acciones en 10 turnos") | impersonal ("Ultimo nivel ganado (2): con LEFT...") |
+| **numeros vivos de esa partida** | descripcion del pasado |
+| un hecho que el agente **no puede ver** (se corta por reloj) | hechos que ya tiene delante |
+| **fragmento ejecutable**: `action(['LEFT','LEFT','LEFT'])` | ninguno |
+| imperativo ("mandalas juntas") | cubierto ("Primer paso **sugerido**") |
+| secuencia | **inventario de vinetas** |
+
+Y matiza la regla de 8.41: **no falla el texto de cada turno, falla el generico.** El que funciono
+salio en el **73,9%** de los turnos.
+
+#### 2. La segunda razon, y es peor: media docena de refutaciones caen DENTRO de la vara
+
+La vara de ruido (5 niveles / 1,19 de media) se midio el **2026-09-15** (8.60). Todo lo refutado
+antes se juzgo sin ella:
+
+| brazo | frente a | diferencia | veredicto real |
+|---|---|---|---|
+| manual del juego (8.49) | control 23 / 4,114 | **3 niveles, 0,174** | **DENTRO — no establecido** |
+| consolidacion v2 | v1 26 / 4,392 | 5 niveles, 1,171 | en el borde |
+| consolidacion v3 | v1 | 8 niveles, 1,167 | borde |
+| yield 180 (8.51) | v1 | 9 niveles | FUERA — refutado |
+| pensamiento apagado (8.52) | v1 | 14 niveles | FUERA — refutado |
+
+**El manual —que empaquetaba TRES de los cinco mecanismos del research— nunca estuvo refutado.**
+Su diferencia con el control plano cabe en el ruido, y ademas estaba escrito en la sintaxis de la
+columna derecha de arriba. Dos motivos independientes para no darlo por muerto.
+
+#### 3. Los cinco mecanismos del research, revisados
+
+1. **Intuitive Gamer** (simulacion plana de un paso) → implementado como *"Primer paso **sugerido**:
+   aplica la mecanica ganadora..."*. Cubierto, sin fragmento ejecutable, dentro del manual.
+   **Refutacion no valida: sintaxis + vara.**
+2. **WorldLLM / afordancias positivas** ("estos controles SI han tenido efecto") → implementado en
+   inventario. **Pero aqui la idea SI esta tocada**: 8.53 midio que en los juegos que nunca puntuan
+   el **79-100% de las acciones ya cambian el tablero**. Decirle "estos controles funcionan" es la
+   misma tautologia que "ganaste con ACTION6" (8.61). *La version no tautologica seria otra cosa:
+   que accion mueve **que objeto**, no cuales tienen efecto.*
+3. **Manual escrito por el MODELO con autocorreccion** — el metodo real del agente que hizo el 100%
+   del set publico. **NUNCA IMPLEMENTADO.** Se descarto a priori porque exigir escritura costo
+   acciones en v13/v14. Es la mayor palanca sin tocar del registro.
+4. **Objetualidad / analogia estructural** (donde esta AHORA el objeto que gano) → implementado en
+   el manual (mala sintaxis) **y reensayado como v7 en la sintaxis correcta**: 26,2% de enganche,
+   p=0,289. **Genuinamente probado, sin significancia.**
+5. **Mapa cognitivo** → aparcado por la base, no por sintaxis. Sigue aparcado.
+
+#### 4. Lo que queda REALMENTE refutado
+
+Fuera de la vara o imposible por mecanica: pensamiento apagado, yield 180, explorador hibrido,
+guard de no-ops (margen 2,0%), y los tres ejes de hardware (servicio 8.57-8.59, modelo 8.56). Nada
+mas. **Todo lo demas del eje de comunicacion esta sin establecer.**
+
+#### 5. Orden recomendado si hay que seguir
+
+(a) **Manual escrito por el modelo con autocorreccion**, en el *learning store* que el harness ya
+tiene, **escribiendo solo al ganar o al refutar** (no cada turno) — es el unico mecanismo con
+evidencia externa de llevar a 100% y el unico nunca implementado. Riesgo conocido y ahora
+cuantificado: cuesta tokens de salida, que son el coste vinculante (8.66)... **si 8.66 se sostiene**,
+que es justo lo que decide v26-b.
+(b) **Manual del anfitrion reescrito en la sintaxis correcta**: segunda persona, numeros vivos,
+fragmento ejecutable, imperativo, secuencia. Barato y nunca estuvo refutado.
+(c) Afordancias, **solo** en su version no tautologica (accion → objeto que mueve).
+
+**Coste:** 0 min de GPU.

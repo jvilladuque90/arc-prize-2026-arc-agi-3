@@ -3324,3 +3324,52 @@ Verificado en la celda antes de mandar, no asumido.
 **Referencia a batir: 3,55** (v24, la misma base sin la nota). Remuestreada dio 3,54 y 2,69,
 asi que el rango de la base en el set oculto es ~2,7-3,6: **un solo envio no podra distinguir
 una mejora pequena**, y eso ya se asume por acuerdo.
+
+### 8.69. v26 puntua 2,43: no transfiere, y aparece un sesgo del banco (2026-09-17)
+
+`arc-agi3-nvfp4-batch-long` v1, ref 56288268: **2,43**.
+
+| envio | base | oculto |
+|---|---|---|
+| v24 | NVFP4 verbatim | **3,55** |
+| v24-b | la misma | 2,69 |
+| v24-c | la misma | 3,54 |
+| v25 | + consolidacion | 2,66 |
+| **v26** | **+ presupuesto de acciones** | **2,43** |
+
+**2,43 queda por debajo de las tres muestras de la base (2,69-3,55).** Con n=1 no se puede
+separar "la palanca resta" de "mala tirada", y por acuerdo no se persigue la varianza. Pero el
+resultado **no** confirma el banco, que daba la media mas alta medida (4,620 contra 4,114).
+
+#### La hipotesis que hay que tomarse en serio: el banco nos engana en este eje
+
+Todo el diagnostico de 8.66 —que la restriccion vinculante son las ACCIONES— sale de corridas de
+**60 minutos** en las que **las 225 partidas terminaron en `cancelled`**, es decir, cortadas por
+reloj. Pero en el rerun de competicion **el recorte de ventana no se aplica** (`if not
+TRUE_SUBMISSION`), asi que las partidas juegan con el presupuesto completo.
+
+Si en el rerun las partidas **no** se cortan por reloj, entonces:
+
+1. la premisa de la nota es **falsa alli** ("esta partida se corta por RELOJ");
+2. empujar el agrupamiento solo anade acciones que no hacian falta;
+3. y la metrica eleva eso **al cuadrado**: `(baseline/acciones)^2` por nivel.
+
+Es decir: la misma palanca que en un banco cortado por tiempo es una ganancia, en una partida
+larga es un impuesto. **Y eso convierte nuestro banco de 60 min en un instrumento sesgado para
+cualquier palanca que toque el trueque tiempo/acciones**, que es justamente la familia de 8.66.
+
+Dato compatible con ese sesgo, y que nunca habiamos mirado: **el banco sobreestima**. La base da
+4,114 de media en el banco y 2,69-3,55 en el oculto; la consolidacion v1 daba 4,392 en banco y su
+envio (v25) 2,66.
+
+#### Donde estamos, sin adornos
+
+Con 3,55 estamos en el **puesto 262 de 280+**. La cabeza: Tufa Labs **18,81**, luego 11,59 y
+11,04; el puesto 20 esta en **5,49**. El techo de completar solo el nivel 1 es **3,52**: estamos
+clavados en el, y **todo el que nos pasa ha cruzado el nivel 2**.
+
+Los tres ejes controlables estan cerrados con numero (servicio 8.57-8.59, modelo por arriba 8.56,
+memoria del agente 8.60-8.65), el cuarto —presupuesto de acciones— produjo una mejora de banco
+que no transfirio, y quedan **13 dias** para el milestone del 30 de septiembre.
+
+**Coste:** 0 min de GPU (el envio no gasta cuota propia).

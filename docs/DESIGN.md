@@ -3503,3 +3503,68 @@ freno —que cuesta tokens de salida— **se debilita** justo con este resultado
 cortado por reloj, ese coste no starva al agente.
 
 **Coste:** 0 min de GPU.
+
+### 8.72. La herencia funciona, el modelo la lee, y no cambia nada (2026-09-18)
+
+Brazo `arc-agi3-nvfp4-inherit-long`, 60 min. Es el resultado negativo mas limpio del
+proyecto, porque las tres piezas se midieron por separado y **solo falla la ultima**.
+
+#### 1. El mecanismo funciona
+
+| corrida | lineas `- Cross-level notes:` pobladas | juegos con almacen |
+|---|---|---|
+| sin nota (base) | **0** | 0 |
+| v1 consolidacion | **0** | 0 |
+| batch | 20 | 2 |
+| **herencia** | **117** | **10** |
+
+El almacen que estaba **vacio en todas las corridas anteriores** ahora se llena: 15
+herencias registradas, 128 sellos `[al ganar el nivel N]`. El fallo de borrado era real y
+queda corregido.
+
+#### 2. El modelo SI la lee — esta vez no la ignora
+
+Solape de vocabulario distintivo entre la nota heredada y el razonamiento del turno:
+
+```
+con SU PROPIA nota heredada : 23,1%   (n=107)
+con la nota de OTRO juego   :  5,8%   (n=91, control nulo)
+diferencia                  : +17,3 puntos  (4x el nulo)
+```
+
+Contraste con 8.61-8.65, donde lo que escribiamos nosotros se mencionaba el 11-15% de las
+veces: **cuando el texto son sus propias palabras, lo usa**. La hipotesis de vocabulario de
+8.61 queda confirmada por una via nueva.
+
+#### 3. Y no sirve de nada
+
+| | base | herencia |
+|---|---|---|
+| niveles | 23 | **23** |
+| media del banco | 4,114 | 4,159 |
+| juegos que puntuan | 15 | 16 |
+| **nivel 2+** | **6** | **5** |
+| nivel 3+ | 2 | 2 |
+
+Pareado: puntaje **7-5-13 empates, p = 0,774**; niveles **5-5, p = 1,000**. Y los juegos que
+cruzan al nivel 2 son los mismos menos uno (`tu93` se pierde, ninguno se gana).
+
+#### Que cierra esto, y es mucho
+
+No es una implementacion fallida: es una **hipotesis refutada con las tres piezas separadas**.
+El conocimiento se conservaba mal (bug real), lo arreglamos, el modelo lo lee, y el puntaje no
+se mueve. **La transferencia de conocimiento entre niveles no es el cuello del nivel 2.**
+
+Y con esto se agotan las explicaciones que teniamos para el muro del nivel 2:
+
+- **no es memoria** — arreglada, leida, sin efecto (aqui);
+- **no es vocabulario ni forma** — siete brazos, 8.60-8.65 y 8.70;
+- **no es presupuesto de acciones** — el banco decia que si, el set oculto lo desmintio en
+  signo (8.71);
+- **no es el servicio ni el modelo por arriba** — cerrados por hardware (8.56-8.59).
+
+Lo que queda, por eliminacion y sin que podamos probarlo desde aqui, es **capacidad**: el
+modelo no resuelve el nivel 2 de estos juegos, y ningun andamiaje del anfitrion lo cambia.
+Encaja con la tabla: quien nos pasa usa otro agente u otro modelo, no un prompt mejor.
+
+**Coste:** 60 min de GPU. **La apuesta se salda en perdida, pero limpia.**

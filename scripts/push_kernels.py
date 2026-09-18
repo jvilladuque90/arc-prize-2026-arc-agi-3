@@ -168,6 +168,33 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # HERENCIA ENTRE NIVELES (build_nvfp4_inherit.py): no borrar lo aprendido al ganar.
+    # LA APUESTA (DESIGN 8.71: solo quedan ~12 muestras y solo son detectables efectos de
+    # +1,0 o mayores, asi que se juega a una sola palanca con expectativa grande).
+    # EL FALLO, medido en tres corridas: el harness borra SEIS de sus siete campos de
+    # conocimiento en cada transicion de nivel y conserva solo `cross_level_notes`
+    # (_update_summarized_knowledge_from_step_summary). Y el modelo escribe al reves:
+    #   World model:        153-255 veces por corrida  -> SE BORRA
+    #   Cross-level notes:  0, 0 y 20 veces            -> es el unico que persiste
+    # Es decir: vuelca todo su conocimiento en el campo que se borra. En el instante en que
+    # gana un nivel se tira entero lo que acababa de aprender, y no es relleno -- textual:
+    # "A didn't complete; toggle works... Switch to hypothesis B", "ACTION7 = no-op. New
+    # hypothesis: checkers-like". Mecanicas, hipotesis refutadas y autocorrecciones: el
+    # contenido exacto del manual del agente que hizo el 100% del set publico (8.48 punto 3).
+    # El injerto dobla esos campos en el que sobrevive, JUSTO ANTES del borrado.
+    # Cero tokens de salida (el texto ya existe), en el vocabulario del modelo (son sus
+    # palabras: 8.61-8.65 midieron que ignora lo que le escribimos nosotros), y una sola vez
+    # por nivel completado, que es la unica senal inequivoca del entorno (8.53).
+    # SE BANCA PARA VERIFICAR EL MECANISMO, no para elegir por puntaje: el banco demostro
+    # apuntar al reves en score (8.71), pero mide bien mecanismo (cientos de eventos).
+    "nvfp4inheritlong": {"notebook": "notebooks/nvfp4_inherit_long.ipynb",
+                         "slug": "arc-agi3-nvfp4-inherit-long",
+                         "title": "arc agi3 nvfp4 inherit long",
+                         "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                              "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                         "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                         "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                          "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # PRESUPUESTO DE ACCIONES (build_nvfp4_batch.py): empujar el agrupamiento donde hay hueco.
     # Eje NUEVO, y el primero que ataca la restriccion demostrada aritmeticamente (DESIGN 8.66):
     # de 140 juegos que completan el nivel 1 y se atascan, el 76,4% APENAS INTENTO el siguiente

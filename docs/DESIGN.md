@@ -3449,3 +3449,57 @@ fragmento ejecutable, imperativo, secuencia. Barato y nunca estuvo refutado.
 (c) Afordancias, **solo** en su version no tautologica (accion → objeto que mueve).
 
 **Coste:** 0 min de GPU.
+
+### 8.71. Segunda muestra: 2,95. El banco y el set oculto discrepan EN SIGNO (2026-09-17)
+
+`arc-agi3-nvfp4-batch-long` v1, ref 56305368, mismo kernel sin cambios: **2,95**.
+
+| | muestras | media |
+|---|---|---|
+| base NVFP4 | 3,55 · 3,54 · 2,69 | **3,26** (sd 0,494) |
+| **+ presupuesto de acciones** | **2,43 · 2,95** | **2,69** |
+
+**Las dos muestras del brazo son las dos mas bajas de las cinco.** Prueba exacta de rangos
+(suma 4, minimo posible 3): **p unilateral = 0,200**. Con n=2 contra n=3 el p minimo alcanzable
+es 0,10, asi que esto es casi lo peor que puede *parecer* sin llegar a significancia. No esta
+probado que reste; **si esta claro que no hay ninguna evidencia de que sume**.
+
+#### Lo que si queda establecido, y es lo grave
+
+```
+banco  :  4,114 -> 4,620   (+0,51)
+oculto :  3,26  -> 2,69    (-0,57)
+```
+
+**Signos opuestos.** No es que el banco exagere: es que **apunta al reves**. Confirma la hipotesis
+de 8.69: nuestro banco de 60 minutos, donde **las 225 partidas terminaron cortadas por reloj**, es
+un instrumento **sesgado** para cualquier palanca que toque el trueque tiempo/acciones — porque en
+el rerun el recorte no se aplica (`if not TRUE_SUBMISSION`) y la restriccion que 8.66 midio como
+vinculante probablemente **no lo es alli**.
+
+Decision: **se retira la palanca de agrupamiento.** No toca nada del envio puntuado — el
+marcador sigue siendo 3,55 con `arc-agi3-nvfp4`, que cuenta el mejor y no el ultimo.
+
+#### El numero que debe gobernar lo que queda
+
+Con sd 0,494 en el set oculto, para detectar una mejora con 80% de potencia hacen falta:
+
+| efecto | muestras POR BRAZO |
+|---|---|
+| +0,5 | ~15 |
+| **+1,0** | **~4** |
+| +1,5 | ~2 |
+
+Con **una submission al dia** y **13 dias** hasta el milestone, el presupuesto total es ~13
+muestras. **Solo son detectables efectos de +1,0 o mayores.** Y el banco no sirve para
+preseleccionar, al menos en esta familia.
+
+**Consecuencia estrategica, sin adornos:** se acabo explorar. Lo unico racional es elegir **una**
+palanca con expectativa *a priori* de efecto grande y gastar en ella las muestras que quedan. En
+todo el registro solo hay una con esa expectativa y evidencia externa: el **manual escrito por el
+modelo con autocorreccion** (8.48 punto 3; en Gemini Flash **2,6x mejor y 3x mas barato**, y es el
+metodo del agente que hizo el 100% del set publico). Nunca se implemento, y la objecion que lo
+freno —que cuesta tokens de salida— **se debilita** justo con este resultado: si el rerun no esta
+cortado por reloj, ese coste no starva al agente.
+
+**Coste:** 0 min de GPU.

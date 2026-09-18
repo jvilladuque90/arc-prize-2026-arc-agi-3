@@ -3568,3 +3568,76 @@ modelo no resuelve el nivel 2 de estos juegos, y ningun andamiaje del anfitrion 
 Encaja con la tabla: quien nos pasa usa otro agente u otro modelo, no un prompt mejor.
 
 **Coste:** 60 min de GPU. **La apuesta se salda en perdida, pero limpia.**
+
+### 8.73. Research de capacidad: no es el modelo ni la vision, y lo que sobra somos nosotros (2026-09-18)
+
+Julian: ir a por capacidad. Se repite el research de 8.38 —que produjo el salto 1,15 -> 3,55—
+ahora que la cabeza de la tabla paso de 11,04 a **18,81**. Cero GPU.
+
+#### 1. El modelo NO es el diferenciador
+
+Los tres kernels publicos mejor puntuados —`chiakazirim/duck-qwen3-8-tuned`,
+`wuliao0/duck-qwen3-8-anim-base`, `saurabhkumar234/flash-next-arc3-submission11-1`— montan
+**exactamente nuestro modelo y nuestros dos datasets**: `keithtyser/qwen3-8-flash-next-nvfp4`.
+Y su **perfil de vLLM es identico al nuestro**, mando por mando.
+
+El `anim-base`, el mas forkeado (249 votos, actualizado hoy), **no tiene conciencia de
+animacion**: cero menciones de `animation`, `noop_guard`, `settle` o `transient`. El nombre
+enganaba.
+
+El unico "tuned" del lote cambia **una linea de juego**: `analyzer_timeout` 900 -> 1200. **No es
+consenso**: los otros seis estan en 900, como nosotros.
+
+**Conclusion: en el ecosistema publico no hay ninguna ventaja que nos falte.**
+
+#### 2. La vision YA esta encendida — correccion de mi primera lectura
+
+Al no ver ni un `image_url` en las transcripciones conclui que no se enviaban imagenes. **Era un
+artefacto del registro**: la transcripcion no serializa las partes de imagen. Las metricas del
+servidor no mienten:
+
+```
+vllm:mm_cache_queries_total  3.687
+vllm:mm_cache_hits_total     3.378
+```
+
+El harness renderiza el tablero (`vision_context.py`, `MULTIMODAL_CONTEXT=current_grid` por
+defecto en `framework/kaggle.py:119`) y el modelo lo recibe. **No hay hueco de vision.**
+
+#### 3. Lo que SI hace distinto la cabeza de la tabla
+
+Tufa Labs publica su enfoque: **vision-LLM-as-policy** — fotogramas recientes como imagenes
+etiquetadas a **Gemma-4-31B**, y se le pide **un unico objeto JSON** con que cambio, un plan
+corto y **las siguientes 1-4 acciones**; mas una memoria de reflexion cada ~10 pasos.
+
+Dos cosas que descolocan:
+
+- **Su modelo es MAS PEQUENO que el nuestro.** Gemma-4-31B frente a nuestro checkpoint de
+  125,91 GiB. La capacidad bruta no es lo que nos separa.
+- Y su hallazgo central, textual: **las herramientas artesanales perjudican al modelo; dejarlo
+  improvisar funciona mejor.**
+
+#### 4. Y nuestro propio registro dice exactamente lo mismo
+
+| envio | que llevaba | oculto |
+|---|---|---|
+| **v24** | **base verbatim, sin injertos** | **3,55 / 3,54 / 2,69** |
+| v25 | base + consolidacion | 2,66 |
+| v26 | base + presupuesto de acciones | 2,43 / 2,95 |
+
+**Nuestro mejor puntaje es la base limpia, y TODO injerto que anadimos puntuo por debajo.**
+Seis muestras, cero excepciones. Es la misma conclusion de Tufa desde nuestros propios datos, y
+explica el arco entero del proyecto: llevamos semanas anadiendo andamiaje, y el andamiaje es el
+problema.
+
+#### 5. Consecuencia
+
+La palanca de capacidad que buscabamos no existe por arriba (el modelo ya es mayor que el del
+lider, la vision ya esta) sino en el **diseno del agente**: politica de salida unica en JSON con
+1-4 acciones frente a nuestro agente que escribe codigo Python. Eso es una reescritura, y con
+~11 muestras y un umbral de deteccion de +1,0 (8.71) **no se puede validar a tiempo**.
+
+Lo que si es accionable, barato y esta respaldado por seis muestras propias mas la publicacion
+del lider: **dejar de anadir**. La base limpia es nuestro mejor puntaje conocido.
+
+**Coste:** 0 min de GPU.

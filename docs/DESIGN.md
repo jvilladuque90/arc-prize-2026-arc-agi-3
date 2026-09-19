@@ -3641,3 +3641,55 @@ Lo que si es accionable, barato y esta respaldado por seis muestras propias mas 
 del lider: **dejar de anadir**. La base limpia es nuestro mejor puntaje conocido.
 
 **Coste:** 0 min de GPU.
+
+### 8.74. Tercera muestra: 2,49. El brazo sale, y corrijo mi lectura pre-registrada (2026-09-19)
+
+`arc-agi3-nvfp4-batch-long` v1, ref 56337113: **2,49**. Contraste completo, 3 contra 3:
+
+```
+orden: 2.43(brazo) < 2.49(brazo) < 2.69(base) < 2.95(brazo) < 3.54(base) < 3.55(base)
+
+base  : 2,69 · 3,54 · 3,55   media 3,260
+brazo : 2,43 · 2,49 · 2,95   media 2,623   deficit -0,637
+
+suma de rangos del brazo = 7 (minimo posible 6)
+p unilateral exacta = 2/20 = 0,100
+```
+
+#### Correccion de mi propia regla
+
+Escribi antes de mirar: *"si la tercera cae por debajo de 2,69, las tres del brazo son las tres
+mas bajas de seis (p=0,05)"*. **Estaba mal, y era comprobable en el momento de escribirlo**: la
+segunda muestra era **2,95**, que ya esta por encima de 2,69. El resultado p=0,05 era
+**inalcanzable** desde que llego esa segunda muestra. Enuncie una regla sin verificarla contra
+los datos que ya tenia.
+
+Lo correcto: 2,49 cae donde yo habia dicho que caeria "el caso refutatorio", pero el test da
+**0,100**, no 0,05, por culpa del 2,95 intermedio.
+
+#### El veredicto, sin estirarlo
+
+- **No alcanza significancia** al 0,05. Con tres por brazo, 0,100 es el segundo mejor resultado
+  posible.
+- **Pero la direccion no se invierte ni una vez en seis muestras**: las tres del brazo estan por
+  debajo de la media de la base, dos por debajo de su minimo.
+- **Y el banco sigue apuntando al reves**: decia +0,51, el oculto acumula **−0,64**.
+
+**La palanca sale.** No "probada como danina", pero sin ninguna evidencia a favor y con el coste
+de oportunidad de las muestras que quedan. Y por la regla que fije antes de enviar: **no hay
+cuarta muestra**, eso ya seria perseguir la varianza que acordamos asumir.
+
+#### Lo que consolida
+
+La tabla de 8.73 queda cerrada con tres muestras por brazo:
+
+| envio | que llevaba | oculto |
+|---|---|---|
+| **v24** | **base verbatim** | **3,55 · 3,54 · 2,69** (media 3,26) |
+| v25 | + consolidacion | 2,66 |
+| v26 | + presupuesto de acciones | **2,43 · 2,49 · 2,95** (media 2,62) |
+
+**Siete muestras, y el mejor sigue siendo la base limpia.** Es el hallazgo de Tufa Labs
+—*hand-crafted tools hurt the model*— reproducido con nuestros propios envios.
+
+**Coste:** 0 min de GPU. Marcador intacto en **3,55**.

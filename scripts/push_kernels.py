@@ -168,6 +168,27 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # IMAGEN ETIQUETADA v2 (build_nvfp4_vision2.py): UNA SOLA VARIABLE.
+    # Corrige el confuso de DESIGN 8.76: aquel brazo cambio etiquetas Y dos paneles, y para
+    # que cupieran baje la escala de x16 a x10 -- degradando justo la capacidad que queria
+    # medir. No se podia separar "etiquetar no sirve" de "le baje la resolucion".
+    # Aqui UN panel a escala x16 EXACTA (area de tablero 1024x1024, identica al harness):
+    # la unica diferencia son la rejilla cian cada 8 celdas y los rotulos en el margen.
+    # Ademas corrige dos defectos de implementacion hallados en auditoria: la fuente por
+    # defecto de PIL era diminuta en un lienzo de 1.050 px (ahora 22 px) y las lineas del
+    # borde derecho e inferior caian fuera del lienzo.
+    # PRIMARIO: acierto de los clics MOUSE sobre objeto, PAREADO POR JUEGO y contra el azar
+    # de cada tablero. En 8.76 use una prueba AGRUPADA y dio un falso significativo: el
+    # primario del proyecto es pareado desde 8.55 justo porque los agregados los dominan
+    # dos o tres juegos.
+    "nvfp4vision2long": {"notebook": "notebooks/nvfp4_vision2_long.ipynb",
+                         "slug": "arc-agi3-nvfp4-vision2-long",
+                         "title": "arc agi3 nvfp4 vision2 long",
+                         "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                              "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                         "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                         "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                          "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # IMAGEN ETIQUETADA (build_nvfp4_vision.py): el canal que nunca habiamos tocado.
     # DESIGN 8.75: el modelo SI recibe imagen del tablero (3.687 consultas a la cache
     # multimodal lo confirman), pero el harness la renderiza como un mapa de colores plano

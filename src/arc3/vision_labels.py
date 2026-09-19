@@ -26,11 +26,15 @@ QUE HACE ESTE MODULO
 3. Pone el **fotograma anterior a la izquierda y el actual a la derecha**, rotulados, para
    que el cambio se vea de un vistazo.
 
-COSTE EN PIXELES, ACOTADO A PROPOSITO
--------------------------------------
-El harness manda 1024x1024 = 1,05 Mpx. Dos paneles a escala 10 con margen suman
-~1.350x670 = 0,90 Mpx: **menos que ahora**, con mas informacion. Si no hay fotograma
-anterior (primer turno del nivel) se manda un solo panel a escala 14.
+RESOLUCION (corregido tras DESIGN 8.76)
+---------------------------------------
+El panel unico va a **escala x16 EXACTA, la misma del harness**: asi, al comparar contra
+la base, la unica variable son las etiquetas. En 8.76 baje la escala a x10 para meter dos
+paneles dentro del presupuesto de pixeles, y eso degradaba justo la capacidad que queria
+medir — resolver una celda para leer su coordenada. Un panel: 1.058x1.058 = 1,12 Mpx,
+un 6,6% sobre el harness, y ese sobrecoste es solo el margen de rotulos.
+Dos paneles (escala x10) siguen disponibles y suman 0,90 Mpx, pero son un experimento
+DISTINTO y no deben mezclarse con el de etiquetado.
 
 POR QUE NO CONTRADICE 8.73
 --------------------------
@@ -47,8 +51,11 @@ import io
 
 PASO = 8                 # cada cuantas celdas van rejilla y rotulo
 ESCALA_DOBLE = 10        # dos paneles
-ESCALA_SIMPLE = 14       # un panel
-MARGEN = 26              # banda blanca para los rotulos
+# x16 EXACTO: es la escala que usa el harness, para que al comparar la unica variable
+# sean las etiquetas y no la resolucion. Ese fue el confuso de DESIGN 8.76.
+ESCALA_SIMPLE = 16       # un panel
+MARGEN = 34              # banda blanca para los rotulos (cabe la fuente grande)
+TAM_FUENTE = 22          # la de por defecto es diminuta en un lienzo de 1050 px
 REJILLA = (0, 255, 255)  # cian puro: NO esta en la paleta ARC
 FONDO = (255, 255, 255)
 TINTA = (0, 0, 0)
@@ -63,8 +70,12 @@ PALETA = {
 
 
 def _fuente():
+    """Fuente legible. `load_default(size=)` existe desde Pillow 10.1; si no, la diminuta."""
     from PIL import ImageFont
-    return ImageFont.load_default()
+    try:
+        return ImageFont.load_default(size=TAM_FUENTE)
+    except TypeError:
+        return ImageFont.load_default()
 
 
 def panel(grid, escala: int, titulo: str):
@@ -92,17 +103,19 @@ def panel(grid, escala: int, titulo: str):
     d = ImageDraw.Draw(lienzo)
     f = _fuente()
 
+    # `min(..., ancho-1)`: sin esto la linea del borde derecho/inferior cae en la
+    # coordenada = ancho del lienzo y PIL la recorta, perdiendose (fallo de 8.76).
+    x_max, y_max = lienzo.width - 1, lienzo.height - 1
     for c in range(0, cols + 1, PASO):
-        x = MARGEN + c * escala
-        d.line([(x, MARGEN), (x, MARGEN + filas * escala)], fill=REJILLA, width=1)
+        x = min(MARGEN + c * escala, x_max)
+        d.line([(x, MARGEN), (x, y_max)], fill=REJILLA, width=1)
         if c < cols:
-            d.text((x + 2, 2), str(c), fill=TINTA, font=f)
+            d.text((x + 3, 3), str(c), fill=TINTA, font=f)
     for r in range(0, filas + 1, PASO):
-        y = MARGEN + r * escala
-        d.line([(MARGEN, y), (MARGEN + cols * escala, y)], fill=REJILLA, width=1)
+        y = min(MARGEN + r * escala, y_max)
+        d.line([(MARGEN, y), (x_max, y)], fill=REJILLA, width=1)
         if r < filas:
-            d.text((2, y + 2), str(r), fill=TINTA, font=f)
-    d.text((MARGEN + 2, MARGEN - 12), titulo, fill=TINTA, font=f)
+            d.text((3, y + 3), str(r), fill=TINTA, font=f)
     return lienzo
 
 
@@ -111,9 +124,9 @@ def componer(grid_antes, grid_ahora):
     from PIL import Image
 
     if not grid_antes:
-        return panel(grid_ahora, ESCALA_SIMPLE, "AHORA (fila,col en los bordes)")
-    a = panel(grid_antes, ESCALA_DOBLE, "ANTES")
-    b = panel(grid_ahora, ESCALA_DOBLE, "AHORA (fila,col en los bordes)")
+        return panel(grid_ahora, ESCALA_SIMPLE, "")
+    a = panel(grid_antes, ESCALA_DOBLE, "")
+    b = panel(grid_ahora, ESCALA_DOBLE, "")
     sep = 8
     out = Image.new("RGB", (a.width + sep + b.width, max(a.height, b.height)), FONDO)
     out.paste(a, (0, 0))

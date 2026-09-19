@@ -87,12 +87,21 @@ def test_sin_anterior_funciona_igual():
     assert im.width > 0 and im.height > 0
 
 
-def test_no_gasta_mas_pixeles_que_el_harness():
-    dos = componer(tablero(), tablero())
+def test_el_panel_unico_conserva_la_resolucion_del_harness():
+    """Lo que mandaba el confuso de 8.76: el tablero debe ir a x16 EXACTO, como el
+    harness, para que la unica variable sean las etiquetas y no la resolucion."""
+    from arc3.vision_labels import ESCALA_SIMPLE
+    assert ESCALA_SIMPLE == 16, "el harness escala x16; cualquier otra cosa mete un confuso"
     solo = componer(None, tablero())
+    assert solo.width == 64 * 16 + MARGEN, "el area de tablero debe ser identica al harness"
+    sobrecoste = solo.width * solo.height / PIXELES_HARNESS
+    assert sobrecoste <= 1.15, f"el margen de rotulos cuesta {sobrecoste:.2f}x, demasiado"
+
+
+def test_dos_paneles_no_gastan_mas_que_el_harness():
+    dos = componer(tablero(), tablero())
     assert dos.width * dos.height <= PIXELES_HARNESS, (
         f"{dos.width}x{dos.height} supera al harness")
-    assert solo.width * solo.height <= PIXELES_HARNESS
 
 
 # ----------------------------------------------------------------- salida

@@ -3822,3 +3822,61 @@ a 0 bytes** porque la CLI de Kaggle falla al escribirlo con la codificacion por 
 aparece. **Cualquier lectura de logs de kernel anterior a esto puede estar truncada.**
 
 **Coste:** 60 min de GPU.
+
+### 8.77. Auditoria: 8.76 estaba mal, y tres defectos de implementacion corregidos (2026-09-19)
+
+Julian pide auditar conclusiones e implementacion antes de volver a gastar GPU. Sale una
+conclusion invalidada y tres defectos reales. Cero GPU.
+
+#### 1. La conclusion de 8.76 NO se sostiene
+
+Reporte *"87,8% -> 81,4%, z = −2,72: significativo y en direccion contraria"* usando una
+**prueba de proporciones AGRUPADA**. Rehecho como manda el proyecto:
+
+```
+agrupado (lo que reporte)        87,8% -> 81,4%    z = -2,72
+PAREADO POR JUEGO, sobre el lift  8 mejor / 5 peor   p = 0,581
+clic util (board_changed)         5 mejor / 2 peor   p = 0,453
+```
+
+**Desde 8.55 el primario de este proyecto es pareado juego a juego**, precisamente porque los
+agregados los dominan dos o tres juegos con muchas acciones. Use una prueba agrupada y me dio
+un **falso significativo**. La imagen etiquetada **no empeoro nada**: no hay efecto medible en
+ninguna direccion.
+
+(Comprobado ademas que la dificultad del tablero era comparable —azar 28,8% contra 29,6%— asi
+que el artefacto venia del agrupamiento, no de jugar tableros distintos.)
+
+#### 2. El mismo error, buscado en el resto
+
+Reauditado **8.72** (la herencia "si se lee"): agrupado 23,1%, **mediana por juego 22,5%**, y
+los **diez** juegos en la banda 17-31%. Ningun juego domina: **la conclusion aguanta**. Queda
+una salvedad honesta que no invalida el numero: el control nulo usa la nota de OTRO juego, asi
+que parte del 4x puede ser vocabulario especifico del juego y no lectura.
+
+#### 3. Tres defectos de implementacion, corregidos
+
+| defecto | efecto | correccion |
+|---|---|---|
+| `ImageFont.load_default()` sin tamano | rotulos diminutos en un lienzo de 1.050 px | Pillow 12.3 admite `size=`; ahora **22 px** |
+| lineas del borde derecho e inferior en `x = ancho` | PIL las recorta y **se perdian** | acotadas a `ancho-1` |
+| `ESCALA_SIMPLE = 14` | no coincidia con los **x16** del harness | **x16 exacto** |
+
+#### 4. Y el confuso de fondo, corregido
+
+8.76 cambio **dos cosas**: etiquetas **y** dos paneles; y para que los dos paneles cupieran en
+el presupuesto de pixeles baje la escala de x16 a **x10**, degradando justo la capacidad que
+queria medir. Empaquete dos peticiones porque llegaron en la misma frase.
+
+El brazo nuevo (`arc-agi3-nvfp4-vision2-long`) es **una sola variable**: un panel a **x16
+exacta** — area de tablero **1024x1024, identica al harness**, verificado decodificando el
+modulo desde el notebook construido — y la unica diferencia son la rejilla cian cada 8 celdas
+y los rotulos en un margen de 34 px (+6,6% de pixeles, solo margen).
+
+El fotograma anterior queda fuera: es otro experimento, y el mas prescindible — el modelo ya
+tiene `previous_frame` en Python y el harness le dice explicitamente que los compare.
+
+**Primario pre-registrado, esta vez bien:** acierto de los clics `MOUSE` sobre objeto,
+**pareado por juego** y contra el azar de cada tablero.
+
+**Coste:** 0 min de GPU.

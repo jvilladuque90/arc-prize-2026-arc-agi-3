@@ -3764,3 +3764,61 @@ nuestra — **mejora la fidelidad del canal de observacion**, que es justo lo qu
 lo que nosotros no. Es la unica palanca identificada que aumenta informacion sin anadir consejo.
 
 **Coste:** 0 min de GPU.
+
+### 8.76. Imagen etiquetada: el primario empeora, y la culpa es en parte mia (2026-09-19)
+
+Brazo `arc-agi3-nvfp4-vision-long`, 60 min. Injerto confirmado en el log:
+`VISION_LABELS injected on seam C: 18 symbols`.
+
+#### El primario pre-registrado, y sale al reves
+
+Clics `MOUSE` que caen sobre un objeto que no es fondo (`artifacts/*_events.jsonl`, que traen
+el tablero de cada paso):
+
+| corrida | clics | **sobre objeto** | cambian el tablero |
+|---|---|---|---|
+| base (sin etiquetas) | 443 | **87,8%** | 92,8% |
+| v1 consolidacion | 443 | 88,3% | 91,0% |
+| herencia | 391 | 92,8% | 94,6% |
+| **IMAGEN ETIQUETADA** | 499 | **81,4%** | **95,4%** |
+
+**87,8% -> 81,4%, z = −2,72**: significativo y **en la direccion contraria**.
+
+#### Pero el primario que elegi es ambiguo
+
+`board_changed` se movio al **otro** lado: **92,8% -> 95,4% (z = +1,71)**. Es decir, con la
+imagen etiquetada los clics caen mas sobre fondo **y a la vez cambian mas el tablero**. En
+varios juegos clicar el vacio *es* la mecanica. **"Sobre objeto" no es lo mismo que "clic util"**,
+y lo pre-registre como si lo fuera.
+
+#### Y hay un confuso que meti yo
+
+Para meter los dos paneles (anterior + actual) dentro del presupuesto de pixeles, baje la escala
+por panel de **x16 a x10**: cada celda paso de 16x16 pixeles a 10x10. Es decir, **cambie dos
+cosas a la vez, y una de ellas degrada justo la capacidad que queria mejorar**: resolver una
+celda para leer su coordenada.
+
+**No puedo separar "etiquetar no sirve" de "le baje la resolucion".** El brazo no decide la
+hipotesis; decide que *esta implementacion concreta* no ayuda.
+
+#### Puntaje
+
+21 niveles, media 3,385, 5 juegos al nivel 2+. Frente a la base (23 / 4,114) son 2 niveles y
+0,73: **dentro de la vara** de 8.60. Sin conclusion, como siempre.
+
+#### Lo que habria que haber hecho, y es una leccion de metodo
+
+El brazo limpio era **etiquetas a resolucion completa (x16) y un solo panel**: una variable. El
+fotograma anterior es un segundo experimento, y ademas el mas prescindible — el modelo ya tiene
+`previous_frame` en Python y el harness le dice explicitamente que los compare.
+
+Bundle dos peticiones en un brazo porque las dos venian en la misma frase, y eso costo la corrida.
+
+#### Nota aparte: un fallo de herramienta que casi me hace concluir mal
+
+Al leer el log del kernel salia vacio y conclui que el injerto no habia disparado. **El log bajaba
+a 0 bytes** porque la CLI de Kaggle falla al escribirlo con la codificacion por defecto de Windows
+(`charmap` en la posicion 65.289). Con `PYTHONUTF8=1` baja entero (118.477 bytes) y el injerto
+aparece. **Cualquier lectura de logs de kernel anterior a esto puede estar truncada.**
+
+**Coste:** 60 min de GPU.

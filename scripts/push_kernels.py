@@ -168,6 +168,28 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # IMAGEN ETIQUETADA (build_nvfp4_vision.py): el canal que nunca habiamos tocado.
+    # DESIGN 8.75: el modelo SI recibe imagen del tablero (3.687 consultas a la cache
+    # multimodal lo confirman), pero el harness la renderiza como un mapa de colores plano
+    # -- un pixel por celda escalado x16 a 1024x1024 -- SIN etiquetas, SIN rejilla, SIN
+    # coordenadas y solo el fotograma actual. Y se le pide emitir MOUSE(row=X, col=Y): para
+    # acertar una celda tiene que CONTAR PIXELES en 1024x1024 sin una sola referencia.
+    # Tufa Labs, primero con 18,81, hace lo contrario: "renders recent frames as LABELED
+    # IMAGES". Llevamos nueve brazos escribiendo texto al final del prompt y CERO tocando
+    # la imagen. Este injerto pone rejilla y coordenadas cada 8 celdas en cian (color que
+    # NO esta en la paleta ARC) y el fotograma anterior al lado del actual.
+    # NO es de la familia que 8.73 desaconseja: no inyecta consejo nuestro, aumenta la
+    # fidelidad de la observacion. Y cuesta MENOS pixeles: 0,89 Mpx contra 1,05.
+    # PRIMARIO PRE-REGISTRADO: fraccion de clics MOUSE que caen sobre un objeto que no es
+    # fondo (cientos de eventos por corrida), no la media del banco.
+    "nvfp4visionlong": {"notebook": "notebooks/nvfp4_vision_long.ipynb",
+                        "slug": "arc-agi3-nvfp4-vision-long",
+                        "title": "arc agi3 nvfp4 vision long",
+                        "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                             "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                        "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                        "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                         "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # HERENCIA ENTRE NIVELES (build_nvfp4_inherit.py): no borrar lo aprendido al ganar.
     # LA APUESTA (DESIGN 8.71: solo quedan ~12 muestras y solo son detectables efectos de
     # +1,0 o mayores, asi que se juega a una sola palanca con expectativa grande).

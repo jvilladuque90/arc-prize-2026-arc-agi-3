@@ -3693,3 +3693,74 @@ La tabla de 8.73 queda cerrada con tres muestras por brazo:
 —*hand-crafted tools hurt the model*— reproducido con nuestros propios envios.
 
 **Coste:** 0 min de GPU. Marcador intacto en **3,55**.
+
+### 8.75. Auditoria de la comunicacion: v1 no tenia nada que transferir, y falta un canal entero (2026-09-19)
+
+Julian pregunta tres cosas: auditar v1 (que "tiene buena pinta" y no transfiere), mirar cuanto
+generalizamos dado que v4 si engancha, y **como le hablamos exactamente al modelo**. Cero GPU.
+
+#### 1. v1: no hay fallo de generalizacion porque nunca hubo efecto que transferir
+
+La "buena pinta" de v1 son **26 niveles / 4,392**. Ese numero **ya esta retirado** (8.60): la
+replica del mismo sistema dio **21 / 3,199**, y la diferencia con el control cabe entera en la
+vara de ruido.
+
+Probe ademas la hipotesis concreta de Julian: que la nota sirva solo donde es informativa. La
+nota v1 nombra el TIPO de accion ganadora, y en **8 de 19** juegos esa accion ya era >=80% de
+todas las del juego — ahi no dice nada. El corte:
+
+| grupo | v1 corrida A contra base | **v1 REPLICA contra base** |
+|---|---|---|
+| nota informativa (n=11) | 5-2, **+0,967** | 2-5, **−1,811** |
+| nota tautologica (n=8) | 3-2, −0,463 | 3-3, −0,967 |
+
+**El signo se invierte entre dos corridas del mismo sistema**, dentro de cada subgrupo. Con n=11
+y n=8 no hay potencia para nada. **La hipotesis no se puede ni examinar con este banco**, y lo
+que se creia que no transfiere nunca estuvo establecido.
+
+#### 2. Por donde le hablamos, medido
+
+Nuestros injertos entran envolviendo `ToolAgent._build_user_prompt` y **anadiendo texto al
+final** del mensaje de usuario:
+
+| | prompt (palabras) | injerto | % del prompt | posicion |
+|---|---|---|---|---|
+| base | 477 | — | — | — |
+| v1 | 490 | 69 | **14,1%** | 88,4% |
+| v4 | 504 | 66 | 13,1% | 89,4% |
+| batch | 489 | 47 | 9,6% | 91,1% |
+
+En **el 100% de los turnos** nuestro texto va **despues de la guia de formato de llamada**
+(221/208/394 casos contra 0): somos lo ultimo que lee antes de responder.
+
+Y un hallazgo incomodo: el prompt del harness **ya ordena agrupar** — *"If your code has found a
+reliable short sequence, prefer batching it in one call"*. **La nota de presupuesto (v26) repetia
+una instruccion que ya estaba.** Eso explica mejor que la varianza por que no pago.
+
+#### 3. El canal que no hemos tocado nunca
+
+El modelo recibe **una imagen PNG del tablero** en el mismo turno de usuario
+(`vision_context.py`; 3.687 consultas a la cache multimodal lo confirman). Como se renderiza:
+
+```python
+image = Image.new("RGB", (cols, rows), ARC_COLOR_MAP[0])   # 64x64 pixeles, un color por celda
+image = image.resize((cols*scale, rows*scale), Image.NEAREST)   # x16 -> 1024x1024
+```
+
+**Un mapa de colores plano. Sin etiquetas, sin rejilla, sin coordenadas, y solo el fotograma
+actual.** Y al modelo se le pide emitir `MOUSE(row=X, col=Y)`: para acertar una celda tiene que
+**contar pixeles** en una imagen de 1024x1024 sin una sola referencia.
+
+Tufa Labs, primero con **18,81**, usa exactamente lo contrario: *"renders recent frames as
+**labeled images**"* — etiquetadas, y **varios** fotogramas.
+
+**Llevamos nueve brazos escribiendo texto al final del prompt y cero tocando la imagen.**
+
+#### Por que esto NO contradice 8.73
+
+8.73 concluyo "dejar de anadir" porque las herramientas artesanales perjudican. Etiquetar la
+imagen **no es de esa familia**: no le dice al modelo que pensar ni le inyecta una conclusion
+nuestra — **mejora la fidelidad del canal de observacion**, que es justo lo que el lider hace y
+lo que nosotros no. Es la unica palanca identificada que aumenta informacion sin anadir consejo.
+
+**Coste:** 0 min de GPU.

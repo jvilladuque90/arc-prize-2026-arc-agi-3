@@ -168,6 +168,27 @@ KERNELS = {
                           "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                           "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                            "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # ANIMFAST (build_animfast_long.py): CAMBIO DE BASE, no injerto. DESIGN 8.79.
+    # Barrido de 110 kernels publicos ordenados por divergencia y cruzados con puntaje: varios
+    # que puntuan alto montan una combinacion que NUNCA hemos corrido -- el stack de servicio
+    # NVFP4 de keithtyser (el que nos dio 3,55) CON el solver del bundle anim de jakobbrggen,
+    # cuyo HarnessSolver lleva animation_awareness=True y hard_noop_guard=True. Nosotros
+    # corrimos anim sobre el 27B viejo (v21/v23: 1,15 y 1,59) y NVFP4 sin anim (v24: 3,55);
+    # esta casilla faltaba. Encaja con lo unico que nos funciono dos veces: adoptar una base
+    # mejor, no anadirle cosas (8.73). Y desbloquea lo que 8.44 aparco: sin senal de animacion
+    # el guard de no-ops solo veia el fotograma final (margen 2,0%, 8.53).
+    # ATRIBUCION: sahasawatt/thui-animfast-v1, que monta el bundle de keithtyser y el solver
+    # del fork feature/animation-awareness de jakobbrggen sobre el duck harness de Tufa Labs.
+    # UNICA EDICION NUESTRA: el recorte de la ventana offline, la misma que hicimos para v24.
+    "animfastlong": {"notebook": "notebooks/animfast_long.ipynb",
+                     "slug": "arc-agi3-animfast-long",
+                     "title": "arc agi3 animfast long",
+                     "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                          "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1",
+                                          "jakobbrggen/taaf-kaggle-source-anim-20260807-anim"],
+                     "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                     "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                      "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # IMAGEN ETIQUETADA v2 (build_nvfp4_vision2.py): UNA SOLA VARIABLE.
     # Corrige el confuso de DESIGN 8.76: aquel brazo cambio etiquetas Y dos paneles, y para
     # que cupieran baje la escala de x16 a x10 -- degradando justo la capacidad que queria

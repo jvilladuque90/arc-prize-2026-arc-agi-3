@@ -3926,3 +3926,68 @@ Con esto **el canal de vision queda medido de verdad**, que era lo que faltaba: 
 hubieramos tocado, es que ahora sabemos que tocarlo bien da 10-4 y no basta.
 
 **Coste:** 60 min de GPU.
+
+### 8.79. Research de codigo abierto: la casilla que nunca corrimos (2026-09-20)
+
+Julian: es una competencia de codigo abierto, hay que mirar que usan los demas. Se repite el
+research de 8.38 —el que produjo 1,15 -> 3,55— pero esta vez a fondo. Cero GPU.
+
+#### Metodo: ordenar por DIVERGENCIA, no por metadata
+
+En 8.73 mire siete kernels por encima y conclui "todos usan nuestro modelo". Cierto pero
+insuficiente. Ahora: **110 kernels publicos** descargados y ordenados por cuanto se aparta su
+codigo de nuestra base, y **cruzados con el ranking por puntaje**. Lo interesante no esta en
+los que son copias.
+
+#### Lo que NO diferencia
+
+Los kernels que puntuan alto comparten **exactamente nuestros ajustes**: `analyzer_timeout`
+900, `n_passes` 1, `MTP_TOKENS` 3, `MAX_NUM_SEQS` 8, `KV_CACHE_MEMORY_BYTES` 5.368.709.120.
+Ninguna ventaja de configuracion. Y el `duck-qwen3-8-anim-base` mas forkeado **no tiene
+conciencia de animacion** pese al nombre.
+
+#### Lo que SI diferencia, y nunca corrimos
+
+Varios kernels del top —`sahasawatt/thui-animfast-v1` y sus repliegues (`yocybercode`,
+`dantelok`)— montan **dos bundles a la vez**:
+
+```
+BUNDLE_DIR      = "duck-harness-kaggle"   -> serving_setup.py, parches vLLM, watchdog  (keithtyser)
+ANIM_BUNDLE_DIR = "anim-20260807-anim"    -> el arbol del SOLVER                       (jakobbrggen)
+
+assert bm.solver.animation_awareness is True and bm.solver.hard_noop_guard is True
+```
+
+Es decir: **el stack de servicio NVFP4 que nos dio 3,55, con el solver consciente de
+animacion**. Nuestra matriz estaba asi:
+
+| | solver base | solver anim |
+|---|---|---|
+| modelo 27B | — | v21/v23: **1,15 / 1,59** |
+| **NVFP4 Flash-Next** | v24: **3,55** | **nunca corrido** |
+
+La casilla que falta es justo la que combina las dos mejores mitades.
+
+#### Por que tiene sentido ademas de estar en el top
+
+1. **Es un cambio de BASE, no un injerto.** Lo unico que nos ha funcionado dos veces. Siete
+   muestras propias mas la publicacion de Tufa Labs dicen que los injertos artesanales restan
+   (8.73); esto no anade nada nuestro.
+2. **Desbloquea lo que 8.44 aparco.** Sin senal consciente de animacion el guard de no-ops
+   solo ve el fotograma final, y su margen medido fue del **2,0%** (8.53). Con
+   `animation_awareness` el agente distingue un fotograma transitorio de uno asentado: es otra
+   cosa, no una version mejor de lo mismo.
+
+#### Lo montado
+
+`arc-agi3-animfast-long`: el kernel publico con **una sola edicion nuestra**, el recorte de la
+ventana offline —literalmente la misma que hicimos sobre el de keithtyser para v24—, porque el
+publico corre las 9 h enteras y en Save & Run eso se come la cuota de G4 de golpe. Compuertas:
+una sola celda cambiada y solo por la insercion, todas compilan.
+
+**Atribucion**: `sahasawatt/thui-animfast-v1`, que monta el bundle de servicio de **keithtyser**
+y el solver del fork `feature/animation-awareness` de **jakobbrggen**, sobre el duck harness de
+**Tufa Labs** (Bessis, Cottaar, Pressman, Smit, Tesnar, Viel). Todo publico y de la propia
+competencia; nuestro derivado se publica igualmente abierto.
+
+**Coste del research:** 0 min de GPU.

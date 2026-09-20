@@ -3880,3 +3880,49 @@ tiene `previous_frame` en Python y el harness le dice explicitamente que los com
 **pareado por juego** y contra el azar de cada tablero.
 
 **Coste:** 0 min de GPU.
+
+### 8.78. Etiquetas a resolucion completa: la auditoria acerto, el efecto no llega (2026-09-19)
+
+Brazo `arc-agi3-nvfp4-vision2-long`, 60 min, **una sola variable**: un panel a x16 exacta
+(area de tablero 1.024x1.024, identica al harness) con rejilla cian cada 8 celdas y rotulos en
+el margen. Injerto confirmado: `VISION_LABELS2 injected on seam C: 19 symbols`.
+
+#### La auditoria de 8.77 acerto: el problema era la resolucion
+
+| corrida | azar | acierto | **lift** |
+|---|---|---|---|
+| base (sin etiquetas) | 28,8% | 87,8% | **3,05x** |
+| etiquetada v1 (**x10**, dos paneles) | 29,6% | 81,4% | **2,75x** |
+| **etiquetada v2 (x16, un panel)** | 28,4% | 89,1% | **3,13x** |
+
+Bajar la escala de x16 a x10 hundia el lift por debajo de la base (2,75 contra 3,05).
+Devuelta la resolucion, el lift la supera (3,13). **El confuso que meti en 8.76 era real y
+explicaba el resultado**, como sospechaba la auditoria.
+
+#### Pero el efecto no alcanza
+
+Primario pre-registrado, **pareado por juego** sobre el lift:
+
+```
+etiquetada v2 mejor en 10 juegos, peor en 4    p = 0,180
+clic util (board_changed): mejor en 6, peor en 3   p = 0,508
+```
+
+**10-4 es la mejor direccion que hemos visto en este canal, y aun asi p = 0,180.**
+
+#### Puntaje: nada
+
+23 niveles (igual que la base), media 4,114 -> 4,295, nivel 2+ 6 -> 5. Pareado: **7-5-13
+empates, p = 0,774**; niveles **4-4, p = 1,000**.
+
+#### Veredicto
+
+**Sin efecto establecido.** Es, eso si, **el primer brazo que no empeora nada**: no queda por
+debajo de la base en ninguna medida, a diferencia de los diez anteriores. Pero por el criterio
+de 8.71 —solo son detectables efectos de +1,0 y solo quedan ~10 muestras— **un p=0,180 en
+mecanismo no justifica gastar una muestra del set oculto**.
+
+Con esto **el canal de vision queda medido de verdad**, que era lo que faltaba: no es que no lo
+hubieramos tocado, es que ahora sabemos que tocarlo bien da 10-4 y no basta.
+
+**Coste:** 60 min de GPU.

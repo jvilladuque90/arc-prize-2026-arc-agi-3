@@ -3991,3 +3991,54 @@ y el solver del fork `feature/animation-awareness` de **jakobbrggen**, sobre el 
 competencia; nuestro derivado se publica igualmente abierto.
 
 **Coste del research:** 0 min de GPU.
+
+### 8.80. ANIMFAST en banco: la mejor media, mas nivel 2, y con MENOS acciones (2026-09-21)
+
+`arc-agi3-animfast-long`, 60 min. Estuvo **13 horas en cola** (cuota de GPU agotada tras diez
+sesiones seguidas) y despues corrio limpio. El solver correcto cargo, verificado en el log:
+
+```
+thui-animfast: bm.label=anim-20260807-anim solver=HarnessSolver
+               animation_awareness=True hard_noop_guard=True
+OFFLINE_CUT soft_min=60.0
+```
+
+#### El resultado
+
+| corrida | niveles | media | juegos>0 | nivel 1 | **nivel 2+** | acciones |
+|---|---|---|---|---|---|---|
+| base NVFP4 (la de 3,55) | 23 | 4,114 | 15 | 15 | 6 | 1.089 |
+| v1 consolidacion | 26 | 4,392 | 19 | 19 | 4 | 1.219 |
+| etiquetada v2 | 23 | 4,295 | 16 | 16 | 5 | — |
+| **ANIMFAST (NVFP4 + anim)** | **26** | **4,613** | **18** | **18** | **7** | **904** |
+
+Pareado contra la base: puntaje **9-4-12 empates, p = 0,267**; niveles 5-3, p = 0,727.
+
+#### Lo que mas me convence no es la media
+
+**Hace 26 niveles con 904 acciones; la base hace 23 con 1.089.** Mas niveles con **un 17%
+menos de acciones**. Y la metrica es `(baseline/acciones)^2` por nivel completado: premia
+exactamente eso. Es el primer brazo que mejora el numerador y el denominador a la vez.
+
+Y **7 juegos al nivel 2+**, el mejor recuento que hemos medido — que es donde esta todo el
+hueco segun 8.66 (el nivel 1 ya va a 0,73x del baseline y topa el juego en 3,52).
+
+#### Lo que NO puedo decir
+
+**No esta establecido.** 3 niveles y 0,50 de media caben en la vara de ruido de 8.60
+(5 niveles / 1,19), y p = 0,267. El banco no lo prueba, y ademas el banco ya nos apunto al
+reves una vez (8.71).
+
+#### Por que aun asi lo recomiendo para el set oculto
+
+1. **Es un cambio de BASE.** Es la unica categoria que nos ha subido el puntaje: 1,15 -> 1,59
+   -> 3,55, las tres veces cambiando la base. Los once injertos, todos por debajo (8.73).
+2. **Tiene validacion externa.** No es una idea nuestra: es un kernel publico del top por
+   puntaje, con su propio historial en el set oculto.
+3. **La direccion es buena en todo lo que importa**: media, juegos que puntuan, nivel 2+ y
+   eficiencia de acciones. Ninguna medida empeora salvo nivel 3+ (2 -> 1, un solo juego).
+
+Con ~9 muestras y un umbral de deteccion de +1,0 (8.71), gastar una aqui es la mejor apuesta
+disponible: prior externo fuerte y categoria correcta.
+
+**Coste:** 60 min de GPU (mas 13 h de cola).

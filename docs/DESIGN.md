@@ -4042,3 +4042,36 @@ Con ~9 muestras y un umbral de deteccion de +1,0 (8.71), gastar una aqui es la m
 disponible: prior externo fuerte y categoria correcta.
 
 **Coste:** 60 min de GPU (mas 13 h de cola).
+
+### 8.81. v27 = 3,27, y el banco queda invalidado como instrumento de seleccion (2026-09-21)
+
+`arc-agi3-animfast-long` (ref 56433400): **3,27**. Cae en la banda que pre-registre como
+"no concluye" (2,7-3,6) y coincide con la media de la base (3,26). Una muestra,
+indistinguible del control.
+
+**Pero al juntarlo con lo demas sale lo importante.** Cuatro brazos con banco Y set oculto:
+
+| brazo | banco | oculto |
+|---|---|---|
+| base NVFP4 | 4,114 | **3,260** (3 muestras) |
+| v1 consolidacion | 4,392 | 2,660 |
+| batch presupuesto | **4,620** | **2,623** (3 muestras) |
+| animfast | 4,613 | **3,270** |
+
+```
+orden por BANCO : batch > animfast > v1 > base
+orden por OCULTO: animfast > base > v1 > batch
+correlacion r = -0,351
+```
+
+**El mejor del banco es el peor del oculto; el peor del banco es el segundo mejor.** Con
+n=4 brazos no es prueba estadistica, pero el orden esta practicamente invertido y encaja con
+lo ya visto en 8.71 (banco +0,51 contra oculto −0,57 en el mismo brazo).
+
+**Consecuencia:** el banco de 25 juegos a 60 min **no sirve para elegir entre brazos**. Explica
+el proyecto entero: doce brazos seleccionados por banco, ninguno transfiere. Lo unico que
+conserva valor del banco es la **verificacion de mecanismo** (que un injerto dispare, que un
+almacen se llene), donde hay cientos de eventos y no hace falta que prediga puntaje.
+
+**Situacion:** marcador **3,55**, que sigue siendo la mejor muestra de la base. Ningun
+candidato con efecto demostrado. Quedan ~8 muestras y 9 dias.

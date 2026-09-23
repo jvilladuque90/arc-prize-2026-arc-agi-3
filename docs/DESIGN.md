@@ -4075,3 +4075,10 @@ almacen se llene), donde hay cientos de eventos y no hace falta que prediga punt
 
 **Situacion:** marcador **3,55**, que sigue siendo la mejor muestra de la base. Ningun
 candidato con efecto demostrado. Quedan ~8 muestras y 9 dias.
+
+### 8.82. Remuestreo de la base: 3,95, nuevo maximo (2026-09-23)
+
+Base NVFP4 verbatim, cero GPU. v24-d (ref 56450217) = **3,95**; v24-e (ref 56477453, tarea diaria) = **3,03**.
+Cinco muestras de la misma base: 3,55 / 3,54 / 2,69 / 3,95 / 3,03 -> media **3,35**, sd **0,49** (igual que 8.71).
+El 3,95 no es mejora del agente: es la cola de la misma distribucion, y el marcador toma el maximo.
+Con 7 tiradas restantes, P(alguna > 3,95) ~ 0,56 (z = 1,22 por tirada).

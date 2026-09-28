@@ -52,7 +52,9 @@ set oculto. Sin él se repite el ciclo de los doce brazos elegidos a ciegas.
   (animfast_long + una celda; compuertas: una celda añadida, resto intacto, todo compila).
 - Smoke contra el bundle anim real: `python scripts/smoke_animfast_map.py` (PASS).
 - Kernel registrado: `animfastmap` → `arc-agi3-animfast-map` en `scripts/push_kernels.py`.
-  **No lanzado**: consume GPU y requiere visto bueno.
+  **v1 lanzada (DESIGN 8.83)**: cae 1-12 pero con un bug de vocabulario (la frontera
+  decia "NO has probado" lo ya hecho) y 10 min menos de reloj. Corregido; **v2 montada,
+  no lanzada**. Dato limpio de v1: la nota sube un 22% los tokens por accion.
 - Diferencia con el parche viejo: se engancha a `inference.agent.tool_agent.ToolAgent`
   (la clase que animfast usa), no a `taaf_grafts.schema_helpers`.
 - Riesgo conocido: es una nota de texto en el prompt, la misma forma que las notas que

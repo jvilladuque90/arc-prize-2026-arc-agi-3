@@ -41,6 +41,25 @@ from __future__ import annotations
 MAX_LISTA = 6          # cuantos elementos como mucho por linea de la nota
 MAX_CELDAS_CLICK = 8   # celdas de click que se enumeran antes de resumir a caja
 
+# Copia de inference/agent/action_names.py del bundle anim. El guardia registra las acciones
+# con el nombre del MODELO ('UP', 'MOUSE(...)') pero `valid_actions` llega con el del MOTOR
+# ('ACTION1'). Sin traducir, la frontera nunca casaba y la nota afirmaba "NO has probado:
+# ACTION1..ACTION5" tras doce movimientos (brazo animfast-map v1, DESIGN 8.83).
+MOTOR_A_MODELO = {
+    "ACTION1": "UP",
+    "ACTION2": "DOWN",
+    "ACTION3": "LEFT",
+    "ACTION4": "RIGHT",
+    "ACTION5": "SPACE",
+    "ACTION6": "MOUSE",
+    "RESET": "RESET",
+}
+
+
+def _a_modelo(nombre: str) -> str:
+    crudo = str(nombre or "").strip().upper()
+    return MOTOR_A_MODELO.get(crudo, crudo)
+
 
 class MapRecorder:
     """Envoltorio del ``NoopGuard`` del harness que ademas registra el grafo.
@@ -190,10 +209,15 @@ def render_map_note(registros: list[dict], nivel: int, firma_actual: str | None,
         #    lineas mas abajo como "nunca hizo nada").
         if acciones_validas:
             probadas = {_nombre(a) for (org, a, _d, _e) in g["aristas"] if org == firma_actual}
-            frontera = [a for a in acciones_validas
-                        if a.upper() not in probadas
-                        and a.upper() not in g["nunca_utiles"]
-                        and a.upper() != "MOUSE"]
+            validas = []
+            for a in acciones_validas:
+                n = _a_modelo(a)
+                if n and n not in validas:
+                    validas.append(n)
+            frontera = [a for a in validas
+                        if a not in probadas
+                        and a not in g["nunca_utiles"]
+                        and a not in ("MOUSE", "RESET")]
             if frontera:
                 lineas.append(f"- desde este estado NO has probado: "
                               f"{', '.join(frontera[:MAX_LISTA])}")

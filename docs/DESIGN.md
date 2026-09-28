@@ -4082,3 +4082,33 @@ Base NVFP4 verbatim, cero GPU. v24-d (ref 56450217) = **3,95**; v24-e (ref 56477
 Cinco muestras de la misma base: 3,55 / 3,54 / 2,69 / 3,95 / 3,03 -> media **3,35**, sd **0,49** (igual que 8.71).
 El 3,95 no es mejora del agente: es la cola de la misma distribucion, y el marcador toma el maximo.
 Con 7 tiradas restantes, P(alguna > 3,95) ~ 0,56 (z = 1,22 por tirada).
+
+### 8.83. Mapa cognitivo sobre animfast (v1): cae, pero la nota mentia (2026-09-28)
+
+AGENTS.md, punto 2. `arc-agi3-animfast-map` v1, sin cola, inyeccion verificada en el log
+(`COGNITIVE_MAP injected ... anim-20260807-anim/.../tool_agent.py`). Nota en 167 prompts.
+
+| | niveles | media | juegos>0 | acciones | reloj/juego | tokens/accion |
+|---|---|---|---|---|---|---|
+| animfast_long (control) | 26 | 4,613 | 18 | 904 | 50,1 min | 729 |
+| animfast_map v1 | 14 | 2,121 | 12 | 597 | **39,6 min** | **891** |
+
+Pareado 1-12-12, p = 0,003. **Pero hay dos confusos**:
+
+1. **Ventana**: esta corrida tuvo 10 min menos de reloj por juego (el corte offline cuenta desde el
+   arranque del kernel, no depende del brazo). Con el MISMO reloj por juego: 19 contra 14 niveles,
+   3-8, **p = 0,227**. Direccion negativa, no significativa.
+2. **Bug nuestro de vocabulario**: el guardia registra acciones con nombre de MODELO (`UP`,
+   `MOUSE(...)`) y `valid_actions` llega con nombre de MOTOR (`ACTION1..6`). La frontera no casaba
+   nunca: en wa30, tras doce movimientos, la nota decia "NO has probado: ACTION1..ACTION5"; en ft09,
+   "NO has probado: ACTION6" justo despues de hacer clics. **Le dabamos informacion FALSA** empujando
+   a repetir lo ya hecho. Ni el test ni el smoke lo cazaron porque usaban nombres de modelo.
+
+Lo que si es dato limpio: **+22% tokens generados por accion** (729 -> 891). La nota hace pensar mas
+al modelo, y a ~10 tok/s eso son acciones perdidas — el mismo coste que ya pagaban las notas (8.41).
+
+**Veredicto: el brazo no mide la idea, mide un bug.** Corregido (`MOTOR_A_MODELO` en
+`cognitive_map.py`, copia de `inference/agent/action_names.py`) con test que reproduce el caso wa30.
+La v2 corregida queda montada; relanzar cuesta 60 min de GPU.
+
+**Coste:** 75 min de GPU.

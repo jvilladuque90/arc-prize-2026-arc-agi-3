@@ -135,6 +135,26 @@ def main() -> int:
     nota_sin_validas = render_map_note(rec.registros, 2, "S1", None)
     check(isinstance(nota_sin_validas, str), "sin acciones validas no revienta")
 
+    # --- 6b. nombres del MOTOR en valid_actions (bug de animfast-map v1) -----
+    # wa30 real: tras moverse con UP/DOWN desde el estado S, la nota decia
+    # "NO has probado: ACTION1..ACTION5" porque valid_actions llega como ACTIONn.
+    reg_motor = [
+        {"level": 1, "antes": "S", "accion": "UP", "efecto": True, "solo_animacion": False},
+        {"level": 1, "antes": "T", "accion": "DOWN", "efecto": True, "solo_animacion": False},
+        {"level": 1, "antes": "S", "accion": "DOWN", "efecto": True, "solo_animacion": False},
+        {"level": 1, "antes": "U", "accion": "MOUSE(row=3, col=4)", "efecto": True,
+         "solo_animacion": False},
+    ]
+    motor = ["ACTION1", "ACTION2", "ACTION3", "ACTION4", "ACTION5", "ACTION6"]
+    nota_m = render_map_note(reg_motor, 1, "S", motor)
+    linea_f = [l for l in nota_m.splitlines() if "NO has probado" in l]
+    check(bool(linea_f) and "LEFT, RIGHT, SPACE" in linea_f[0],
+          "con nombres de motor la frontera sale traducida", linea_f[0] if linea_f else nota_m)
+    check("ACTION" not in nota_m, "la nota nunca muestra nombres de motor")
+    check(not linea_f or ("UP" not in linea_f[0] and "DOWN" not in linea_f[0]),
+          "lo ya probado desde aqui NO aparece como frontera")
+    check(not linea_f or "MOUSE" not in linea_f[0], "MOUSE (ACTION6) nunca es frontera")
+
     # --- 7. el registrador nunca puede tumbar el guardia --------------------
     class Explosivo(GuardiaFalso):
         pass

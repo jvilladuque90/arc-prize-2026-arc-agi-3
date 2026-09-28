@@ -189,6 +189,21 @@ KERNELS = {
                      "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                      "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                       "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # MAPA COGNITIVO SOBRE ANIMFAST (build_animfast_map.py): AGENTS.md, punto 2.
+    # Grafo de estados del anfitrion (Blind Squirrel, 2o del preview) sobre animfast_long, una
+    # sola celda. Aparcado en 8.44 porque la base no tenia guardia de no-ops ni animacion;
+    # animfast trae ambas. Se engancha a inference.agent.tool_agent.ToolAgent (smoke local:
+    # scripts/smoke_animfast_map.py). Herramienta GENERICA: estado y frontera, cero
+    # conocimiento de dominio escrito por nosotros.
+    "animfastmap": {"notebook": "notebooks/animfast_map.ipynb",
+                    "slug": "arc-agi3-animfast-map",
+                    "title": "arc agi3 animfast map",
+                    "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                         "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1",
+                                         "jakobbrggen/taaf-kaggle-source-anim-20260807-anim"],
+                    "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                    "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                     "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # IMAGEN ETIQUETADA v2 (build_nvfp4_vision2.py): UNA SOLA VARIABLE.
     # Corrige el confuso de DESIGN 8.76: aquel brazo cambio etiquetas Y dos paneles, y para
     # que cupieran baje la escala de x16 a x10 -- degradando justo la capacidad que queria

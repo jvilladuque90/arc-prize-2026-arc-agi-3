@@ -32,7 +32,7 @@ debajo de la base (8.73), y Tufa Labs publicó lo mismo. Lo que queda es darle a
 
 | # | Herramienta | Qué ataca | Coste | Estado |
 |---|---|---|---|---|
-| **2** | **Grafo de estados del anfitrión** (Blind Squirrel, 2º del preview): nodo = firma del tablero, arista = acción; nota con estados repetidos, acciones probadas desde aquí y frontera | acciones malgastadas en bucles | CPU, ~100 tokens de entrada | **EN CURSO** |
+| **2** | **Grafo de estados del anfitrión** (Blind Squirrel, 2º del preview): nodo = firma del tablero, arista = acción; nota con estados repetidos, acciones probadas desde aquí y frontera | acciones malgastadas en bucles | CPU, ~100 tokens de entrada | nota: **neutra** (8.84); falta variante que actúe |
 | 1 | **Predictor de efectos aprendido en vivo** (StochasticGoose, 1º del preview): red pequeña que predice si una acción cambia el tablero | acciones inertes | CPU, cero tokens | pendiente |
 | 3 | **Simulador escrito por el modelo**: `step(estado, accion)` en Python, planificar sin gastar acciones reales | planificación | muchos tokens | pendiente (apuesta Paper Award) |
 | 4 | **Biblioteca de funciones entre niveles** (estilo Voyager): código que ya funcionó, no notas | transferencia nivel→nivel | pocos tokens | pendiente, con cautela (7 brazos de memoria fallaron) |
@@ -53,8 +53,9 @@ set oculto. Sin él se repite el ciclo de los doce brazos elegidos a ciegas.
 - Smoke contra el bundle anim real: `python scripts/smoke_animfast_map.py` (PASS).
 - Kernel registrado: `animfastmap` → `arc-agi3-animfast-map` en `scripts/push_kernels.py`.
   **v1 lanzada (DESIGN 8.83)**: cae 1-12 pero con un bug de vocabulario (la frontera
-  decia "NO has probado" lo ya hecho) y 10 min menos de reloj. Corregido; **v2 montada,
-  no lanzada**. Dato limpio de v1: la nota sube un 22% los tokens por accion.
+  decia "NO has probado" lo ya hecho) y 10 min menos de reloj. Corregido y relanzado:
+  **v2 neutra (DESIGN 8.84)**: mismo reloj 21 vs 19 niveles, 3-4, p=1,0; tokens/accion como el
+  control. El grafo descrito en texto no paga.
 - Diferencia con el parche viejo: se engancha a `inference.agent.tool_agent.ToolAgent`
   (la clase que animfast usa), no a `taaf_grafts.schema_helpers`.
 - Riesgo conocido: es una nota de texto en el prompt, la misma forma que las notas que

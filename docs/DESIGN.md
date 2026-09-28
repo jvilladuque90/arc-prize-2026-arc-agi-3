@@ -4112,3 +4112,25 @@ al modelo, y a ~10 tok/s eso son acciones perdidas — el mismo coste que ya pag
 La v2 corregida queda montada; relanzar cuesta 60 min de GPU.
 
 **Coste:** 75 min de GPU.
+
+### 8.84. Mapa cognitivo v2 (bug corregido): neutro (2026-09-28)
+
+`arc-agi3-animfast-map` v2, inyeccion verificada, nota en 152 prompts, frontera ya en nombres de modelo.
+
+| | niveles | media | juegos>0 | acciones | reloj/juego | tokens/accion |
+|---|---|---|---|---|---|---|
+| animfast_long (control) | 26 | 4,613 | 18 | 904 | 50,1 min | 729 |
+| map v1 (bug) | 14 | 2,121 | 12 | 597 | 39,6 min | 891 |
+| **map v2** | 19 | 2,834 | 15 | 773 | 41,9 min | **738** |
+
+Crudo 4-9-12, p = 0,267. **Con el mismo reloj por juego: 21 vs 19 niveles, 3-4, p = 1,000.** Sin efecto.
+
+1. **El +22% de tokens de v1 era el bug**, no la nota: con la frontera veraz vuelve a 738 (control 729).
+   La nota en si es barata.
+2. **Pero no aporta**: en juegos de navegacion casi cada estado es nuevo, asi que la frontera lista
+   todas las acciones ("NO has probado: UP, DOWN, LEFT, RIGHT") — cierto pero sin informacion.
+3. Ambos brazos del mapa tuvieron ~9 min menos de reloj que el control; el control de 50 min parece la
+   excepcion, no la regla. Por eso la comparacion valida es la de reloj igualado.
+
+**Veredicto: el grafo DESCRITO en texto no paga.** Queda la variante de AGENTS.md (que el anfitrion
+ACTUE sobre el grafo), o pasar al punto 1. **Coste:** ~75 min de GPU.

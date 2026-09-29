@@ -1,1 +1,1 @@
-﻿v25-b: NVFP4 verbatim + consolidacion al ganar nivel (unica palanca que ha pasado la compuerta de 60 min en regimen: 26 niveles / 4.392 vs 23 / 4.114). Fallback de esta noche mientras se banca la siguiente palanca del research de razonamiento
+﻿sheetu v1: NUEVA BASE. Kernel publico scottlegrand/taaf-flashnext-sheetu12b-0922 (5.19 oculto, mejor publico al 2026-09-29): stack NVFP4 de keithtyser + AGENTFIX (IMAGES, MEMORY, TIMING). Unica edicion nuestra: recorte de la ventana offline, inactivo en el rerun. Atribucion: Scott Le Grand, keithtyser, Tufa Labs. plan.md

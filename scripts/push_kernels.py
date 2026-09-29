@@ -189,6 +189,18 @@ KERNELS = {
                      "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                      "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                       "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # SHEETU (build_sheetu_long.py): NUEVA BASE, plan.md. El mejor kernel publico al 2026-09-29
+    # (5,19 oculto): stack NVFP4 de keithtyser + AGENTFIX de Scott Le Grand (IMAGES, MEMORY,
+    # TIMING encendidos). Imagen docker PROPIA del kernel publico, no la nuestra de v24.
+    # UNICA EDICION NUESTRA: el recorte de la ventana offline (solo fuera del rerun).
+    "sheetulong": {"notebook": "notebooks/sheetu_long.ipynb",
+                   "slug": "arc-agi3-sheetu",
+                   "title": "arc agi3 sheetu",
+                   "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                        "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                   "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                   "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                    "37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461")},
     # MAPA COGNITIVO SOBRE ANIMFAST (build_animfast_map.py): AGENTS.md, punto 2.
     # Grafo de estados del anfitrion (Blind Squirrel, 2o del preview) sobre animfast_long, una
     # sola celda. Aparcado en 8.44 porque la base no tenia guardia de no-ops ni animacion;

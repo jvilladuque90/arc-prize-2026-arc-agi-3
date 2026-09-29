@@ -3,7 +3,11 @@
 Guía para cualquier agente (humano o IA) que trabaje en este repo. El detalle vive en
 `docs/DESIGN.md`; aquí va lo que hay que saber antes de tocar nada y el plan vigente.
 
-## Estado (2026-09-27)
+## Estado (2026-09-29)
+
+**Plan vigente: `plan.md`** — nueva base `sheetu12b` (5,19 oculto, mejor kernel público),
+envío del hito #2 con ella, y los puntos 1-4 rediseñados como DATOS en el sandbox, no notas.
+
 
 - **Mejor score oculto: 3,95** (base NVFP4 verbatim, `juliancamilovilla/arc-agi3-nvfp4`).
 - Cinco muestras de esa misma base: 3,55 / 3,54 / 2,69 / 3,95 / 3,03 → media 3,35, sd 0,49.

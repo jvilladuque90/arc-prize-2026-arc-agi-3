@@ -201,6 +201,16 @@ KERNELS = {
                    "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                    "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                     "37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461")},
+    # S1 SOBRE SHEETU (build_sheetu_effects.py): plan.md. Predictor de efectos como FUNCION del
+    # sandbox (action_effects()), no como nota: "frames yes, narration no". Una celda.
+    "sheetueffects": {"notebook": "notebooks/sheetu_effects.ipynb",
+                      "slug": "arc-agi3-sheetu-effects",
+                      "title": "arc agi3 sheetu effects",
+                      "default_datasets": ["keithtyser/duck-qwen38-nvfp4-mtp-vllm-smoke-v1",
+                                           "keithtyser/qwen38-flash-next-vllm-nvfp4-runtime-v1"],
+                      "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
+                      "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                       "37c64f7dd9c54116ecd1bcc88817c5469b88387388fade02bfa8bf3fc647d461")},
     # MAPA COGNITIVO SOBRE ANIMFAST (build_animfast_map.py): AGENTS.md, punto 2.
     # Grafo de estados del anfitrion (Blind Squirrel, 2o del preview) sobre animfast_long, una
     # sola celda. Aparcado en 8.44 porque la base no tenia guardia de no-ops ni animacion;

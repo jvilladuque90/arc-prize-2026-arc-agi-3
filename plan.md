@@ -63,7 +63,7 @@ fue siempre adoptar una base mejor, y eso es exactamente lo que hacemos hoy.
 | Brazo | Qué | Forma (datos, no narración) | Coste |
 |---|---|---|---|
 | **S0** | sheetu verbatim | control | — |
-| **S1** | **Punto 1 — predictor de efectos en vivo** | objeto `effects` en el sandbox: `effects.p_change(action)` y por color/objeto clicado, aprendido en la partida | CPU, cero tokens si no se consulta |
+| **S1** ✅ montado | **Punto 1 — predictor de efectos en vivo** (`src/arc3/sandbox_effects.py`, tests PASS incl. sandbox real; kernel `sheetueffects` registrado, no lanzado) | objeto `effects` en el sandbox: `effects.p_change(action)` y por color/objeto clicado, aprendido en la partida | CPU, cero tokens si no se consulta |
 | **S2** | **Punto 2 — grafo que actúa** | objeto `graph` en el sandbox: estados visitados, `graph.path_to(estado)` que devuelve la secuencia de acciones | CPU |
 | **S3** | **Punto 4 — biblioteca de funciones** | las funciones Python que el modelo definió y que precedieron a un nivel ganado sobreviven al siguiente nivel en el sandbox | pocos tokens |
 | **S4** | **Punto 3 — simulador del modelo** | el sandbox acepta un `step(state, action)` del modelo y le reporta su error de predicción contra el motor | muchos tokens; apuesta Paper Award |

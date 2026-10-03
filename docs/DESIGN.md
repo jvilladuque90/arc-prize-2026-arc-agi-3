@@ -4134,3 +4134,85 @@ Crudo 4-9-12, p = 0,267. **Con el mismo reloj por juego: 21 vs 19 niveles, 3-4, 
 
 **Veredicto: el grafo DESCRITO en texto no paga.** Queda la variante de AGENTS.md (que el anfitrion
 ACTUE sobre el grafo), o pasar al punto 1. **Coste:** ~75 min de GPU.
+
+### 8.85. Auditoria de mejoras publicas: la solucion de Franzen explica el salto del leaderboard (2026-10-03)
+
+Pedido de Julian: el lider subio mucho, buscar mejoras publicas y aplicarlas a nuestra mejor base.
+
+#### Lo que paso
+- **Envio del 3-oct: ERROR** ("A system error. Please try resubmitting", ref 56784478). Mismo kernel sheetu v1 que
+  termino bien el 30-sep (3,78), 1-oct (2,49) y 2-oct (4,79). El error es de plataforma, no de codigo. Dos fallos
+  nuestros lo agravaron: `submit_at_reset.py` daba por bueno cualquier envio del dia aunque terminara en ERROR (corregido) y
+  no habia disparos tardios que reintentaran tras un fallo que solo se ve ~9 h despues (anadidos a las 10,5 h y 14 h).
+- **Leaderboard 2026-10-03** (3.618 equipos): Tufa Labs 52,51 y Yi-Chia Chen 48,07; el resto del top-25 esta en 31,7-35,8.
+  Unos 480 equipos estan entre 20 y 40 (mediana 26,9). Nosotros: 4,79, puesto 543 (el 29-sep eramos el 304 con 3,98).
+- **Causa del salto**: el notebook publico de Daniel Franzen (`dfranzen/arc-agi-3-milestone-2-solution`, 30-sep, 294 votos).
+  Reproduccion independiente SIN cambios (skarin): **27,80**. Instantanea comunitaria de copias sin cambios: **media 25,77, sd 3,93**
+  (dato del autor, no verificado). El pelotón 31-36 es la cola alta de miles de copias, no mejoras. Tufa Labs anuncio que no abrira
+  su codigo del hito 2; los puestos 1 y 2 estan a z = +6,8 y +5,7 de la distribucion de copias: tienen algo privado.
+
+#### Que es la solucion de Franzen (verificado leyendo el codigo y 4 corridas reales ajenas)
+1. **Servicio**: SGLang "Pennyroyal" v2.5.3 + Qwen3.8-Flash-Next INT4 (Intel AutoRound W4A16) + drafter MTP aparte. Decodifica
+   **700-780 tok/s** con 10 solicitudes en curso (nuestra base vLLM NVFP4: 195-270 agregados), prefill ~12,4K tok/s (nosotros ~4K),
+   pool de KV de **1.011.264 tokens en FP8 contra 105.202** (9,6x), contexto de 128K contra nuestro 16K-32K. Arranque
+   determinista de 9,3 min (vLLM nuestro: 7-8 min hasta el 21-sep, 16-22 min desde el 28-sep, con techo duro de 25 min).
+2. **Parche de ~500 KB al duck harness**: `tool_agent.py` pasa de 2.063 a 7.259 lineas. Lo que queda ENCENDIDO en la corrida final:
+   historia larga retenida (presupuesto de entrada 118.272 tokens, desalojo hasta 59.136) con el razonamiento del modelo conservado;
+   imagen de tablero 640x640 mas imagen de diferencias acumuladas y de muerte; ACTION7 expuesta como UNDO; texto de game over honesto
+   (BAR RULE: la barra del borde es el presupuesto); **funciones persistentes escritas por el modelo (alcance: juego)**; memoria de
+   notas APAGADA (ARC3_MEMORY_SECTIONS=off); guardas blandas; capa HTTP robusta (primer request por juego tolerado 900 s).
+3. **Planificador de prioridad del lado del cliente**: 110 juegos como hilos, 10 plazas (= max-running-requests del servidor); un juego
+   conserva su plaza hasta que se desaloja su historia; valor = (nivel x eficiencia + cola esperada) x probabilidad / ritmo.
+   No usa el campo priority del servidor: es agnostico al motor, pero esta ajustado a SGLang y a 128K.
+
+#### Que explica el rendimiento (la lectura honesta)
+- Los tres ganadores publicos del hito (Franzen 27,89; Lord Han Solo 23,84; Siriki 22,53) **comparten**: Qwen3.8-Flash-Next + MTP +
+  KV en FP8 + **historia larga retenida (69K-131K)** + observabilidad (UNDO, game over honesto, barra visible) + codigo del agente que
+  persiste. Sus planificadores, imagenes y motores **difieren**, y el throughput de Franzen es el MAS BAJO de los tres: ni el motor ni el
+  planificador explican el orden. Lo comun es lo que cuenta.
+- La unica escalera publica de puntajes (Siriki, muestras unicas) va de 6,42 a 22,53 en 12 dias: reglas de niveles resueltos fijadas por
+  el agente **+2,8**; KV en FP8 con historia mas profunda (ventana 49K a 69,6K) **+8,0**; anadir texto a cada prompt **-2,3** con ventana de 37K.
+- **Nuestra base retenia 16K con KV en BF16**: menos historia que cualquier ganador. Es la hipotesis mas fuerte de por que estabamos en 4-5.
+- Ningun fork mejora a Franzen: `amatlas` son brazos con parches parciales (confundidos), `pf-unit-v12` es una rebanada fiel de las
+  funciones persistentes, y `sirikilohit` documenta diagnosticos sin un solo A/B. Ningun kernel trae ablacion por componente en el oculto.
+
+#### Defectos reales de la base de Franzen (verificados por ejecucion), arreglables sin riesgo de modelo
+1. Un timeout o fallo del sandbox **vacia la biblioteca de funciones persistentes**. 2. El reinicio automatico no reintenta: una caida de
+10 s del gateway tumba el juego. 3. No hay vigilante del servidor SGLang (si muere, los juegos se rinden en ~4 min y la corrida termina).
+4. `result` no-texto sin tope (180 KB en una prueba) y cualquier excepcion que no sea de red termina el juego. 5. Los nodos de segmentacion
+no traen bbox ni area. 6. Coste O(historia) por accion (6 s por accion con 1.000 fotogramas). 7. El tope de 532 min por juego cae 1-1,6 min
+despues del muro de 540 min de Kaggle. Margen de GPU durante el juego: solo 1,6-2,2 GiB: no subir MEMFRAC ni la concurrencia.
+
+#### Que queda de nuestro plan S1-S4
+- **S3 (funciones entre niveles): ya esta en Franzen**, como superconjunto sin curar. Hueco: sin verificacion de salida ni cache de datos.
+  El precedente mas cercano con puntaje oculto es la biblioteca de modulos por juego de Lord Han Solo, con pruebas contra fotogramas
+  grabados antes de aceptar un guardado.
+- **S1 (action_effects)**: no aplica tal cual (el ancla `runtime_globals["last_action_result"]` ya no existe); con el ancla
+  `runtime_globals["action"] = action` aplica y funciona en el sandbox real de Franzen. Pero la verificacion destapo 4 defectos
+  propios (HUD solo mira la fila/columna exterior, los efectos solo-animacion cuentan como inertes, RESET/UNDO automaticos ensucian el
+  recuento, el "sin probar" por nivel choca con la guia de transferencia de Franzen) y su valor medido es pequeno: **~1,8 % de acciones
+  desperdiciadas** direccionables sin ft09. El `result` de cada transicion con `gameplay_changed` ya cubre la mayor parte.
+- **S2 (grafo)**: el modulo no puede ni inyectarse (necesita `noop_guard` y `ToolAgent._noop_guard`, que no existen) y fue neutro.
+  Su clave de estado incluye el HUD: tasa de revisita 14,3 % con el fotograma entero contra 31,2 % recortando el borde.
+- **S4 (simulador)**: evidencia externa negativa (Carnot: 0 de 31 predicados de meta inducidos se cumplio).
+
+#### Estadistica: lo que NO se puede validar
+Con sd = 3,93 por corrida oculta, 4 contra 4 muestras detectan solo ~8 puntos y 2+2 solo efectos enormes; detectar 3 puntos pide ~27
+corridas por brazo. **Las mejoras no se pueden seleccionar en el oculto.** Hay que elegirlas por mecanismo y evidencia externa, y
+validarlas con compuertas mecanicas (repetir las peticiones guardadas `*_requests.jsonl` contra el servidor: tokens/s, longitud de
+aceptacion, TTFT, aciertos de cache).
+Mientras tanto, remuestrear sigue siendo palanca real: con media 25,8 y sd 3,9, el maximo esperado de 28 envios es **33,7**; con media 29,8 es
+37,7 y P(max > 36) = 0,81. Hoy el puesto 3-5 pide 34-36.
+
+#### Decision
+**Adoptar la copia fiel de Franzen como base** (`arc-agi3-franzen-m2`, sin ediciones: ya juega solo 10 juegos x 25 min fuera del rerun).
+Registrada (`franzenm2`) y verificada celda a celda; **NO lanzada**: el clasificador de permisos bloqueo el push porque no habia
+autorizacion explicita (Julian respondio "esperar a que termine la auditoria"). Siguiente: endurecimiento sin riesgo de modelo (items 1-4
+de arriba) y palancas con evidencia (historia mas profunda, FP8 en linea, aceptacion MTP relajada: las dos ultimas son afirmaciones de
+autor +28 % y 179 a 231 tok/s, sin validar).
+
+#### Coste y error propio
+El analisis multiagente consumio ~6,95 M de tokens de subagentes en 79 min y **agoto el limite de sesion** de Julian: fallaron el lector de
+servicio (su informe llego a disco), la consolidacion, la verificacion adversarial y la sintesis. Sobraron lectores: 11 agentes leyendo
+~500 KB de parche con ventanas solapadas era mas de lo que la decision necesitaba. Consolide a mano desde los informes
+(`_tmp_pub/audit/R*.md`, fuera de git). **Coste de GPU: 0.**

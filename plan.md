@@ -1,100 +1,61 @@
-# plan.md — nueva base y hoja de ruta hasta el cierre (2026-09-29)
+# plan.md — ruta hasta el cierre (actualizado 2026-10-03, tras la auditoría de mejoras públicas)
+
+Detalle y evidencia: `docs/DESIGN.md` §8.85. Informes de los lectores: `_tmp_pub/audit/R*.md` (fuera de git).
 
 ## 0. Situación
 
 | | |
 |---|---|
-| Nuestro mejor oculto | **3,98** (base NVFP4 v24 remuestreada), puesto ~304 de 3.485 |
-| Líder | Tufa Labs **45,33**; 2º 36,73; 10º 13,40; 20º 7,99; 50º 5,49 |
-| Mejor kernel **público** | `scottlegrand/taaf-flashnext-sheetu12b-0922` — **5,19** |
-| Hito #2 | **2026-09-30** (queda un envío: el del día 30) |
-| Inscripción / cierre final | 2026-10-26 / **2026-11-02** → ~33 envíos después del hito |
+| Nuestro mejor oculto | **4,79** (sheetu v1), puesto 543 de 3.618. Muestras sheetu: 3,78 / 2,49 / 4,79. Envío del 3-oct: ERROR de plataforma |
+| Líderes | Tufa Labs **52,51**, Yi-Chia Chen **48,07** (privados). Puestos 3-25: 31,7-35,8 |
+| Pelotón | ~480 equipos entre 20 y 40, mediana 26,9: copias de la solución pública de Franzen |
+| Franzen M2 sin cambios | reproducción independiente **27,80**; copias: media **25,77**, sd **3,93** |
+| Cierre | final **2026-11-02**, un envío por día |
 
-Los de arriba de 10 no publican: el techo alcanzable con código público hoy es ~5,2.
+## 1. Qué cambió respecto al plan anterior (S1-S4)
 
-## 1. La nueva base: `sheetu12b` (5,19)
+El plan anterior (S1 `action_effects`, S2 grafo, S3 funciones entre niveles, S4 simulador) se escribió sobre la base sheetu.
+La auditoría muestra que **casi todo queda obsoleto**:
 
-Autor Scott Le Grand, sobre el duck harness de Tufa Labs y el stack NVFP4 de keithtyser.
-**Mismo modelo, mismos datasets y mismo harness que nuestra v24.** Lo que cambia:
+| Item | Veredicto con Franzen como base |
+|---|---|
+| S3 funciones persistentes | **Ya incluido** (alcance juego, superconjunto sin curar). Hueco: un fallo del sandbox vacía la biblioteca |
+| S1 `action_effects` | Aplica con el ancla `runtime_globals["action"] = action`, pero 4 defectos propios y valor ~1,8 % de acciones |
+| S2 grafo | No se puede inyectar; fue neutro; su clave de estado incluye el HUD |
+| S4 simulador | Evidencia externa negativa (Carnot: 0 de 31 predicados) |
 
-| Capa | v24 (nuestra, 3,35 de media) | sheetu12b (5,19) |
-|---|---|---|
-| Modelo | Qwen3.8-Flash-Next NVFP4 (RadixArk), MTP 3 | igual |
-| Servicio vLLM | 8 secuencias, contexto 32K | **16 secuencias, contexto del analizador 16K** (mismo KV de 5 GiB) |
-| Imagen del tablero | escala x4 | **x12** (ARM P) |
-| Historial | reenvía todos los tableros | **F1**: sólo el tablero actual lleva imagen (los viejos eran ~26% del contexto) |
-| Memoria del agente | parser exacto; game over borra el modelo del mundo | **F3**: parser tolerante (`World model (revised):`), game over NO borra |
-| Animación | el modelo sólo ve el fotograma final | **F13**: los fotogramas intermedios, accesibles desde el sandbox Python |
-| Hoja de fotogramas | — | **F19**: una imagen con TODOS los fotogramas de la última acción, sin narración |
-| Instrumentación | — | TIMING (sólo logs) |
+Lo que sí explica el rendimiento público (los 3 ganadores del hito lo comparten): **historia larga retenida (69K-131K) + KV en FP8
++ observabilidad (UNDO, game over honesto, barra visible) + código del agente que persiste.** Nuestra base retenía 16K en BF16.
 
-Apagados por el autor tras medir: F2 resultado forzado, F4 guardia de bucles, F5 no-op con
-HUD, F6 ACTION7, F7 libro de efectos (texto), F10 estancamiento, resumen de animación en texto.
+## 2. Ruta nueva
 
-**La lección del autor coincide con la nuestra (8.73, 8.84):** *"Frames yes, narration no."*
-F13 (datos en el sandbox) movió el oculto 3,20 → 3,71; el MISMO contenido narrado como texto
-por el anfitrión bajó a 2,57. Nuestras notas de texto (7 brazos de memoria, mapa cognitivo)
-fallaron por la misma razón. **Regla de diseño que sale de aquí: lo que añadamos va como
-DATOS consultables o IMAGEN, nunca como nota narrada en el prompt.**
-
-## 2. Envío inicial
-
-- `juliancamilovilla/arc-agi3-sheetu` v1 (`notebooks/sheetu_long.ipynb`): el público verbatim
-  + nuestro recorte de ventana offline (sólo fuera del rerun). `scripts/build_sheetu_long.py`.
-- Tarea `ARC-AGI3-SubmitOneShot` rearmada al kernel sheetu: dispara 2026-09-29 23:40Z y
-  envía en cuanto abre el cupo del día 30. Es el envío del hito #2.
-- Riesgo: si el Save & Run falla antes, la tarea se devuelve a `arc-agi3-nvfp4`.
-
-## 3. Nuestras palancas que funcionaron — qué se añade
-
-| Palanca | Resultado en el oculto | ¿Se añade? |
-|---|---|---|
-| Cambio de base 27B → NVFP4 | 1,59 → 3,55 | ya incluido (misma base) |
-| Recorte de ventana offline | infraestructura, no puntaje | **sí**, ya añadido |
-| Remuestreo (el marcador toma el máximo) | 3,55 → 3,98 | **sí**, como política de envío |
-| Solver anim (animfast) | 3,27, sin efecto | no: sheetu ya trae F13+F19, mejor medido |
-| 11 injertos de texto, 7 brazos de memoria, batching, visión etiquetada, mapa | ninguno transfirió | **no** |
-
-Dicho claro: **ninguna palanca de agente nuestra ha transferido al oculto.** Lo que nos subió
-fue siempre adoptar una base mejor, y eso es exactamente lo que hacemos hoy.
-
-## 4. Palancas planeadas sobre la nueva base (AGENTS.md), rediseñadas con la regla del §1
-
-| Brazo | Qué | Forma (datos, no narración) | Coste |
+| # | Paso | Coste | Estado |
 |---|---|---|---|
-| **S0** | sheetu verbatim | control | — |
-| **S1** ✅ montado | **Punto 1 — predictor de efectos en vivo** (`src/arc3/sandbox_effects.py`, tests PASS incl. sandbox real; kernel `sheetueffects` registrado, no lanzado) | función `action_effects()` en el sandbox: por acción y por color clicado, cuántas veces cambió el tablero en el nivel (HUD ignorado); `action_effects(accion)` da `p_change` | CPU, cero tokens si no se consulta |
-| **S2** | **Punto 2 — grafo que actúa** | objeto `graph` en el sandbox: estados visitados, `graph.path_to(estado)` que devuelve la secuencia de acciones | CPU |
-| **S3** | **Punto 4 — biblioteca de funciones** | las funciones Python que el modelo definió y que precedieron a un nivel ganado sobreviven al siguiente nivel en el sandbox | pocos tokens |
-| **S4** | **Punto 3 — simulador del modelo** | el sandbox acepta un `step(state, action)` del modelo y le reporta su error de predicción contra el motor | muchos tokens; apuesta Paper Award |
-| — | Punto 5 (votación/verificador) | descartado: a ~10 tok/s no cabe | — |
+| 1 | **Base = copia fiel de Franzen** (`arc-agi3-franzen-m2`, registrada `franzenm2`, sin ediciones) | ~45-50 min de GPU de Save & Run | **preparada, NO lanzada: espera tu autorización** |
+| 2 | Re-armar la tarea diaria a esa base (con disparos tardíos de reintento ya añadidos) | 0 | tras el paso 1 |
+| 3 | **Endurecimiento sin riesgo de modelo**: biblioteca de funciones a prueba de fallos del sandbox, reintento del reinicio automático, vigilante del servidor SGLang, tope al `result` | CPU; validar con compuertas mecánicas | por hacer |
+| 4 | Palancas con evidencia externa: biblioteca de módulos con pruebas contra fotogramas grabados (Lord Han Solo), historia aún más profunda | GPU de compuerta | por decidir |
+| 5 | Reproducible sin GPU: banco mecánico por repetición de peticiones guardadas (`*_requests.jsonl`): tokens/s, aceptación, TTFT, caché | CPU/GPU corta | por construir |
+| — | Descartado hasta nueva evidencia: S2, S4, Swift 1.5, REAP, finetune de huikang, FP8 en línea y aceptación MTP relajada (afirmaciones de autor sin validar) | — | — |
 
-Orden: S1 → S2 → S3 → S4. S1 primero: es el más barato y ataca el denominador de la métrica.
+## 3. Reglas de evaluación (el oculto no selecciona)
 
-## 5. Protocolo de evaluación (el banco NO selecciona, r = −0,351)
+- Con sd 3,93: **4 contra 4 muestras detectan solo ~8 puntos**; 3 puntos pedirían ~27 corridas por brazo. No se promueve nada por un par de envíos.
+- Una mejora entra por **mecanismo + evidencia externa + compuerta mecánica**, no por su puntaje oculto.
+- Remuestrear sí es palanca: media 25,8 → E[máx de 28 envíos] ≈ 33,7; media 29,8 → 37,7 (P(máx>36) = 0,81). Puestos 3-5 hoy: 34-36.
+- Cada kernel experimental se aparta del control de Franzen: nunca dos cambios a la vez.
 
-1. **Banco de 60 min sólo como compuerta mecánica**: la inyección se activa, nada revienta,
-   tokens/acción no se disparan. Nunca para elegir.
-2. **La selección se hace en el oculto**, con los ~33 envíos:
-   - S0 recibe envíos intercalados durante todo el periodo (control y además remuestreo del máximo).
-   - Cada brazo recibe 2 muestras; si su media queda > 0,5 por debajo de la de S0, se corta;
-     si no, 2 más (4 muestras detectan +1,0 con sd 0,49).
-   - Nunca dos brazos a la vez sobre la misma base.
-3. En la última semana (≥ 2026-10-26) sólo se envía la mejor configuración, para explotar el máximo.
-
-## 6. Calendario
+## 4. Calendario
 
 | Fecha | Qué |
 |---|---|
-| 09-29 | sheetu v1 en Save & Run; tarea rearmada; plan.md |
-| 09-30 | envío sheetu (hito #2) |
-| 10-01 → 10-07 | S1 construido, compuerta de banco, 2+2 muestras; S0 intercalado |
-| 10-08 → 10-18 | S2 y S3 |
-| 10-19 → 10-25 | S4 si queda margen, o más muestras del mejor |
-| 10-26 → 11-02 | sólo la mejor configuración |
+| 10-03 | Franzen fiel en Save & Run **si autorizas hoy**; enviarlo hoy (el cupo del 3-oct sigue libre: su envío terminó en ERROR) |
+| 10-04 → 10-08 | envíos diarios de la base fiel (muestras y control); endurecimiento (paso 3) con pruebas locales |
+| 10-09 → 10-20 | primer brazo endurecido (2 muestras) y palanca con evidencia (paso 4) |
+| 10-21 → 11-02 | solo la mejor configuración; remuestreo diario |
 
-## 7. Atribución
+## 5. Atribución
 
-Scott Le Grand (agentfix, sheet, ARM P), keithtyser (stack NVFP4), Tufa Labs — Bessis,
-Cottaar, Pressman, Smit, Tesnar, Viel (duck harness). Todos públicos en la competición;
-nuestros derivados se publican abiertos (CC0/MIT-0 requerido para premio).
+Daniel Franzen (solución y parche), Tufa Labs (duck harness: Bessis, Cottaar, Pressman, Smit, Tesnar, Viel), John Pezzulli (Pennyroyal),
+Mamy Ratsimbazafy y Gabriel Olympie (parches de SGLang), Intel (AutoRound), Albucino (drafter MTP), Scott Le Grand y keithtyser (base anterior).
+Todos públicos en la competición; nuestros derivados se publican abiertos (CC0/MIT-0 exigido para premio).

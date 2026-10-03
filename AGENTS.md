@@ -3,10 +3,10 @@
 Guía para cualquier agente (humano o IA) que trabaje en este repo. El detalle vive en
 `docs/DESIGN.md`; aquí va lo que hay que saber antes de tocar nada y el plan vigente.
 
-## Estado (2026-09-29)
+## Estado (2026-10-03)
 
-**Plan vigente: `plan.md`** — nueva base `sheetu12b` (5,19 oculto, mejor kernel público),
-envío del hito #2 con ella, y los puntos 1-4 rediseñados como DATOS en el sandbox, no notas.
+**Plan vigente: `plan.md`** — la auditoría del 2026-10-03 (DESIGN 8.85) cambió la ruta: la base pasa a ser la copia fiel
+de la solución pública de Franzen (27,80 reproducido; copias: media 25,8, sd 3,9). S1-S4 quedan casi obsoletos.
 
 
 - **Mejor score oculto: 3,95** (base NVFP4 verbatim, `juliancamilovilla/arc-agi3-nvfp4`).

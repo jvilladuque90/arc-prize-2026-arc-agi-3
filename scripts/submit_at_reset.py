@@ -71,9 +71,17 @@ def main() -> int:
     try:
         for s in api.competition_submissions(COMP)[:5]:
             fecha = getattr(s, "date", None)
+            estado = str(getattr(s, "status", "")).upper()
             if fecha is not None and getattr(fecha, "date", lambda: None)() == hoy:
+                # Un envio que termino en ERROR/CANCELED (p. ej. "A system error. Please try
+                # resubmitting", 2026-10-03, ref 56784478) NO cuenta como el envio del dia:
+                # sin esta excepcion el 00:47Z y el 03:02Z lo daban por bueno mientras
+                # corria, y nada reintentaba despues de que fallara.
+                if "ERROR" in estado or "CANCEL" in estado:
+                    log(f"envio de hoy en {estado} (ref={getattr(s, 'ref', '?')}); se reintenta")
+                    continue
                 log(f"ya hay envio hoy UTC (ref={getattr(s, 'ref', '?')}, "
-                    f"{fecha}); no se reenvia")
+                    f"{fecha}, {estado}); no se reenvia")
                 return 0
     except Exception as exc:  # noqa: BLE001 — si la consulta falla, se intenta igual
         log(f"aviso: no pude comprobar envios de hoy ({type(exc).__name__}); sigo")

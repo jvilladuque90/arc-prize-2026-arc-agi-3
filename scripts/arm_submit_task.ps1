@@ -63,13 +63,19 @@ if ($Daily) {
     $triggers = @(
         (New-ScheduledTaskTrigger -Daily -At $startLocal),
         (New-ScheduledTaskTrigger -Daily -At $startLocal.AddMinutes(45)),
-        (New-ScheduledTaskTrigger -Daily -At $startLocal.AddHours(3))
+        (New-ScheduledTaskTrigger -Daily -At $startLocal.AddHours(3)),
+        # El rerun tarda ~9 h y un ERROR de sistema solo se ve DESPUES: estos dos disparos
+        # tardios reintentan (submit_at_reset.py ignora envios en ERROR/CANCELED).
+        (New-ScheduledTaskTrigger -Daily -At $startLocal.AddHours(10.5)),
+        (New-ScheduledTaskTrigger -Daily -At $startLocal.AddHours(14))
     )
 } else {
     $triggers = @(
         (New-ScheduledTaskTrigger -Once -At $startLocal),
         (New-ScheduledTaskTrigger -Once -At $startLocal.AddMinutes(45)),
-        (New-ScheduledTaskTrigger -Once -At $startLocal.AddHours(3))
+        (New-ScheduledTaskTrigger -Once -At $startLocal.AddHours(3)),
+        (New-ScheduledTaskTrigger -Once -At $startLocal.AddHours(10.5)),
+        (New-ScheduledTaskTrigger -Once -At $startLocal.AddHours(14))
     )
 }
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -MultipleInstances IgnoreNew `
@@ -85,6 +91,6 @@ $t = Get-ScheduledTask -TaskName $TaskName
 "tarea      : $TaskName  [$($t.State)]"
 "kernel     : $Kernel"
 "python     : $py"
-"disparos   : $startLocal, $($startLocal.AddMinutes(45)), $($startLocal.AddHours(3)) (local)  =  $StartUtc + 45m + 3h" + $(if ($Daily) { "  [CADA NOCHE]" } else { "  [una sola noche]" })
+"disparos   : $startLocal, $($startLocal.AddMinutes(45)), $($startLocal.AddHours(3)) (local)  =  $StartUtc + 45m + 3h + 10.5h + 14h" + $(if ($Daily) { "  [CADA NOCHE]" } else { "  [una sola noche]" })
 "reintenta  : hasta $MaxMinutes min o hasta que el cupo abra"
 "log        : $(Join-Path $root 'daily_submit.log')"

@@ -189,6 +189,21 @@ KERNELS = {
                      "model_sources": ["keithtyser/qwen3-8-flash-next-nvfp4/PyTorch/radixark-modelopt-fp4/1"],
                      "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                       "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # FRANZEN M2 (build_franzen_fork.py): NUEVA BASE, auditoria 2026-10-03. Copia FIEL del
+    # notebook publico dfranzen/arc-agi-3-milestone-2-solution: SGLang "Pennyroyal" + Qwen3.8-
+    # Flash-Next INT4 AutoRound + drafter MTP aparte + parche de ~500 KB sobre el duck harness +
+    # planificacion por prioridad de los 110 juegos. Reproduccion independiente sin cambios:
+    # 27,80 en el oculto; copias sin cambios: media 25,77, sd 3,93. Sin ediciones nuestras: fuera
+    # del rerun ya es barato (10 juegos publicos x 25 min). Imagen docker = la nuestra de siempre.
+    "franzenm2": {"notebook": "notebooks/franzen_m2.ipynb",
+                  "slug": "arc-agi3-franzen-m2",
+                  "title": "arc agi3 franzen m2",
+                  "default_datasets": ["dfranzen/pennyroyal-v253",
+                                       "dfranzen/taaf-kaggle-source-bundle-copy"],
+                  "model_sources": ["dfranzen/albucino-qwen3-8-flash-next-drafter/Transformers/default/1",
+                                    "dfranzen/intel-qwen3.8-flash-next-w4a16-autoround/Transformers/default/1"],
+                  "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                   "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # SHEETU (build_sheetu_long.py): NUEVA BASE, plan.md. El mejor kernel publico al 2026-09-29
     # (5,19 oculto): stack NVFP4 de keithtyser + AGENTFIX de Scott Le Grand (IMAGES, MEMORY,
     # TIMING encendidos). Imagen docker PROPIA del kernel publico, no la nuestra de v24.

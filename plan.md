@@ -31,8 +31,8 @@ Lo que sí explica el rendimiento público (los 3 ganadores del hito lo comparte
 
 | # | Paso | Coste | Estado |
 |---|---|---|---|
-| 1 | **Base = copia fiel de Franzen** (`arc-agi3-franzen-m2`, registrada `franzenm2`, sin ediciones) | ~45-50 min de GPU de Save & Run | **preparada, NO lanzada: espera tu autorización** |
-| 2 | Re-armar la tarea diaria a esa base (con disparos tardíos de reintento ya añadidos) | 0 | tras el paso 1 |
+| 1 | **Base = copia fiel de Franzen** (`arc-agi3-franzen-m2` v1, sin ediciones) | 35 min de GPU de Save & Run | **hecho 2026-10-03**: compuerta local 10 juegos x 25 min = **46,31** (47 niveles, 1.358 acciones, servidor listo a 523 s); enviada, ref 56803691 |
+| 2 | Tarea diaria re-armada a esa base, 5 disparos/día (20:02, 20:47, 23:02, 06:32, 10:02 locales; ignora envíos en ERROR) | 0 | **hecho** |
 | 3 | **Endurecimiento sin riesgo de modelo**: biblioteca de funciones a prueba de fallos del sandbox, reintento del reinicio automático, vigilante del servidor SGLang, tope al `result` | CPU; validar con compuertas mecánicas | por hacer |
 | 4 | Palancas con evidencia externa: biblioteca de módulos con pruebas contra fotogramas grabados (Lord Han Solo), historia aún más profunda | GPU de compuerta | por decidir |
 | 5 | Reproducible sin GPU: banco mecánico por repetición de peticiones guardadas (`*_requests.jsonl`): tokens/s, aceptación, TTFT, caché | CPU/GPU corta | por construir |
@@ -49,7 +49,7 @@ Lo que sí explica el rendimiento público (los 3 ganadores del hito lo comparte
 
 | Fecha | Qué |
 |---|---|
-| 10-03 | Franzen fiel en Save & Run **si autorizas hoy**; enviarlo hoy (el cupo del 3-oct sigue libre: su envío terminó en ERROR) |
+| 10-03 | Franzen fiel lanzada (13:08) y **enviada hoy** (17:51Z, ref 56803691); el cupo del 3-oct estaba libre porque su envío terminó en ERROR |
 | 10-04 → 10-08 | envíos diarios de la base fiel (muestras y control); endurecimiento (paso 3) con pruebas locales |
 | 10-09 → 10-20 | primer brazo endurecido (2 muestras) y palanca con evidencia (paso 4) |
 | 10-21 → 11-02 | solo la mejor configuración; remuestreo diario |

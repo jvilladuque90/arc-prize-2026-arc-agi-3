@@ -204,6 +204,18 @@ KERNELS = {
                                     "dfranzen/intel-qwen3.8-flash-next-w4a16-autoround/Transformers/default/1"],
                   "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                    "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # H1 SOBRE FRANZEN (build_franzen_h1.py): brazo de endurecimiento, plan.md paso 3. Copia fiel de
+    # Franzen + UNA celda: la biblioteca de funciones sobrevive a un timeout del sandbox y un result
+    # enorme se recorta. Una variable, sin riesgo de modelo.
+    "franzenh1": {"notebook": "notebooks/franzen_h1.ipynb",
+                  "slug": "arc-agi3-franzen-h1",
+                  "title": "arc agi3 franzen h1",
+                  "default_datasets": ["dfranzen/pennyroyal-v253",
+                                       "dfranzen/taaf-kaggle-source-bundle-copy"],
+                  "model_sources": ["dfranzen/albucino-qwen3-8-flash-next-drafter/Transformers/default/1",
+                                    "dfranzen/intel-qwen3.8-flash-next-w4a16-autoround/Transformers/default/1"],
+                  "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                   "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # SHEETU (build_sheetu_long.py): NUEVA BASE, plan.md. El mejor kernel publico al 2026-09-29
     # (5,19 oculto): stack NVFP4 de keithtyser + AGENTFIX de Scott Le Grand (IMAGES, MEMORY,
     # TIMING encendidos). Imagen docker PROPIA del kernel publico, no la nuestra de v24.

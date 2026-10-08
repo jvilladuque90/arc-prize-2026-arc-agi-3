@@ -1,61 +1,61 @@
-# plan.md — ruta hasta el cierre (actualizado 2026-10-03, tras la auditoría de mejoras públicas)
+# plan.md — estado y ruta hasta el cierre (actualizado 2026-10-08)
 
-Detalle y evidencia: `docs/DESIGN.md` §8.85. Informes de los lectores: `_tmp_pub/audit/R*.md` (fuera de git).
+Evidencia: `docs/DESIGN.md` §8.85. Informes de la auditoría: `_tmp_pub/audit/R*.md` (fuera de git).
 
-## 0. Situación
+## 0. Situación (2026-10-08)
 
 | | |
 |---|---|
-| Nuestro mejor oculto | **4,79** (sheetu v1), puesto 543 de 3.618. Muestras sheetu: 3,78 / 2,49 / 4,79. Envío del 3-oct: ERROR de plataforma |
-| Líderes | Tufa Labs **52,51**, Yi-Chia Chen **48,07** (privados). Puestos 3-25: 31,7-35,8 |
-| Pelotón | ~480 equipos entre 20 y 40, mediana 26,9: copias de la solución pública de Franzen |
-| Franzen M2 sin cambios | reproducción independiente **27,80**; copias: media **25,77**, sd **3,93** |
-| Cierre | final **2026-11-02**, un envío por día |
+| Base | **Franzen M2 fiel** (`arc-agi3-franzen-m2` v1), 6 muestras ocultas: 25,01 / 25,17 / 23,39 / 27,15 / 27,63 / 25,97 → **media 25,7, sd 1,6** |
+| Nuestro mejor | **27,63** (puesto 651 de ~3.700) |
+| Leaderboard | Tufa 55,89, Yi-Chia Chen 55,77, 3º 42,66; #10 = 37,1; #25 = 33,8; #100 = 31,8 |
+| Envío automático diario | **APAGADO** (decisión de Julian, 2026-10-08). Los envíos son manuales o de un solo disparo |
+| Cierre | 2026-11-02, un envío por día → quedan ~25 |
 
-## 1. Qué cambió respecto al plan anterior (S1-S4)
+Lectura: el pelotón de copias de Franzen ya está en 31-37 por pura suerte de cola alta. Con media 25,7 y sd 1,6 un máximo
+de muchos envíos rondará 29-30, **no alcanza el top 10**. Para pelear el top 5 (≥ 40) hace falta subir la **media** de verdad.
 
-El plan anterior (S1 `action_effects`, S2 grafo, S3 funciones entre niveles, S4 simulador) se escribió sobre la base sheetu.
-La auditoría muestra que **casi todo queda obsoleto**:
+## 1. Estado del plan original (puntos 1-5 y S1-S4)
 
-| Item | Veredicto con Franzen como base |
-|---|---|
-| S3 funciones persistentes | **Ya incluido** (alcance juego, superconjunto sin curar). Hueco: un fallo del sandbox vacía la biblioteca |
-| S1 `action_effects` | Aplica con el ancla `runtime_globals["action"] = action`, pero 4 defectos propios y valor ~1,8 % de acciones |
-| S2 grafo | No se puede inyectar; fue neutro; su clave de estado incluye el HUD |
-| S4 simulador | Evidencia externa negativa (Carnot: 0 de 31 predicados) |
+| Punto original | Qué se hizo | Estado hoy |
+|---|---|---|
+| 1 / S1 predictor de efectos | `action_effects()` en el sandbox, probado con el sandbox real (8 pruebas). Sobre Franzen no aplica tal cual (ancla nueva: `runtime_globals["action"] = action`) y tiene 4 defectos propios; valor medido ~1,8 % de acciones | **aparcado**; reanclar solo si sobra tiempo |
+| 2 / S2 grafo de estados | construido, probado 2 veces en banco: v1 −(bug de vocabulario), v2 **neutro** (21 vs 19 niveles, p=1,0). No se puede inyectar en Franzen | **descartado** como nota; solo valdría una variante que actúe |
+| 3 / S4 simulador del modelo | sin construir; evidencia externa negativa (Carnot: 0 de 31 predicados) | **descartado** por ahora |
+| 4 / S3 biblioteca de funciones | **ya viene en Franzen** (persistentes, alcance juego). Hueco: un timeout vacía la biblioteca | **H1 en curso** (arreglo) y H2 (retención con pruebas) |
+| 5 razonamiento extra (votación) | descartado: no cabe en el reloj | descartado |
+| Cambio de base | 3,3 → 4,8 (sheetu) → **25,7 (Franzen)**; es la única palanca que ha movido el puntaje | **hecho** |
 
-Lo que sí explica el rendimiento público (los 3 ganadores del hito lo comparten): **historia larga retenida (69K-131K) + KV en FP8
-+ observabilidad (UNDO, game over honesto, barra visible) + código del agente que persiste.** Nuestra base retenía 16K en BF16.
+## 2. Brazos sobre la base nueva (una variable cada uno)
 
-## 2. Ruta nueva
+Evaluación oculta: control = las 6 muestras de Franzen (media 25,7, sd 1,6). Con 3 muestras por brazo se detecta ~+4 puntos;
+efectos menores no se pueden confirmar y entran solo por mecanismo + compuerta mecánica (DESIGN 8.85).
 
-| # | Paso | Coste | Estado |
+| Brazo | Qué cambia | Por qué | Estado |
 |---|---|---|---|
-| 1 | **Base = copia fiel de Franzen** (`arc-agi3-franzen-m2` v1, sin ediciones) | 35 min de GPU de Save & Run | **hecho 2026-10-03**: compuerta local 10 juegos x 25 min = **46,31** (47 niveles, 1.358 acciones, servidor listo a 523 s); enviada, ref 56803691 |
-| 2 | Tarea diaria re-armada a esa base, 5 disparos/día (20:02, 20:47, 23:02, 06:32, 10:02 locales; ignora envíos en ERROR) | 0 | **hecho** |
-| 3 | **Endurecimiento sin riesgo de modelo**: biblioteca de funciones a prueba de fallos del sandbox, reintento del reinicio automático, vigilante del servidor SGLang, tope al `result` | CPU; validar con compuertas mecánicas | por hacer |
-| 4 | Palancas con evidencia externa: biblioteca de módulos con pruebas contra fotogramas grabados (Lord Han Solo), historia aún más profunda | GPU de compuerta | por decidir |
-| 5 | Reproducible sin GPU: banco mecánico por repetición de peticiones guardadas (`*_requests.jsonl`): tokens/s, aceptación, TTFT, caché | CPU/GPU corta | por construir |
-| — | Descartado hasta nueva evidencia: S2, S4, Swift 1.5, REAP, finetune de huikang, FP8 en línea y aceptación MTP relajada (afirmaciones de autor sin validar) | — | — |
+| **H1** endurecimiento | la biblioteca de funciones sobrevive a un timeout/caída del sandbox; un `result` enorme se recorta | defectos verificados en el `ToolAgent` real; aplica a cualquier juego que busque con BFS | **Save & Run en curso** (lanzado 15:08); 8/8 pruebas |
+| **H2** retención con pruebas | una función solo se guarda si pasa contra fotogramas grabados (precedente: Lord Han Solo 23,8) | calidad de la biblioteca: hoy "todo lo válido se queda" | por diseñar |
+| **D1** historia más profunda | menos plazas simultáneas (10→8) y desalojo hasta ~70K en vez de 59K | los 3 ganadores públicos retienen 69K-131K; evidencia de +8 (Siriki) en otra base | solo variables de entorno; por decidir (compromete rendimiento por plaza) |
+| **R1** banco mecánico | repetir peticiones guardadas contra el servidor: tokens/s, aceptación, TTFT, caché | única forma de validar cambios de servicio sin gastar días de envío | por construir |
+| descartados | FP8 en línea, aceptación MTP relajada (afirmaciones de autor sin validar), Swift 1.5, REAP, finetune | no se pueden validar con el ruido actual | — |
 
-## 3. Reglas de evaluación (el oculto no selecciona)
-
-- Con sd 3,93: **4 contra 4 muestras detectan solo ~8 puntos**; 3 puntos pedirían ~27 corridas por brazo. No se promueve nada por un par de envíos.
-- Una mejora entra por **mecanismo + evidencia externa + compuerta mecánica**, no por su puntaje oculto.
-- Remuestrear sí es palanca: media 25,8 → E[máx de 28 envíos] ≈ 33,7; media 29,8 → 37,7 (P(máx>36) = 0,81). Puestos 3-5 hoy: 34-36.
-- Cada kernel experimental se aparta del control de Franzen: nunca dos cambios a la vez.
-
-## 4. Calendario
+## 3. Calendario (un envío por día)
 
 | Fecha | Qué |
 |---|---|
-| 10-03 | Franzen fiel lanzada (13:08) y **enviada hoy** (17:51Z, ref 56803691); el cupo del 3-oct estaba libre porque su envío terminó en ERROR |
-| 10-04 → 10-08 | envíos diarios de la base fiel (muestras y control); endurecimiento (paso 3) con pruebas locales |
-| 10-09 → 10-20 | primer brazo endurecido (2 muestras) y palanca con evidencia (paso 4) |
-| 10-21 → 11-02 | solo la mejor configuración; remuestreo diario |
+| 10-08 | H1 Save & Run (15:08). Si pasa la compuerta, envío de un solo disparo a las 20:02 locales (00:02Z del 9) |
+| 10-09 → 10-11 | H1: 3 muestras. Mientras tanto, diseño de H2 y D1 |
+| 10-12 → 10-18 | brazo siguiente (H2 o D1 según lo que enseñe H1) con 3 muestras |
+| 10-19 → 10-27 | tercer brazo; el mejor se acumula sobre la base |
+| 10-28 → 11-02 | solo la mejor configuración, envío diario (máximo de N) |
+
+## 4. Reglas
+
+- Nada de notas narradas en el prompt ("frames yes, narration no"); lo que se añada va como datos o código.
+- Un cambio por brazo; toda GPU se anuncia y se autoriza antes de lanzarla.
+- El banco local no selecciona; solo es compuerta mecánica.
 
 ## 5. Atribución
 
-Daniel Franzen (solución y parche), Tufa Labs (duck harness: Bessis, Cottaar, Pressman, Smit, Tesnar, Viel), John Pezzulli (Pennyroyal),
-Mamy Ratsimbazafy y Gabriel Olympie (parches de SGLang), Intel (AutoRound), Albucino (drafter MTP), Scott Le Grand y keithtyser (base anterior).
-Todos públicos en la competición; nuestros derivados se publican abiertos (CC0/MIT-0 exigido para premio).
+Daniel Franzen (solución y parche), Tufa Labs (duck harness), John Pezzulli (Pennyroyal), Mamy Ratsimbazafy y Gabriel Olympie
+(parches de SGLang), Intel (AutoRound), Albucino (drafter MTP). Nuestros derivados se publican abiertos.

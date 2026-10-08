@@ -33,9 +33,9 @@ efectos menores no se pueden confirmar y entran solo por mecanismo + compuerta m
 
 | Brazo | Qué cambia | Por qué | Estado |
 |---|---|---|---|
-| **H1** endurecimiento | la biblioteca de funciones sobrevive a un timeout/caída del sandbox; un `result` enorme se recorta | defectos verificados en el `ToolAgent` real; aplica a cualquier juego que busque con BFS | **Save & Run en curso** (lanzado 15:08); 8/8 pruebas |
+| **H1** endurecimiento | la biblioteca de funciones sobrevive a un timeout/caída del sandbox; un `result` enorme se recorta | defectos verificados en el `ToolAgent` real | compuerta local **46,63** (control 46,31); envío de un solo disparo armado 2026-10-09 00:02Z |
 | **H2** retención con pruebas | una función solo se guarda si pasa contra fotogramas grabados (precedente: Lord Han Solo 23,8) | calidad de la biblioteca: hoy "todo lo válido se queda" | por diseñar |
-| **D1** historia más profunda | menos plazas simultáneas (10→8) y desalojo hasta ~70K en vez de 59K | los 3 ganadores públicos retienen 69K-131K; evidencia de +8 (Siriki) en otra base | solo variables de entorno; por decidir (compromete rendimiento por plaza) |
+| **D1** historia más profunda | 8 plazas (en vez de 10) y desalojo de 24K en vez de 58K (+19 % de historia a igual KV) | los 3 ganadores públicos retienen 69K-131K; +8 de Siriki en otra base | **compuerta local NEGATIVA (2026-10-08)**: 29,76 contra 46,31; 29 % menos acciones y 17 % menos tok/s. Sin envío oculto salvo que Julian lo pida |
 | **R1** banco mecánico | repetir peticiones guardadas contra el servidor: tokens/s, aceptación, TTFT, caché | única forma de validar cambios de servicio sin gastar días de envío | por construir |
 | descartados | FP8 en línea, aceptación MTP relajada (afirmaciones de autor sin validar), Swift 1.5, REAP, finetune | no se pueden validar con el ruido actual | — |
 

@@ -216,6 +216,16 @@ KERNELS = {
                                     "dfranzen/intel-qwen3.8-flash-next-w4a16-autoround/Transformers/default/1"],
                   "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                    "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # D1 SOBRE FRANZEN (build_franzen_d1.py): historia mas profunda a igual KV (8 plazas, desalojo 24K).
+    "franzend1": {"notebook": "notebooks/franzen_d1.ipynb",
+                  "slug": "arc-agi3-franzen-d1",
+                  "title": "arc agi3 franzen d1",
+                  "default_datasets": ["dfranzen/pennyroyal-v253",
+                                       "dfranzen/taaf-kaggle-source-bundle-copy"],
+                  "model_sources": ["dfranzen/albucino-qwen3-8-flash-next-drafter/Transformers/default/1",
+                                    "dfranzen/intel-qwen3.8-flash-next-w4a16-autoround/Transformers/default/1"],
+                  "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                   "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # SHEETU (build_sheetu_long.py): NUEVA BASE, plan.md. El mejor kernel publico al 2026-09-29
     # (5,19 oculto): stack NVFP4 de keithtyser + AGENTFIX de Scott Le Grand (IMAGES, MEMORY,
     # TIMING encendidos). Imagen docker PROPIA del kernel publico, no la nuestra de v24.

@@ -4216,3 +4216,29 @@ El analisis multiagente consumio ~6,95 M de tokens de subagentes en 79 min y **a
 servicio (su informe llego a disco), la consolidacion, la verificacion adversarial y la sintesis. Sobraron lectores: 11 agentes leyendo
 ~500 KB de parche con ventanas solapadas era mas de lo que la decision necesitaba. Consolide a mano desde los informes
 (`_tmp_pub/audit/R*.md`, fuera de git). **Coste de GPU: 0.**
+
+### 8.86. Primeros brazos sobre Franzen: H1 pasa, D1 falla, A se descarta (2026-10-08)
+
+**Base**: 6 muestras ocultas de Franzen sin cambios (3-oct a 8-oct): 25,01 / 25,17 / 23,39 / 27,15 / 27,63 / 25,97, media 25,7, sd 1,6. Tarea diaria apagada.
+
+| brazo | cambio | compuerta local (10 juegos x 25 min) |
+|---|---|---|
+| control | ninguno | 46,31 · 47 niveles · 1.358 acciones · 585 tok/s |
+| **H1** | la biblioteca de funciones sobrevive a un timeout del sandbox; `result` enorme recortado (verificado en el ToolAgent real: 0 funciones tras timeout en el original, conservadas en H1; 270 KB baja a 12,8 KB) | **46,63** · 1.427 acciones · 558 tok/s |
+| **D1** | 8 plazas y desalojo de 24K (historia +19 % a igual KV) | **29,76** · ~30 niveles · 963 acciones (-29 %) · 486 tok/s (-17 %) |
+
+D1 falla por rendimiento por plaza, no por falta de historia. No se envia al oculto. H1 se envia (un solo disparo, 9-oct 00:02Z).
+
+**A (primera ronda mas corta del planificador): descartado por el simulador de CPU.** Medido en las demos: T1 (primer recorte) ~18,5 min,
+primera ronda de 110 juegos con 10 plazas ~203 min de 532. Pero la curva media de puntaje es **casi lineal, ~2,2 puntos/min** durante
+los primeros 15 min; las curvas por juego son heterogeneas (ft09, sb26, r11l, re86 se estancan hacia el minuto 10-15; ar25, tr87, sc25,
+vc33, tu93 siguen subiendo) y los estancados no se distinguen de los que tardan en arrancar (sc25 y ar25 estan planos hasta el minuto 10 y
+luego suben). El bache de ritmo alrededor del primer recorte (1,4-1,7 contra 2,2) cae dentro del ruido (EE ~1 punto/min con 20 curvas).
+Con solo 25 min de horizonte el simulador ademas no puede evaluar reparto mas alla de 25 min por juego. Sin concavidad no hay beneficio de
+repartir en amplitud: A no se construye.
+
+**Hallazgo estructural**: en las demos los niveles completados puntuan ~100 (eficiencia >= 1, p. ej. ft09 4/6 = 47,62 = 10/21 exacto): el tope
+por fraccion ponderada de niveles es el que manda. **El puntaje esta limitado por niveles completados, no por eficiencia de acciones**, lo que
+resta valor a S1/S2 y a cualquier recorte de acciones desperdiciadas. Palancas de rendimiento que quedan (auditoria R07, todas pequenas):
+ocupacion de plazas (8,2-9,2 de 10; cada 5 s de herramienta por turno cuesta ~20 % de tokens), gate a 12, profundidad MTP 4 (+4-6 %), escalas
+de KV calibradas.

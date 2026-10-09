@@ -561,3 +561,4 @@ changes the strategy.*
 | 2026-10-08 | **H1 passes the gate (46.63 vs 46.31); D1 fails it (29.76).** D1 = 8 slots + 24K drain: 29% fewer actions and 17% less tok/s on the same clock. The bottleneck is per-slot throughput, not history depth | plan.md |
 | 2026-10-08 | **A (scheduler) dropped by CPU simulator.** Mean curve almost linear (~2.2 points/min), no concavity, trim dip inside noise. Finding: score is limited by levels completed (efficiency >= 1), not by actions | DESIGN 8.86 |
 | 2026-10-09 | **G15: Franzen scores 5.38 on the 15 games its demo excludes (46.3 on the 10 it picks).** Mix 21.7 ≈ 25.7 hidden. First level: 2.6 min (easy) vs 11.6 (hard). The gap is speed of understanding, not system | DESIGN 8.87 |
+| 2026-10-09 | **E1: Franzen runs at reasoning_effort=xhigh (template default).** Option B (Swift 1.5) gated: on agentic work its total tokens rise 11.9%. Mechanism tested with medium/low on the 15 hard games | DESIGN 8.88 |

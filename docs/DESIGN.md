@@ -4264,3 +4264,23 @@ tokens muerde a partir de ~90K por nivel y los niveles dificiles cuestan 35-40K)
 de GPU; la compuerta facil se repite a +-0,5 (47,14 / 46,31 / 46,63) y G15 aun no tiene repeticion. (2) Ninguna palanca fina cierra la brecha; el
 techo de las palancas baratas conocidas es ~+2-4 puntos. (3) Los dos primeros puestos (55,9 / 55,8) resuelven, de algun modo, la mayoria de los
 juegos dificiles.
+
+### 8.88. E1: el esfuerzo de razonamiento por defecto es xhigh (2026-10-09)
+
+La plantilla de chat de Qwen3.8-Flash-Next usa `reasoning_effort` con valor por defecto **`xhigh`** (acepta `xhigh`, `medium`, `low`):
+xhigh inyecta en el prompt del sistema "piensa con cuidado, valida supuestos clave, considera alternativas, prioriza la correccion";
+`low` inyecta "piensa breve, ve directo a la conclusion"; `medium` no inyecta ninguna instruccion. Franzen corre todo en xhigh (su
+escalera de esfuerzo solo baja tras una truncacion y esta apagada). En los 15 juegos dificiles el modelo gasta ~2.200 tokens por accion y
+el 3,5 % de las respuestas (>= 11K tokens) consume el 19 % de los tokens (transcript de cd82: razonamiento valido pero muy largo).
+
+**Opcion B (Swift 1.5) evaluada y condicionada a este mecanismo.** Swift es un ajuste fino de razonamiento eficiente: -45 % a -63 % de tokens
+en tareas de una pregunta, pero en la unica prueba agentica (Terminal-Bench 2.1) los tokens TOTALES suben 11,9 % (40.591 a 45.428; su
+fila "-17,9 %" parece la mediana), con MTP desactivado en su evaluacion y sin datos de SM120. Servirlo exigiria reescribir el lanzador
+(auto-round, hashes de tokenizador, vista del drafter, mapa FR-Spec), ningun kernel publico sirve un NVFP4 como modelo PRINCIPAL en SGLang
+(sirikilohit usa INT4 principal + drafter NVFP4) y el NVFP4 pesa ~+2,5 GiB mas, con lo que el pool de KV baja ~20 % (D1 mostro que
+menos plazas cuestan ~29 % de acciones). Antes de esa ingenieria se prueba el MECANISMO con el modelo actual.
+
+**E1** (`src/arc3/franzen_effort.py`, 11 pruebas en el ToolAgent real): `ARC3_STATIC_REASONING_EFFORT` fija el esfuerzo desde el inicio por
+el mismo camino que la escalera de Franzen. Dos kernels de diagnostico sobre los 15 juegos dificiles (referencia G15 con xhigh: 5,38 de media,
+17 niveles, 1.097 acciones, 1.266.120 tokens): `arc-agi3-e1-med-g15` y `arc-agi3-e1-low-g15`. Se mira primero acciones, tokens por accion,
+niveles y tiempo al primer nivel; si el razonamiento mas corto acelera la comprension, B gana sentido; si no, B se descarta.

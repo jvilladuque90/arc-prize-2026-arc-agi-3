@@ -4242,3 +4242,25 @@ por fraccion ponderada de niveles es el que manda. **El puntaje esta limitado po
 resta valor a S1/S2 y a cualquier recorte de acciones desperdiciadas. Palancas de rendimiento que quedan (auditoria R07, todas pequenas):
 ocupacion de plazas (8,2-9,2 de 10; cada 5 s de herramienta por turno cuesta ~20 % de tokens), gate a 12, profundidad MTP 4 (+4-6 %), escalas
 de KV calibradas.
+
+### 8.87. G15: el oculto es una mezcla de juegos faciles y dificiles; la brecha es velocidad de comprension (2026-10-09)
+
+Franzen FIEL jugando los 15 juegos publicos que su demo excluye (`arc-agi3-franzen-g15`, 39 min, servidor listo sin errores):
+**media 5,38**, mediana 2,52, 1.097 acciones, 12 de 15 puntuan > 0 y 3 sacan 0 (cd82, g50t, sk48). En los 10 que su demo elige: 46,3.
+Mezcla de los 25 publicos = (10 x 46,3 + 15 x 5,4) / 25 = **21,7**, coherente con el 25,7 medio del oculto (que da ~2x el tiempo por juego).
+**El oculto es, en esencia, ~40 % de juegos que se resuelven (~46) y ~60 % que casi no avanzan (~5).**
+
+| | faciles (control, 10) | dificiles (G15, 15) |
+|---|---|---|
+| 1er nivel (mediana) | **2,6 min** | **11,6 min** (3 de 15 no lo completan en 37 min) |
+| siguientes niveles (mediana) | 3,3 min | ~10,8 min |
+| tokens por accion | ~600 | ~2.200 (cd82: 31 acciones en 37 min) |
+
+Los transcripts de los dificiles muestran razonamiento genuino (cd82: estados de inclinacion de una taza, hipotesis y experimentos), pero muy
+lento por accion. La brecha de rendimiento es de **velocidad de comprension de la mecanica**, no de sistema: ni el planificador (el castigo por
+tokens muerde a partir de ~90K por nivel y los niveles dificiles cuestan 35-40K), ni la ocupacion (+4-7 %), ni el contexto.
+
+**Consecuencias**: (1) el instrumento de evaluacion correcto es el **puntaje ponderado de dos compuertas** (0,4 x facil + 0,6 x dificil), unos 85 min
+de GPU; la compuerta facil se repite a +-0,5 (47,14 / 46,31 / 46,63) y G15 aun no tiene repeticion. (2) Ninguna palanca fina cierra la brecha; el
+techo de las palancas baratas conocidas es ~+2-4 puntos. (3) Los dos primeros puestos (55,9 / 55,8) resuelven, de algun modo, la mayoria de los
+juegos dificiles.

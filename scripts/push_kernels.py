@@ -254,6 +254,16 @@ KERNELS = {
                                 "dfranzen/intel-qwen3.8-flash-next-w4a16-autoround/Transformers/default/1"],
               "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
                                "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
+    # E1 MEDIUM ENVIABLE (build_franzen_e1.py sobre franzen_m2): reasoning_effort=medium desde el inicio. Su Save & Run
+    # (10 juegos x 25 min) es tambien la compuerta de los faciles. DESIGN 8.89.
+    "e1msub": {"notebook": "notebooks/franzen_e1m.ipynb",
+               "slug": "arc-agi3-e1-med",
+               "title": "arc agi3 e1 med",
+               "default_datasets": ["dfranzen/pennyroyal-v253", "dfranzen/taaf-kaggle-source-bundle-copy"],
+               "model_sources": ["dfranzen/albucino-qwen3-8-flash-next-drafter/Transformers/default/1",
+                                 "dfranzen/intel-qwen3.8-flash-next-w4a16-autoround/Transformers/default/1"],
+               "docker_image": ("gcr.io/kaggle-private-byod/python@sha256:"
+                                "57e612b484cf3df5026ee4dcc3cb176974b22b2bc0937fb1e16132a8be4cb13c")},
     # SHEETU (build_sheetu_long.py): NUEVA BASE, plan.md. El mejor kernel publico al 2026-09-29
     # (5,19 oculto): stack NVFP4 de keithtyser + AGENTFIX de Scott Le Grand (IMAGES, MEMORY,
     # TIMING encendidos). Imagen docker PROPIA del kernel publico, no la nuestra de v24.

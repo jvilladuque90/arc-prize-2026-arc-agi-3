@@ -562,3 +562,4 @@ changes the strategy.*
 | 2026-10-08 | **A (scheduler) dropped by CPU simulator.** Mean curve almost linear (~2.2 points/min), no concavity, trim dip inside noise. Finding: score is limited by levels completed (efficiency >= 1), not by actions | DESIGN 8.86 |
 | 2026-10-09 | **G15: Franzen scores 5.38 on the 15 games its demo excludes (46.3 on the 10 it picks).** Mix 21.7 ≈ 25.7 hidden. First level: 2.6 min (easy) vs 11.6 (hard). The gap is speed of understanding, not system | DESIGN 8.87 |
 | 2026-10-09 | **E1: Franzen runs at reasoning_effort=xhigh (template default).** Option B (Swift 1.5) gated: on agentic work its total tokens rise 11.9%. Mechanism tested with medium/low on the 15 hard games | DESIGN 8.88 |
+| 2026-10-09 | **E1-medium: 15 hard games 5.38 → 16.66 (x3.1), 17 → 32 levels, +44% actions; 11 better/3 equal/1 worse (p=0.006).** Default xhigh makes the model over-think; medium acts and experiments more | DESIGN 8.89 |

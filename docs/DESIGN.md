@@ -4284,3 +4284,20 @@ menos plazas cuestan ~29 % de acciones). Antes de esa ingenieria se prueba el ME
 el mismo camino que la escalera de Franzen. Dos kernels de diagnostico sobre los 15 juegos dificiles (referencia G15 con xhigh: 5,38 de media,
 17 niveles, 1.097 acciones, 1.266.120 tokens): `arc-agi3-e1-med-g15` y `arc-agi3-e1-low-g15`. Se mira primero acciones, tokens por accion,
 niveles y tiempo al primer nivel; si el razonamiento mas corto acelera la comprension, B gana sentido; si no, B se descarta.
+
+### 8.89. E1-medium: 5,38 → 16,66 en los 15 juegos dificiles (2026-10-09)
+
+`arc-agi3-e1-med-g15` (Franzen fiel, unica diferencia `reasoning_effort=medium` en lugar del `xhigh` por defecto), mismos 15 juegos y mismo contrato (tope 37,5 min):
+
+| | xhigh (G15) | **medium** |
+|---|---|---|
+| media / mediana | 5,38 / 2,52 | **16,66** / 6,67 |
+| niveles completados | 17 | **32** |
+| acciones | 1.097 | **1.583** (+44 %) |
+| tokens totales / por accion | 1.266.120 / 1.154 | 1.387.444 / 876 |
+| juegos mejor / igual / peor | | **11 / 3 / 1**, signos p = 0,006 |
+
+Mayores saltos: ka59 10,7 a 50,4; tn36 10,7 a 75,0; sp80 4,8 a 28,6; s5i5 2,5 a 16,7. Unico peor: lf52 5,5 a 1,8. Servidor listo a 538 s, sin errores.
+Mecanismo: `xhigh` inyecta "valida supuestos clave, considera alternativas, prioriza la correccion"; sin ella el modelo experimenta mas
+(+44 % de acciones con +10 % de tokens), que es lo que acelera la comprension de las mecanicas (DESIGN 8.87). Una sola corrida: la magnitud es
+incierta, el signo no. Pendiente: `low`, y la compuerta de los 10 faciles con medium (el kernel enviable `arc-agi3-e1-med` la da).

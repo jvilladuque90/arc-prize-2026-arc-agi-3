@@ -4301,3 +4301,18 @@ Mayores saltos: ka59 10,7 a 50,4; tn36 10,7 a 75,0; sp80 4,8 a 28,6; s5i5 2,5 a 
 Mecanismo: `xhigh` inyecta "valida supuestos clave, considera alternativas, prioriza la correccion"; sin ella el modelo experimenta mas
 (+44 % de acciones con +10 % de tokens), que es lo que acelera la comprension de las mecanicas (DESIGN 8.87). Una sola corrida: la magnitud es
 incierta, el signo no. Pendiente: `low`, y la compuerta de los 10 faciles con medium (el kernel enviable `arc-agi3-e1-med` la da).
+
+### 8.90. E1-medium en los 10 faciles: 38,0 contra 46,3; el balance sobre los 25 publicos es positivo (2026-10-09)
+
+`arc-agi3-e1-med` v1 (demo de Franzen, 10 juegos x 25 min, `reasoning_effort=medium`): **media 38,01** (control 46,31, H1 46,63), 41 niveles
+(control 47), 1.337 acciones, servidor listo a 505 s. Por mi regla previa (umbral 40) NO se armo el envio. Pero:
+- **Correccion a DESIGN 8.87**: dije que la compuerta facil "se repite a +-0,5". Era falso: las tres medias parecidas (47,14 / 46,31 / 46,63) eran en
+  parte coincidencia. Juego a juego control y H1 difieren mucho (tr87 47,6 contra 100; lp85 58,3 contra 41,7; vc33 53,6 contra 35,7): la desviacion de
+  la diferencia por juego es ~19 y la de la media de una corrida ~4. El -8,5 de medium es **z ~ -1,6, no significativo**; el +11,3 de los dificiles si.
+- Por juego en los faciles: mejoran ft09 (47,6 a 71,4) y re86 (27,8 a 41,7); empeoran ar25, lp85, sc25, tu93, vc33 y sobre todo **tr87 (47,6 / 100 a 0,9)**.
+- **Balance sobre los 25 publicos**: xhigh 21,7 contra medium **25,2** (+3,5); con mezcla 50/50 faciles/dificiles 25,8 contra 27,3 (+1,5). Positivo pero
+  mucho mas modesto que el x3 de los dificiles.
+- `low` (G15) fallo a los 12 s por una carrera de montaje del dataset del bundle (no por el cambio); relanzado como v2.
+
+Idea derivada (E2, sin construir): esfuerzo adaptativo, xhigh mientras el juego avanza y medium cuando un nivel lleva mucho sin resolverse. Los faciles
+completan el primer nivel en 2,6 min (mediana) y los dificiles en 11,6.

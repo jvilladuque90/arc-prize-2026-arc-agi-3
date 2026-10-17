@@ -71,6 +71,10 @@ en sus 10: una mezcla de 25 juegos de **21,7**, cercana al 25,7 visto en el ocul
 - La tabla guarda el máximo de cada equipo, así que reenviar una base sin cambios es una palanca (modesta): con media 25,7 y
   sd 1,6–3,9, el máximo esperado de ~28 sorteos ronda 29–34.
 
+Nota de reproducibilidad: los notebooks de experimento de `notebooks/` se regeneraron con comentarios en inglés después de haber
+subido a Kaggle los kernels H1, D1, E1 y G15. El código que se ejecuta es idéntico; solo difieren los comentarios y los docstrings de
+los módulos embebidos.
+
 ## 4. Correcciones a afirmaciones previas
 
 La bitácora archivada contiene estos errores, conservados por transparencia:

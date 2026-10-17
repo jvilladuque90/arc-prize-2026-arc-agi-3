@@ -71,6 +71,9 @@ his 10 — a 25-game mix of **21.7**, close to the 25.7 seen on the hidden set. 
 - The leaderboard keeps each team's maximum, so repeated submissions of an unchanged base are a (modest) lever: with mean 25.7 and
   sd 1.6–3.9 the expected maximum of ~28 draws is ~29–34.
 
+Reproducibility note: the experiment notebooks in `notebooks/` were regenerated with English comments after the kernels H1, D1,
+E1 and G15 had been pushed to Kaggle. The code that runs is identical; only comments and the embedded modules' docstrings differ.
+
 ## 4. Corrections to earlier claims
 
 The archived lab notebook contains these mistakes, kept for transparency:

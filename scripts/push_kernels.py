@@ -50,6 +50,9 @@ KERNELS = {
     "franzenh1": _franzen("franzen_h1", "arc-agi3-franzen-h1"),            # sandbox robustness fixes
     "franzend1": _franzen("franzen_d1", "arc-agi3-franzen-d1"),            # deeper history, 8 slots
     "e1msub": _franzen("franzen_e1m", "arc-agi3-e1-med"),                  # reasoning_effort=medium
+    # Context and memory arms (built and unit-tested; see docs/IDEAS.md V4 and V5).
+    "franzenm1": _franzen("franzen_m1", "arc-agi3-franzen-m1"),            # pre-seeded helper functions
+    "franzenc1": _franzen("franzen_c1", "arc-agi3-franzen-c1"),            # fresh context after a stagnant level
     # Diagnostics on the 15 public games Franzen's demo leaves out (never submitted).
     "franzeng15": _franzen("franzen_g15", "arc-agi3-franzen-g15"),
     "e1medg15": _franzen("franzen_g15_med", "arc-agi3-e1-med-g15"),

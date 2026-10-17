@@ -26,7 +26,7 @@ ajustes de prompt o harness probados encima de una base movió el puntaje menos 
 Un LLM juega cada partida escribiendo pequeños programas en Python. Un sandbox le entrega el tablero como imagen, una imagen de
 «qué cambió», los fotogramas de animación y una segmentación del tablero en objetos; responde llamando a `action([...])`. Recuerda
 su propio razonamiento (128K tokens de historia) y las funciones auxiliares que escribió. Un planificador reparte una GPU entre
-110 juegos, y el modelo se sirve 2–3 veces más rápido que con una configuración estándar de vLLM. Detalle: [docs/APPROACH.es.md](docs/APPROACH.es.md).
+110 juegos, y el modelo se sirve 2–3 veces más rápido que con una configuración estándar de vLLM. Detalle y diagramas: [docs/APPROACH.es.md](docs/APPROACH.es.md).
 
 ## Qué aprendimos (versión corta)
 
@@ -53,10 +53,10 @@ docs/
   IDEAS(.es).md               investigación: ideas probadas por otros, qué las bloqueó, vetas abiertas
   ROADMAP(.es).md             qué está corriendo y qué sigue
   archive/                    la bitácora original en español y notas de diseño anteriores (histórico)
-src/arc3/                     parches al harness de Franzen (franzen_hardening.py, franzen_effort.py)
+src/arc3/                     parches al harness de Franzen: robustez (H1), esfuerzo de razonamiento (E1), ayudas precargadas (M1), reinicio por estancamiento (C1)
 scripts/                      publicación de kernels, automatización de envíos, constructor de notebooks (build_arm.py)
 notebooks/                    los notebooks de Kaggle realmente enviados o usados como diagnóstico
-tests/                        pruebas de los parches (se ejecutan contra el harness parcheado real)
+tests/                        un archivo de pruebas por parche, contra el harness parcheado real; `scripts/check_repo.py` comprueba que documentos, registro y notebooks concuerdan
 archive/legacy/               el pipeline superado: explorador de grafo de estados, brazos vLLM/NVFP4, bancos de Colab
 kernel_versions.json          versiones de kernel publicadas (hacen falta al enviar)
 ```
@@ -70,7 +70,7 @@ python scripts/download_data.py                       # datos de la competencia 
 kaggle kernels pull dfranzen/arc-agi-3-milestone-2-solution -p _tmp_pub/dfranzen_arc-agi-3-milestone-2-solution -m
 python scripts/build_arm.py fork                  # notebooks/franzen_m2.ipynb (copia fiel, verificada celda a celda)
 python scripts/prepare_harness_tree.py                # árbol del harness parcheado que usan las pruebas
-python tests/test_franzen_hardening.py && python tests/test_franzen_effort.py
+python scripts/check_repo.py --tests                  # comprobación de consistencia + los cuatro archivos de pruebas
 python scripts/push_kernels.py franzenm2 --dry-run    # inspeccionar; quitar --dry-run y añadir --gpu para correr en Kaggle
 python scripts/submit_at_reset.py juliancamilovilla/arc-agi3-franzen-m2 "mensaje"   # espera al cupo diario
 ```

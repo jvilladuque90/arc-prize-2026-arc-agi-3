@@ -47,6 +47,75 @@ faithful copy — it reproduces at ~26 on the hidden set. Our contribution is th
 - publishing and **submission automation**: pinned Kaggle images, kernel versions, an idempotent daily submitter that waits for the
   quota and alternates control and candidate.
 
+## Diagram: the system
+
+```mermaid
+flowchart LR
+  G[("ARC-AGI-3 gateway<br/>110 hidden games")]
+  subgraph RERUN["Kaggle rerun: one RTX PRO 6000, 9 hours, no internet"]
+    SCH["Scheduler<br/>110 games, 10 slots<br/>priority: progress, tokens, tail fade"]
+    subgraph AGENT["Per-game agent (Franzen / Tufa Duck harness)"]
+      EYES["Eyes<br/>board image x10, diff image,<br/>death images, animation frames"]
+      BRAIN["Brain<br/>Qwen3.8-Flash-Next INT4<br/>+ MTP drafter, effort = xhigh"]
+      HANDS["Hands: Python sandbox<br/>segmentation, history, frame_diff,<br/>UNDO, action(...)"]
+      MEM["Memory<br/>own reasoning, 128K, block trim<br/>persistent functions"]
+    end
+    SRV["SGLang server (Pennyroyal)<br/>INT4, FP8 KV cache, ~700 tok/s"]
+  end
+  SCH --> AGENT
+  G -- "new frame" --> EYES --> BRAIN --> HANDS -- "action([...])" --> G
+  BRAIN <--> MEM
+  HANDS <--> MEM
+  BRAIN --- SRV
+
+  classDef adopted fill:#d8f3dc,stroke:#2d6a4f,color:#000;
+  class EYES,BRAIN,HANDS,MEM,SCH,SRV adopted;
+```
+
+Green = adopted from the public solution and unchanged. Everything we changed or tried sits on one of these boxes; the table below says
+what, and with what result.
+
+## Diagram: how we iterate
+
+```mermaid
+flowchart LR
+  A["Control<br/>faithful Franzen copy"] --> B["Arm: control + ONE cell<br/>(scripts/build_arm.py)"]
+  B --> C["Unit test on the real<br/>patched harness (tests/)"]
+  C --> D["Local gate: 10 or 15 games, 25 min<br/>catches breakage, never ranks"]
+  D --> E["Hidden-set samples,<br/>one submission per day,<br/>alternating with the control"]
+  E --> F{"mean beats control<br/>by more than ~3 points<br/>over 4+ samples?"}
+  F -- yes --> G["Becomes the new control"]
+  F -- no --> H["Documented in docs/RESULTS.md<br/>and archived"]
+```
+
+## Component map: proven, tried by us, untried
+
+Legend: **adopted** = public solution, used unchanged · **0 / − / +** our hidden-set or gate verdict · **built** = coded and unit-tested, not yet
+run · **untried**.
+
+| Part | Component | Status |
+|---|---|---|
+| Serving | SGLang + INT4 + MTP drafter, FP8 KV, 128K context | **adopted** (the jump from ~3 to ~26) |
+| | Calibrated FP8 KV scales; MTP depth 4; 12 slots; other checkpoints (Swift, NVIDIA NVFP4, expert-pruned) | **untried** (V2, V3, V9) |
+| Eyes | 10x board image, diff image, death images, animation frames as data | **adopted** |
+| | Labeled grid image | **0** (old stack) |
+| Hands | Python sandbox, segmentation, `frame_diff`, UNDO | **adopted** |
+| | Action-effects function (S1), state-graph note (S2) | **0** (score is limited by levels completed, not by wasted actions) |
+| Memory / context | Own reasoning kept in history; block trimming at 128K | **adopted** |
+| | Deeper history with 8 slots (D1) | **−** (−29 % actions) |
+| | Harness-written notes / world-model sections (7 variants) | **0 / −** |
+| | Persistent functions | **adopted**; robustness fixes H1 **0** (safe) |
+| | Pre-seeded helper functions (M1) | **built** |
+| | Fresh context after a stagnant level (C1, from heliosli) | **built** |
+| | Test-gated function retention; keep literal constants | **untried** (V6, V7) |
+| Reasoning | `reasoning_effort=xhigh` (template default) | **adopted** |
+| | `medium` (E1) | **−** (hidden 20.98 vs 25.7) |
+| | `low`; adaptive effort | **untried** (the `low` run failed twice on infrastructure) |
+| Scheduler | Priority gate, 10 slots | **adopted** |
+| | D' priority (public, one sample 31.54) | **running** (alternating with the control) |
+| | Shorter first stint; fuller slot occupancy | **0** (CPU simulation; server already saturated) |
+| Training | Fine-tuning, test-time training, RL on public games | **untried** (contamination risk, no budget inside a run) |
+
 ## Mini-glossary
 
 | Term | Meaning |

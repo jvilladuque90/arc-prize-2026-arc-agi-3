@@ -5,6 +5,8 @@
   d1                        notebooks/franzen_d1.ipynb      control + D1 cell (8 slots, 24K trim drain)
   effort --base m2|g15 --level medium|low
                             franzen_e1m / franzen_g15_med / franzen_g15_low   + E1 cell (src/arc3/franzen_effort.py)
+  memory                    notebooks/franzen_m1.ipynb      control + M1 cell: pre-seeded helper functions (src/arc3/franzen_memory.py)
+  stagnation                notebooks/franzen_c1.ipynb      control + C1 cell: fresh context after a stagnant level (src/arc3/franzen_stagnation.py)
   g15                       notebooks/franzen_g15.ipynb     control, but the demo plays the 15 games Franzen leaves out
 
 Every build is gated: exactly one cell added (or one cell edited, for g15), every other cell byte-identical to its base,
@@ -74,6 +76,16 @@ os.environ["ARC3_STATIC_REASONING_EFFORT"] = "__LEVEL__"
 print("E1 reasoning_effort pinned to", os.environ["ARC3_STATIC_REASONING_EFFORT"], "in", _ta_path, flush=True)
 '''
 
+TREE_CELL = '''# __TITLE__ — experiment arm (docs/RESULTS.md). One variable: __WHAT__.
+# The module (embedded below) writes its helper file into the harness and patches tool_agent.py by exact-anchor
+# replacement; it applies in Save & Run as well, so a broken patch shows up at the gate and not inside a submission.
+import base64 as _b64t
+_nst = {}
+exec(compile(_b64t.b64decode("__B64__").decode("utf-8"), "__MODULE__.py", "exec"), _nst)
+_nst["apply_to_tree"](Path(BUNDLE_DIR) / "src" / "ARC3-Inference")
+print("__TAG__ applied to", Path(BUNDLE_DIR) / "src" / "ARC3-Inference", flush=True)
+'''
+
 # g15: the demo plays the 15 public games Franzen's demo excludes, with a cap that leaves ~25 slot-minutes per game
 G15_OLD_EXCLUDED = ("demo_excluded_games = [] if TRUE_SUBMISSION else ['bp35', 'cd82', 'cn04', 'dc22', 'g50t', 'ka59', "
                     "'lf52', 'ls20', 'm0r0', 's5i5', 'sk48', 'sp80', 'su15', 'tn36', 'wa30']")
@@ -130,7 +142,7 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "g15"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()
@@ -152,6 +164,14 @@ def main() -> int:
                                   with_module(H1_CELL, ROOT / "src" / "arc3" / "franzen_hardening.py"))
     if a.arm == "d1":
         return insert_after_patch(control, NB / "franzen_d1.ipynb", D1_CELL)
+    if a.arm in ("memory", "stagnation"):
+        spec = {"memory": ("M1 PRE-SEEDED HELPER FUNCTIONS", "the persistent-function library starts each game with 7 tested utilities",
+                           "franzen_memory", "M1", "franzen_m1"),
+                "stagnation": ("C1 STAGNATION RESTART", "one fresh reasoning context after 96K tokens on an unfinished level",
+                               "franzen_stagnation", "C1", "franzen_c1")}[a.arm]
+        cell = with_module(TREE_CELL, ROOT / "src" / "arc3" / f"{spec[2]}.py")
+        cell = cell.replace("__TITLE__", spec[0]).replace("__WHAT__", spec[1]).replace("__MODULE__", spec[2]).replace("__TAG__", spec[3])
+        return insert_after_patch(control, NB / f"{spec[4]}.ipynb", cell)
     if a.arm == "g15":
         nb = load(control)
         hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and G15_OLD_EXCLUDED in src(c)]

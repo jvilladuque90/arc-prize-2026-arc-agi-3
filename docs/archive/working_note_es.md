@@ -3,7 +3,7 @@
 *Working Note — ARC Prize 2026 · ARC-AGI-3 (Kaggle).*
 **Autor:** Julian Camilo Villa Duque.
 
-> **Documento vivo.** Se actualiza a medida que llegan resultados. Ver el [registro de decisiones](#apéndice-a--registro-de-decisiones-y-mediciones-clave) y el doc de diseño [`docs/DESIGN.md`](../docs/DESIGN.md). Última actualización: **2026-08-17**. Estado: harness duck (TAAF) + injertos en **1.10** oculto (media base 0.98); el cuello es **semántico, no de presupuesto** (cuatro experimentos en el Apéndice A).
+> **Documento vivo.** Se actualiza a medida que llegan resultados. Ver el [registro de decisiones](#apéndice-a--registro-de-decisiones-y-mediciones-clave) y el doc de diseño [`docs/DESIGN.md`](DESIGN.md). Última actualización: **2026-08-17**. Estado: harness duck (TAAF) + injertos en **1.10** oculto (media base 0.98); el cuello es **semántico, no de presupuesto** (cuatro experimentos en el Apéndice A).
 
 ---
 
@@ -25,7 +25,7 @@ aprende de las consecuencias.
   las partidas (el `submission.parquet` es un dummy). En *Save & Run* juega los 25 juegos públicos
   **offline** — nuestro banco de pruebas gratis que **no** consume submission de competencia.
 
-![Un frame 64×64 (ejemplo sintético).](01_frame.png)
+![Un frame 64×64 (ejemplo sintético).](img/01_frame.png)
 
 *Figura 0 — Cómo se ve un frame (sintético; no es un juego de la competencia). Un fondo, una región
 grande, un "botón" pequeño de color raro, un avatar y una barra de estado pintada en el borde.*
@@ -74,7 +74,7 @@ apuesta central — es que **no** le damos solo píxeles crudos; le inyectamos l
 ya computamos** como texto (*"obj3 color=2 size=16 center=(46,46) button_score=1.00"*, más el efecto
 numérico de la última acción), para que razone sobre **datos duros**, no sobre píxeles alucinados.
 
-![Las features objetuales inyectadas en el prompt (frame sintético).](02_features.png)
+![Las features objetuales inyectadas en el prompt (frame sintético).](img/02_features.png)
 
 *Figura 0b — Extracción de features sobre el frame sintético. Los objetos reciben bounding boxes y un
 `button_score` (verde = alto; el botón rojo pequeño y el avatar puntúan 1.00; la región azul grande

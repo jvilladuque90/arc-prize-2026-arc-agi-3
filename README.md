@@ -26,7 +26,7 @@ roughly 25 prompt/harness tweaks tested on top of a base moved it by less than t
 An LLM plays each game by writing small Python programs. A sandbox hands it the board as an image, a "what changed" image,
 the animation frames, and a segmentation of the board into objects; it answers by calling `action([...])`. It remembers its
 own reasoning (128K tokens of history) and the helper functions it wrote. A scheduler shares one GPU among 110 games, and the
-model is served 2–3× faster than a standard vLLM setup. Details: [docs/APPROACH.md](docs/APPROACH.md).
+model is served 2–3× faster than a standard vLLM setup. Details and diagrams: [docs/APPROACH.md](docs/APPROACH.md).
 
 ## What we learned (short version)
 
@@ -53,10 +53,10 @@ docs/
   IDEAS.md                    research: ideas proven elsewhere, what blocked them, open veins
   ROADMAP.md                  what is running and what comes next
   archive/                    the original Spanish lab notebook and older design notes (historical)
-src/arc3/                     harness patches applied to Franzen's code (franzen_hardening.py, franzen_effort.py)
+src/arc3/                     harness patches applied to Franzen's code: hardening (H1), reasoning effort (E1), pre-seeded helpers (M1), stagnation restart (C1)
 scripts/                      kernel publishing, submission automation, notebook builder (build_arm.py)
 notebooks/                    the Kaggle notebooks actually submitted or used as diagnostics
-tests/                        tests for the harness patches (run against the real patched harness)
+tests/                        one test file per patch, run against the real patched harness; `scripts/check_repo.py` checks docs, registry and notebooks agree
 archive/legacy/               the superseded pipeline: state-graph explorer, vLLM/NVFP4 arms, Colab benches
 kernel_versions.json          pushed kernel versions (needed at submit time)
 ```
@@ -70,7 +70,7 @@ python scripts/download_data.py                       # competition data (not ve
 kaggle kernels pull dfranzen/arc-agi-3-milestone-2-solution -p _tmp_pub/dfranzen_arc-agi-3-milestone-2-solution -m
 python scripts/build_arm.py fork                  # notebooks/franzen_m2.ipynb (faithful copy, checked cell by cell)
 python scripts/prepare_harness_tree.py                # patched harness tree used by the tests
-python tests/test_franzen_hardening.py && python tests/test_franzen_effort.py
+python scripts/check_repo.py --tests                  # consistency check + the four patch test files
 python scripts/push_kernels.py franzenm2 --dry-run    # inspect; add --gpu (no --dry-run) to run on Kaggle
 python scripts/submit_at_reset.py juliancamilovilla/arc-agi3-franzen-m2 "message"   # waits for the daily quota
 ```

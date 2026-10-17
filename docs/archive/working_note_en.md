@@ -3,7 +3,7 @@
 *Working Note — ARC Prize 2026 · ARC-AGI-3 (Kaggle).*
 **Author:** Julian Camilo Villa Duque.
 
-> **Living document.** Updated as results arrive. See the [decision log](#appendix-a--decision-log-and-key-measurements) and the linked design doc [`docs/DESIGN.md`](../docs/DESIGN.md). Last updated: **2026-08-17**. Current state: duck harness (TAAF) + grafts at **1.10** hidden (baseline mean 0.98); the bottleneck is **semantic, not budget** (four experiments in Appendix A).
+> **Living document.** Updated as results arrive. See the [decision log](#appendix-a--decision-log-and-key-measurements) and the linked design doc [`docs/DESIGN.md`](DESIGN.md). Last updated: **2026-08-17**. Current state: duck harness (TAAF) + grafts at **1.10** hidden (baseline mean 0.98); the bottleneck is **semantic, not budget** (four experiments in Appendix A).
 
 ---
 
@@ -25,7 +25,7 @@ consequences.
   comes from the plays (the `submission.parquet` is a dummy). In *Save & Run* it plays the 25 public
   games **offline** — our free test bench that does **not** consume a competition submission.
 
-![A 64×64 frame (synthetic example).](01_frame.png)
+![A 64×64 frame (synthetic example).](img/01_frame.png)
 
 *Figure 0 — What a frame looks like (synthetic; not a competition game). A background, a large region,
 a small rare-colored "button", an avatar, and a status bar painted in the border.*
@@ -73,7 +73,7 @@ by vLLM on the competition's RTX Pro 6000 GPU) decides. Its edge — and our cen
 (*"obj3 color=2 size=16 center=(46,46) button_score=1.00"*, plus the numeric effect of the last
 action), so the model reasons over **hard data**, not hallucinated pixels.
 
-![The object features injected into the prompt (synthetic frame).](02_features.png)
+![The object features injected into the prompt (synthetic frame).](img/02_features.png)
 
 *Figure 0b — Feature extraction on the synthetic frame. Objects get bounding boxes and a
 `button_score` (green = high; the small red button and the avatar score 1.00; the large blue region

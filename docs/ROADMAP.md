@@ -20,14 +20,19 @@ leaderboard's maximum.
 
 ## Next arms (one change each, in this order)
 
-1. **Replay bench (V1)** — the tool that lets us judge serving and numeric changes without spending submissions.
-2. **Stagnation reset (V5)** — a single cell; targets hard games stuck in loops.
-3. **Pre-seeded helper functions (V4)** — saves the first minutes of every game without adding prose.
+1. **Pre-seeded helper functions (M1 / V4)** — *built and unit-tested* (`notebooks/franzen_m1.ipynb`); needs a Save & Run gate, then hidden samples against the control.
+2. **Stagnation reset (C1 / V5)** — *built and unit-tested* (`notebooks/franzen_c1.ipynb`, ported from `heliosli`); same path. Its effect can only appear in the hidden rerun.
+3. **Replay bench (V1)** — the tool that lets us judge serving and numeric changes without spending submissions.
 4. **Calibrated FP8 KV scales (V2)** — validated with the replay bench first.
 
 Each arm needs: a unit test against the real patched harness, a local gate (breakage only), then hidden-set samples against the
 control. Ideas that cannot be validated (lossy serving tricks, model swaps) are not shipped. Details and ranking:
 [IDEAS](IDEAS.md).
+
+## Where the diagrams are
+
+The system diagram, the experiment-loop diagram and the proven / tried / untried component map are in
+[APPROACH](APPROACH.md#diagram-the-system). `python scripts/check_repo.py --tests` checks that docs, registry, notebooks and tests agree.
 
 ## Rules of engagement
 

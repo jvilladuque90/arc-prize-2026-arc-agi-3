@@ -50,6 +50,75 @@ ejecutamos como copia fiel: reproduce ~26 en el set oculto. Lo nuestro es la *ma
 - **automatización de publicación y envíos**: imágenes de Kaggle fijadas, versiones de kernel, un enviador diario idempotente que
   espera al cupo y alterna control y candidato.
 
+## Diagrama: el sistema
+
+```mermaid
+flowchart LR
+  G[("Gateway ARC-AGI-3<br/>110 juegos ocultos")]
+  subgraph RERUN["Rerun de Kaggle: una RTX PRO 6000, 9 horas, sin internet"]
+    SCH["Planificador<br/>110 juegos, 10 plazas<br/>prioridad: progreso, tokens, tramo final"]
+    subgraph AGENT["Agente por juego (harness Duck de Franzen / Tufa)"]
+      EYES["Ojos<br/>imagen del tablero x10, imagen de diferencias,<br/>imagenes de muerte, fotogramas de animacion"]
+      BRAIN["Cerebro<br/>Qwen3.8-Flash-Next INT4<br/>+ drafter MTP, esfuerzo = xhigh"]
+      HANDS["Manos: sandbox de Python<br/>segmentacion, historial, frame_diff,<br/>UNDO, action(...)"]
+      MEM["Memoria<br/>razonamiento propio, 128K, recorte por bloques<br/>funciones persistentes"]
+    end
+    SRV["Servidor SGLang (Pennyroyal)<br/>INT4, cache KV FP8, ~700 tok/s"]
+  end
+  SCH --> AGENT
+  G -- "fotograma nuevo" --> EYES --> BRAIN --> HANDS -- "action([...])" --> G
+  BRAIN <--> MEM
+  HANDS <--> MEM
+  BRAIN --- SRV
+
+  classDef adopted fill:#d8f3dc,stroke:#2d6a4f,color:#000;
+  class EYES,BRAIN,HANDS,MEM,SCH,SRV adopted;
+```
+
+Verde = adoptado de la solucion publica y sin cambios. Todo lo que cambiamos o probamos cuelga de una de estas cajas; la tabla de abajo
+dice que, y con que resultado.
+
+## Diagrama: como iteramos
+
+```mermaid
+flowchart LR
+  A["Control<br/>copia fiel de Franzen"] --> B["Brazo: control + UNA celda<br/>(scripts/build_arm.py)"]
+  B --> C["Prueba unitaria sobre el<br/>harness parcheado real (tests/)"]
+  C --> D["Compuerta local: 10 o 15 juegos, 25 min<br/>detecta roturas, nunca clasifica"]
+  D --> E["Muestras en el set oculto,<br/>un envio al dia,<br/>alternando con el control"]
+  E --> F{"la media supera al control<br/>en mas de ~3 puntos<br/>con 4+ muestras?"}
+  F -- si --> G["Pasa a ser el nuevo control"]
+  F -- no --> H["Documentado en docs/RESULTS.es.md<br/>y archivado"]
+```
+
+## Mapa de componentes: probado, probado por nosotros, sin probar
+
+Leyenda: **adoptado** = solucion publica, usada sin cambios · **0 / − / +** nuestro veredicto en el oculto o en la compuerta · **construido** =
+codificado y con pruebas unitarias, aun sin correr · **sin probar**.
+
+| Parte | Componente | Estado |
+|---|---|---|
+| Servicio | SGLang + INT4 + drafter MTP, KV FP8, contexto de 128K | **adoptado** (el salto de ~3 a ~26) |
+| | Escalas de KV FP8 calibradas; MTP con profundidad 4; 12 plazas; otros checkpoints (Swift, NVFP4 de NVIDIA, expertos podados) | **sin probar** (V2, V3, V9) |
+| Ojos | Imagen del tablero x10, imagen de diferencias, imagenes de muerte, fotogramas de animacion como datos | **adoptado** |
+| | Imagen de la cuadricula con etiquetas | **0** (pila vieja) |
+| Manos | Sandbox de Python, segmentacion, `frame_diff`, UNDO | **adoptado** |
+| | Funcion de efectos de acciones (S1), nota de grafo de estados (S2) | **0** (el puntaje lo limitan los niveles completados, no las acciones desperdiciadas) |
+| Memoria / contexto | Razonamiento propio en la historia; recorte por bloques a 128K | **adoptado** |
+| | Historia mas profunda con 8 plazas (D1) | **−** (−29 % de acciones) |
+| | Notas escritas por el harness / secciones de modelo del mundo (7 variantes) | **0 / −** |
+| | Funciones persistentes | **adoptado**; arreglos de robustez H1 **0** (seguros) |
+| | Funciones auxiliares precargadas (M1) | **construido** |
+| | Contexto nuevo tras un nivel estancado (C1, de heliosli) | **construido** |
+| | Retencion de funciones con pruebas; conservar constantes literales | **sin probar** (V6, V7) |
+| Razonamiento | `reasoning_effort=xhigh` (defecto de la plantilla) | **adoptado** |
+| | `medium` (E1) | **−** (oculto 20,98 contra 25,7) |
+| | `low`; esfuerzo adaptativo | **sin probar** (la corrida de `low` fallo dos veces por infraestructura) |
+| Planificador | Compuerta de prioridad, 10 plazas | **adoptado** |
+| | Prioridad D' (publica, una muestra 31,54) | **en curso** (alternando con el control) |
+| | Primer tramo mas corto; mayor ocupacion de plazas | **0** (simulacion en CPU; el servidor ya esta saturado) |
+| Entrenamiento | Ajuste fino, entrenamiento en tiempo de prueba, RL con los juegos publicos | **sin probar** (riesgo de contaminacion, sin presupuesto dentro de una corrida) |
+
 ## Mini-glosario
 
 | Término | Significado |

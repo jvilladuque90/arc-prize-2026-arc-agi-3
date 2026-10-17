@@ -31,12 +31,12 @@ and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the publ
 
 | Path | Purpose |
 |---|---|
-| `src/arc3/` | patches applied to Franzen's `tool_agent.py` by exact-anchor replacement (`franzen_hardening.py`, `franzen_effort.py`) |
+| `src/arc3/` | patches applied to Franzen's `tool_agent.py` by exact-anchor replacement: `franzen_hardening.py` (H1), `franzen_effort.py` (E1), `franzen_memory.py` (M1), `franzen_stagnation.py` (C1) |
 | `scripts/build_arm.py` | builds `notebooks/franzen_*.ipynb` (control copy and one-cell arms) with cell-by-cell gates |
 | `scripts/push_kernels.py` | publishes a notebook as a public Kaggle kernel (`--gpu` to run on the RTX PRO 6000; `--dry-run` first) |
 | `scripts/submit_at_reset.py`, `daily_alternate.py`, `arm_submit_task.ps1` | submission automation |
 | `scripts/prepare_harness_tree.py` | builds the patched harness the tests run against |
-| `tests/` | `python tests/test_franzen_hardening.py`, `python tests/test_franzen_effort.py` |
+| `tests/`, `scripts/check_repo.py` | one test file per patch; `python scripts/check_repo.py --tests` checks docs, registry, notebooks, links and tests together |
 
 ## Documentation discipline
 

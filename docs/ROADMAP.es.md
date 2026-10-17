@@ -20,14 +20,19 @@ aprovechar el máximo de la tabla.
 
 ## Próximos brazos (un cambio cada uno, en este orden)
 
-1. **Banco de repetición (V1)**: la herramienta que permite juzgar cambios de servicio y numéricos sin gastar envíos.
-2. **Reinicio por estancamiento (V5)**: una sola celda; apunta a juegos difíciles atrapados en bucles.
-3. **Funciones auxiliares precargadas (V4)**: ahorra los primeros minutos de cada juego sin añadir prosa.
+1. **Funciones auxiliares precargadas (M1 / V4)**: *construido y con pruebas unitarias* (`notebooks/franzen_m1.ipynb`); falta una compuerta de Save & Run y luego muestras ocultas contra el control.
+2. **Reinicio por estancamiento (C1 / V5)**: *construido y con pruebas unitarias* (`notebooks/franzen_c1.ipynb`, portado de `heliosli`); mismo camino. Su efecto solo puede aparecer en el rerun oculto.
+3. **Banco de repetición (V1)**: la herramienta que permite juzgar cambios de servicio y numéricos sin gastar envíos.
 4. **Escalas de KV FP8 calibradas (V2)**: se valida primero con el banco de repetición.
 
 Cada brazo necesita: una prueba unitaria contra el harness parcheado real, una compuerta local (solo roturas) y luego muestras
 ocultas contra el control. Lo que no se puede validar (trucos de servicio con pérdida, cambios de modelo) no se envía. Detalle y
 orden: [IDEAS](IDEAS.es.md).
+
+## Dónde están los diagramas
+
+El diagrama del sistema, el del ciclo de experimentos y el mapa de componentes probado / probado por nosotros / sin probar están en
+[APPROACH](APPROACH.es.md#diagrama-el-sistema). `python scripts/check_repo.py --tests` comprueba que documentos, registro, notebooks y pruebas concuerdan.
 
 ## Reglas de juego
 

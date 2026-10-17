@@ -1,27 +1,31 @@
-# --- Secretos y entorno local ---
+# --- Secrets and local environment ---
 .env
 .venv/
 venv/
 env/
 .kaggle/
 
-# --- Datos de la competencia (NO versionar: privacidad/reglas de Kaggle) ---
-# Todo esto se re-descarga con: python scripts/download_data.py
+# --- Competition data (never versioned: Kaggle rules / privacy) ---
+# Re-download with: python scripts/download_data.py
 environment_files/
 arc_agi_3_wheels/
 ARC-AGI-3-Agents/
 data/
 
-# --- Salidas de ejecución ---
+# --- Third-party bundles and scratch work (public kernels we study; not redistributed) ---
+_tmp_*/
+.submit_message.txt
+dataset-metadata.json
+
+# --- Run outputs and local logs ---
 recordings/
 replays/
 logs.log
+*.log
 features_out/
 submission*.tar.gz
 submission*.json
 *.zip
-_tmp_ducklog/
-_tmp_*/
 
 # --- Python ---
 __pycache__/
@@ -29,7 +33,7 @@ __pycache__/
 .pytest_cache/
 .ipynb_checkpoints/
 
-# --- Modelos / artefactos pesados ---
+# --- Heavy artifacts ---
 models/
 *.safetensors
 *.bin
@@ -38,12 +42,3 @@ models/
 # --- Editor ---
 .vscode/
 .idea/
-daily_submit.log
-.effects_deployed
-effects_deploy.log
-.banking_ab_launched
-banking_ab.log
-.banking_ab_launched
-traces_goal*.json
-micro_eval_*.json
-level_ab.json

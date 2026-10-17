@@ -1,1 +1,0 @@
-﻿franzen-m2 v1 (auto-diario): copia fiel sin ediciones del notebook publico dfranzen/arc-agi-3-milestone-2-solution (reproduccion independiente 27.80; copias: media 25.77, sd 3.93). Remuestreo de la base: el marcador toma el maximo. Atribucion: Daniel Franzen, Tufa Labs, John Pezzulli, Intel, Albucino. DESIGN 8.85.

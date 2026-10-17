@@ -1,21 +1,9 @@
-"""arc3: utilidades para ARC-AGI-3 (Kaggle arc-prize-2026-arc-agi-3).
+"""arc3: harness patches for the ARC-AGI-3 Kaggle entry (competition `arc-prize-2026-arc-agi-3`).
 
-Módulos:
-  env      -> descubrimiento y ejecución local de environments (arcengine/arc_agi)
-  features -> feature engineering sobre frames 64x64 y transiciones (s, a, s')
-  probe    -> política de sondeo que genera el dataset de features por juego
+Modules:
+  franzen_hardening -> H1: keep the persistent-function library after a sandbox timeout; cap huge tool results
+  franzen_effort    -> E1: pin the model's `reasoning_effort` from the first request
+
+Each module patches the source of Daniel Franzen's public harness (`tool_agent.py`) by exact-anchor replacement
+and refuses to touch anything if an anchor is not found exactly once. The superseded pipeline lives in `archive/legacy/`.
 """
-
-from .features import (
-    connected_components,
-    grid_features,
-    frame_to_grid,
-    transition_features,
-)
-
-__all__ = [
-    "connected_components",
-    "grid_features",
-    "frame_to_grid",
-    "transition_features",
-]

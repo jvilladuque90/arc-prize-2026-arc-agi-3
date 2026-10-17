@@ -1,73 +1,45 @@
 # AGENTS.md — ARC Prize 2026, ARC-AGI-3
 
-Guía para cualquier agente (humano o IA) que trabaje en este repo. El detalle vive en
-`docs/DESIGN.md`; aquí va lo que hay que saber antes de tocar nada y el plan vigente.
+Guide for any agent (human or AI) working in this repository. Start with [README.md](README.md); the current state, results
+and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the public docs end in `.es.md`.
 
-## Estado (2026-10-03)
+## Current state (2026-10-17)
 
-**Plan vigente: `plan.md`** — la auditoría del 2026-10-03 (DESIGN 8.85) cambió la ruta: la base pasa a ser la copia fiel
-de la solución pública de Franzen (27,80 reproducido; copias: media 25,8, sd 3,9). S1-S4 quedan casi obsoletos.
+- Base: a faithful copy of Daniel Franzen's public Milestone-2 solution (`notebooks/franzen_m2.ipynb`). Hidden-set score
+  **25.7 mean, sd 1.6 (n = 6)**.
+- Daily submissions alternate between that control and the D′ scheduler variant (`scripts/daily_alternate.py`, armed as the
+  Windows task `ARC-AGI3-SubmitOneShot`). The decision rule is in `docs/ROADMAP.md`.
+- Every experiment tried on top of a base so far was neutral or negative (`docs/RESULTS.md`). The superseded pipeline is in
+  `archive/legacy/` and is not maintained.
 
+## Rules that are not negotiable
 
-- **Mejor score oculto: 3,95** (base NVFP4 verbatim, `juliancamilovilla/arc-agi3-nvfp4`).
-- Cinco muestras de esa misma base: 3,55 / 3,54 / 2,69 / 3,95 / 3,03 → media 3,35, sd 0,49.
-  El 3,95 es varianza, no mejora (DESIGN 8.82).
-- Hasta el hito del 2026-09-30 se remuestrea la base una vez al día con la tarea programada
-  `ARC-AGI3-SubmitOneShot` (cero GPU). No gastar esas muestras en brazos.
+1. **Never commit or redistribute** `.env`, `environment_files/`, `arc_agi_3_wheels/`, `ARC-AGI-3-Agents/`, or any third-party
+   bundle under `_tmp_*/`. Never print credentials.
+2. Kernels are **public** (`is_private: False`): the prize requires open-sourcing everything.
+3. The metric is `(baseline_actions / actions_taken)^2` per completed level (capped at 115), levels weighted by their index.
+   More levels with fewer actions — not "levels" alone.
+4. **One variable per arm**, against a **faithful control**. Arms are notebooks that differ from the control in a single cell.
+5. **Local gates screen out broken changes; they never rank improvements** (`docs/RESULTS.md` §3). Compare hidden-set
+   samples against the control, and count how many samples the claimed effect would need before running.
+6. Use paired statistics by game (sign test), never pooled proportions.
+7. **GPU launches and submissions are announced and authorised first.** Prefer cheap, CPU-only checks before spending quota.
+8. Do not inject harness-written prose into the model's prompt ("frames yes, narration no"): data exposed in the sandbox and
+   images helped, notes did not.
 
-## Reglas que no se negocian
+## Layout and common commands
 
-1. **Nunca** commitear ni redistribuir `.env`, `environment_files/`, `arc_agi_3_wheels/`,
-   `ARC-AGI-3-Agents/` ni `_tmp_nvfp4_bundle/`.
-2. Los kernels van **públicos** (`is_private: False`): lo exige el premio de código abierto.
-3. Colab: las cuentas 1-3 son del proyecto hermano arc-agi-2. Sólo tocamos la 4 y la 5.
-4. **La métrica** es `(baseline/acciones)²` por nivel completado, ponderada por índice de nivel.
-   Más niveles con menos acciones. No "niveles".
-5. **Estadística pareada juego a juego** (test de signos), nunca proporciones agrupadas (8.77).
-6. **El banco de 60 min / 25 juegos NO selecciona**: correlación banco-oculto r = −0,351 (8.81).
-   Un brazo no se promueve por ganar el banco.
-7. Una variable por brazo. Toda GPU se anuncia antes de lanzarla.
+| Path | Purpose |
+|---|---|
+| `src/arc3/` | patches applied to Franzen's `tool_agent.py` by exact-anchor replacement (`franzen_hardening.py`, `franzen_effort.py`) |
+| `scripts/build_arm.py` | builds `notebooks/franzen_*.ipynb` (control copy and one-cell arms) with cell-by-cell gates |
+| `scripts/push_kernels.py` | publishes a notebook as a public Kaggle kernel (`--gpu` to run on the RTX PRO 6000; `--dry-run` first) |
+| `scripts/submit_at_reset.py`, `daily_alternate.py`, `arm_submit_task.ps1` | submission automation |
+| `scripts/prepare_harness_tree.py` | builds the patched harness the tests run against |
+| `tests/` | `python tests/test_franzen_hardening.py`, `python tests/test_franzen_effort.py` |
 
-## Plan: herramientas genéricas (no escritas a mano)
+## Documentation discipline
 
-Diagnóstico: los once injertos con conocimiento de dominio escrito por nosotros quedaron por
-debajo de la base (8.73), y Tufa Labs publicó lo mismo. Lo que queda es darle al modelo
-**cómputo, algoritmos o aprendizaje** cuyo contenido sale del propio juego.
-
-| # | Herramienta | Qué ataca | Coste | Estado |
-|---|---|---|---|---|
-| **2** | **Grafo de estados del anfitrión** (Blind Squirrel, 2º del preview): nodo = firma del tablero, arista = acción; nota con estados repetidos, acciones probadas desde aquí y frontera | acciones malgastadas en bucles | CPU, ~100 tokens de entrada | nota: **neutra** (8.84); falta variante que actúe |
-| 1 | **Predictor de efectos aprendido en vivo** (StochasticGoose, 1º del preview): red pequeña que predice si una acción cambia el tablero | acciones inertes | CPU, cero tokens | pendiente |
-| 3 | **Simulador escrito por el modelo**: `step(estado, accion)` en Python, planificar sin gastar acciones reales | planificación | muchos tokens | pendiente (apuesta Paper Award) |
-| 4 | **Biblioteca de funciones entre niveles** (estilo Voyager): código que ya funcionó, no notas | transferencia nivel→nivel | pocos tokens | pendiente, con cautela (7 brazos de memoria fallaron) |
-| 5 | Más cómputo de razonamiento (votación, verificador) | calidad por turno | reloj | **descartado**: a ~10 tok/s no cabe |
-
-Orden: 2 → 1 → 3 → 4. El 2 va primero porque ya estaba construido y sólo esperaba una base con
-guardia de no-ops y señal de animación, que animfast trae.
-
-**Condición previa para promover cualquiera al oculto:** un banco que correlacione con el
-set oculto. Sin él se repite el ciclo de los doce brazos elegidos a ciegas.
-
-### Punto 2 — grafo de estados sobre animfast
-
-- Módulo: `src/arc3/cognitive_map.py` (construido en `ee4677a`, aparcado en DESIGN 8.44).
-- Tests del módulo: `python scripts/test_cognitive_map.py`.
-- Constructor: `python scripts/build_animfast_map.py` → `notebooks/animfast_map.ipynb`
-  (animfast_long + una celda; compuertas: una celda añadida, resto intacto, todo compila).
-- Smoke contra el bundle anim real: `python scripts/smoke_animfast_map.py` (PASS).
-- Kernel registrado: `animfastmap` → `arc-agi3-animfast-map` en `scripts/push_kernels.py`.
-  **v1 lanzada (DESIGN 8.83)**: cae 1-12 pero con un bug de vocabulario (la frontera
-  decia "NO has probado" lo ya hecho) y 10 min menos de reloj. Corregido y relanzado:
-  **v2 neutra (DESIGN 8.84)**: mismo reloj 21 vs 19 niveles, 3-4, p=1,0; tokens/accion como el
-  control. El grafo descrito en texto no paga.
-- Diferencia con el parche viejo: se engancha a `inference.agent.tool_agent.ToolAgent`
-  (la clase que animfast usa), no a `taaf_grafts.schema_helpers`.
-- Riesgo conocido: es una nota de texto en el prompt, la misma forma que las notas que
-  fallaron. Lo distinto es el contenido: estado del juego, no conocimiento nuestro.
-  Siguiente variante si la nota no paga: que el anfitrión *actúe* sobre el grafo (volver a un
-  estado conocido por el camino más corto) en vez de describirlo.
-
-## Disciplina de documentación
-
-DESIGN una vez y completo; working notes (`paper/working_note_{es,en}.md`) una línea por
-resultado; commits de tres líneas con puntero a la sección de DESIGN.
+Public docs are bilingual (English first, `.es.md` beside it) and short. Record each result once in `docs/RESULTS.md`
+(and `.es.md`), the open questions in `docs/IDEAS.md`, and the plan in `docs/ROADMAP.md`. Commit messages: a short subject, a
+two-line body, then a pointer to the doc section. The Spanish lab notebook in `docs/archive/` is frozen.

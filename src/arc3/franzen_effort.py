@@ -1,17 +1,17 @@
-"""E1: esfuerzo de razonamiento FIJO desde el inicio sobre el harness parcheado de Franzen.
+"""E1: pin the model's `reasoning_effort` from the first request on Franzen's patched harness (docs/RESULTS.md).
 
-POR QUE (DESIGN 8.88): la plantilla de chat de Qwen3.8-Flash-Next usa `reasoning_effort` con valor por
-defecto `xhigh`, que inyecta en el prompt del sistema "piensa con cuidado, valida supuestos clave,
-considera alternativas, prioriza la correccion". `low` inyecta "piensa breve, ve directo a la
-conclusion" y `medium` no inyecta ninguna instruccion. Franzen corre todo en xhigh (su escalera de
-esfuerzo solo baja DESPUES de una truncacion y esta apagada). En los 15 juegos dificiles el modelo gasta
-~2.200 tokens por accion (31 acciones en 37 min en cd82) y 3,5 % de las respuestas (>= 11K tokens)
-consumen el 19 % de los tokens: el cuello de botella es la velocidad de comprension. Este brazo prueba
-el MECANISMO de la opcion B (modelo que razona con menos tokens) con el modelo actual y sin ingenieria.
+Qwen3.8-Flash-Next's chat template reads `reasoning_effort` and DEFAULTS TO `xhigh`, which injects into the system
+prompt "think carefully, validate key assumptions, consider alternatives, prioritise correctness". `low` injects
+"keep your thinking brief" and `medium` injects nothing. Franzen runs everything at the default (his effort ladder only
+steps down AFTER a truncated reply and is off).
 
-El valor llega al servidor como chat_template_kwargs["reasoning_effort"] por el mismo camino que ya usa
-la escalera de Franzen. Si ARC3_STATIC_REASONING_EFFORT esta vacio no cambia nada.
-Cada ancla debe aparecer EXACTAMENTE una vez. Independiente del fin de linea.
+The value reaches the server as chat_template_kwargs["reasoning_effort"], by the same path the ladder already uses.
+If ARC3_STATIC_REASONING_EFFORT is empty nothing changes.
+
+Outcome: `medium` tripled the local score on 15 hard public games but scored BELOW the control on the hidden set
+(20.98 vs 25.7), so this arm is kept as a documented negative result, not as a recommendation.
+
+The anchor must appear EXACTLY once or nothing is touched; line endings are preserved.
 """
 
 from __future__ import annotations
@@ -24,7 +24,7 @@ A = (
     "        return kwargs\n"
 )
 B = (
-    "        # E1: esfuerzo fijo desde el inicio (la escalera, si esta activa, lo sobrescribe despues)\n"
+    "        # E1: fixed effort from the start (the ladder, when active, overrides it afterwards)\n"
     "        static_effort = os.environ.get(\"ARC3_STATIC_REASONING_EFFORT\", \"\").strip()\n"
     "        if static_effort:\n"
     "            kwargs[\"reasoning_effort\"] = static_effort\n"
@@ -34,17 +34,17 @@ B = (
     "            kwargs[\"reasoning_effort\"] = ladder[rung]\n"
     "        return kwargs\n"
 )
-MARCA = "ARC3_STATIC_REASONING_EFFORT"
-VALIDOS = ("xhigh", "medium", "low")
+MARKER = "ARC3_STATIC_REASONING_EFFORT"
+VALID_LEVELS = ("xhigh", "medium", "low")
 
 
 def apply_to_source(src: str) -> str:
-    """Devuelve tool_agent.py con el esfuerzo fijo. Lanza si el ancla no es unica."""
-    if MARCA in src:
+    """Return tool_agent.py with the fixed effort. Raises if the anchor is not unique."""
+    if MARKER in src:
         return src
     nl = "\r\n" if "\r\n" in src else "\n"
     a, b = A.replace("\n", nl), B.replace("\n", nl)
     n = src.count(a)
     if n != 1:
-        raise RuntimeError(f"ancla encontrada {n} veces, se esperaba 1")
+        raise RuntimeError(f"anchor found {n} times, expected 1")
     return src.replace(a, b, 1)

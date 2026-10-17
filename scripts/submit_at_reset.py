@@ -1,16 +1,16 @@
-"""Espera al reset UTC de la cuota de envios y manda un kernel al set oculto.
+"""Wait for the daily UTC quota reset and submit a kernel to the hidden test set.
 
-La competencia admite UN envio por dia UTC. Cuando el cupo del dia ya esta
-gastado, la API responde 400 con FAILED_PRECONDITION y el CLI solo muestra
-"400 Client Error" — por eso aqui se imprime el cuerpo del error, que si dice
-el motivo real.
+The competition allows ONE submission per UTC day. When the day's quota is spent the API answers 400 with
+FAILED_PRECONDITION and the CLI only prints "400 Client Error", so the error body (which does state the reason) is
+logged here. Success is verified against the submissions list, because the CLI prints nothing on success.
 
-Verifica el resultado contra la lista de envios (el CLI no imprime nada al
-tener exito, asi que "sin salida" no es prueba de nada).
+The script is idempotent per UTC day (safe to fire several times a night) and retries until the quota opens.
+A submission that ended in ERROR/CANCELED does not count as the day's submission and is retried.
 
-Uso:
-  python scripts/submit_at_reset.py juliancamilovilla/arc-agi3-duck-anim "mensaje"
-  python scripts/submit_at_reset.py <kernel> "<mensaje>" --now   # sin esperar
+Usage:
+  python scripts/submit_at_reset.py juliancamilovilla/arc-agi3-franzen-m2 "message"
+  python scripts/submit_at_reset.py <kernel> "<message>" --now        # try once, do not wait
+Environment: SUBMIT_MAX_MINUTES (default 240) bounds the retry window.
 """
 
 from __future__ import annotations
@@ -46,86 +46,78 @@ def load_env() -> None:
 
 
 def main() -> int:
-    # Primera linea de log ANTES de cualquier import de terceros: la noche del
-    # 2026-09-11 la tarea no dejo ni una linea, y un ImportError de `kaggle` en
-    # un interprete sin el paquete habria dado exactamente ese sintoma.
-    log(f"arranque: {sys.executable} argv={sys.argv[1:3]}")
+    # First log line BEFORE any third-party import: on 2026-09-11 the scheduled task left no trace at all, which is
+    # exactly what an ImportError for `kaggle` in an interpreter without the package would produce.
+    log(f"start: {sys.executable} argv={sys.argv[1:3]}")
     args = [a for a in sys.argv[1:] if a != "--now"]
     wait = "--now" not in sys.argv
-    kernel = args[0]
-    message = args[1]
+    kernel, message = args[0], args[1]
     version = json.loads((ROOT / "kernel_versions.json").read_text(encoding="utf-8"))[kernel]
 
     load_env()
     try:
         from kaggle.api.kaggle_api_extended import KaggleApi
     except Exception as exc:  # noqa: BLE001
-        log(f"ERROR importando kaggle en {sys.executable}: {type(exc).__name__}: {exc}")
+        log(f"ERROR importing kaggle in {sys.executable}: {type(exc).__name__}: {exc}")
         return 1
     api = KaggleApi()
     api.authenticate()
 
-    # Idempotente: la tarea dispara varias veces por noche por robustez, y un
-    # segundo disparo tras un envio exitoso no debe gastar 240 min reintentando.
-    hoy = datetime.datetime.now(datetime.timezone.utc).date()
+    # Idempotent: the task fires several times per night for robustness; a second firing after a successful
+    # submission must not spend 240 minutes retrying.
+    today = datetime.datetime.now(datetime.timezone.utc).date()
     try:
         for s in api.competition_submissions(COMP)[:5]:
-            fecha = getattr(s, "date", None)
-            estado = str(getattr(s, "status", "")).upper()
-            if fecha is not None and getattr(fecha, "date", lambda: None)() == hoy:
-                # Un envio que termino en ERROR/CANCELED (p. ej. "A system error. Please try
-                # resubmitting", 2026-10-03, ref 56784478) NO cuenta como el envio del dia:
-                # sin esta excepcion el 00:47Z y el 03:02Z lo daban por bueno mientras
-                # corria, y nada reintentaba despues de que fallara.
-                if "ERROR" in estado or "CANCEL" in estado:
-                    log(f"envio de hoy en {estado} (ref={getattr(s, 'ref', '?')}); se reintenta")
+            date = getattr(s, "date", None)
+            status = str(getattr(s, "status", "")).upper()
+            if date is not None and getattr(date, "date", lambda: None)() == today:
+                # An ERROR/CANCELED submission (e.g. "A system error. Please try resubmitting", 2026-10-03) does not
+                # count as the day's submission; without this exception nothing retried after it failed.
+                if "ERROR" in status or "CANCEL" in status:
+                    log(f"today's submission is {status} (ref={getattr(s, 'ref', '?')}); retrying")
                     continue
-                log(f"ya hay envio hoy UTC (ref={getattr(s, 'ref', '?')}, "
-                    f"{fecha}, {estado}); no se reenvia")
+                log(f"a submission already exists today UTC (ref={getattr(s, 'ref', '?')}, {date}, {status}); "
+                    f"not resubmitting")
                 return 0
-    except Exception as exc:  # noqa: BLE001 — si la consulta falla, se intenta igual
-        log(f"aviso: no pude comprobar envios de hoy ({type(exc).__name__}); sigo")
+    except Exception as exc:  # noqa: BLE001 — if the check fails, try anyway
+        log(f"warning: could not check today's submissions ({type(exc).__name__}); continuing")
 
-    # NO se calcula el instante del reset: se INTENTA y se reintenta hasta que el
-    # cupo abra. Asi el envio es inmune a la zona horaria de la maquina, al
-    # desfase del reloj del servidor y a que la tarea arranque antes o despues.
-    # El 400 del cupo agotado es FAILED_PRECONDITION y trae el motivo en el
-    # cuerpo (el CLI lo oculta); cualquier otro error se registra igual y se
-    # reintenta, porque un fallo de red no puede costar el envio del dia.
+    # The reset instant is NOT computed: we TRY and retry until the quota opens, which makes the submission immune to
+    # the machine's time zone, server clock skew and the task starting early or late. The quota-exhausted 400 is
+    # FAILED_PRECONDITION with the reason in the body (hidden by the CLI); any other error is logged and retried too,
+    # because a network failure must not cost the day's submission.
     max_minutes = int(os.environ.get("SUBMIT_MAX_MINUTES", "240")) if wait else 1
     deadline = time.time() + max_minutes * 60
-    log(f"armado: {kernel} v{version} — reintentando hasta {max_minutes} min "
-        f"o hasta que el cupo abra")
+    log(f"armed: {kernel} v{version} — retrying for up to {max_minutes} min or until the quota opens")
     attempt = 0
     while True:
         attempt += 1
         try:
-            api.competition_submit_code("submission.parquet", message, COMP,
-                                        kernel, int(version))
-            log(f"ENVIADO {kernel} v{version} (intento {attempt})")
+            api.competition_submit_code("submission.parquet", message, COMP, kernel, int(version))
+            log(f"SUBMITTED {kernel} v{version} (attempt {attempt})")
             break
         except Exception as exc:
             resp = getattr(exc, "response", None)
             body = resp.text[:300] if resp is not None else str(exc)[:300]
             if attempt == 1 or attempt % 15 == 0:
-                log(f"intento {attempt}: {body}")
+                log(f"attempt {attempt}: {body}")
             if time.time() >= deadline:
-                log(f"AGOTADO tras {attempt} intentos: {body}")
+                log(f"EXHAUSTED after {attempt} attempts: {body}")
                 return 1
             time.sleep(60)
 
-    # El CLI no imprime nada al tener exito -> verificar contra la lista.
+    # The CLI prints nothing on success -> verify against the list.
     time.sleep(15)
     subs = api.competition_submissions(COMP)
     if not subs:
-        log("VERIFICACION: la lista de envios vino vacia")
+        log("VERIFICATION: the submissions list came back empty")
         return 1
     newest = subs[0]
-    log(f"envio mas reciente: ref={getattr(newest, 'ref', '?')} "
-        f"fecha={getattr(newest, 'date', '?')} estado={getattr(newest, 'status', '?')}")
+    log(f"newest submission: ref={getattr(newest, 'ref', '?')} date={getattr(newest, 'date', '?')} "
+        f"status={getattr(newest, 'status', '?')}")
     desc = str(getattr(newest, "description", ""))
     ok = message[:40] in desc
-    log("OK (verificado en la lista)" if ok else f"AVISO: descripcion inesperada: {desc[:120]}")
+    log("OK (verified in the list)" if ok else f"WARNING: unexpected description: {desc[:120]}")
     return 0 if ok else 1
 
 

@@ -1,5 +1,5 @@
-# Local dev. arcengine y arc_agi se instalan desde arc_agi_3_wheels/ (datos de la
-# competencia, no versionados): pip install arc_agi_3_wheels/*.whl
+# Local tooling for the scripts in this repo. The competition packages (arcengine, arc_agi) are installed from the
+# competition's own wheels, which are not versioned:  pip install arc_agi_3_wheels/*.whl
 numpy
 pandas
 pyarrow

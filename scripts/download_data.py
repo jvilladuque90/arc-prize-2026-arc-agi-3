@@ -1,10 +1,9 @@
-"""Descarga los datos de la competencia arc-prize-2026-arc-agi-3 con la Kaggle CLI.
+"""Download the competition data (arc-prize-2026-arc-agi-3) with the Kaggle CLI.
 
-Lee credenciales desde .env (KAGGLE_API_TOKEN, kaggle_username) y descomprime en el
-root del repo (los datos vienen con la estructura ARC-AGI-3-Agents/, environment_files/,
-arc_agi_3_wheels/). Nada de esto se versiona en git (ver .gitignore).
+Reads credentials from .env (KAGGLE_API_TOKEN, kaggle_username) and unzips into the repo root (the data ships as
+ARC-AGI-3-Agents/, environment_files/, arc_agi_3_wheels/). None of it is versioned: see .gitignore.
 
-Uso:  python scripts/download_data.py
+Usage:  python scripts/download_data.py
 """
 
 from __future__ import annotations
@@ -27,7 +26,7 @@ def load_env(env_path: Path) -> None:
         if not line or line.startswith("#") or "=" not in line:
             continue
         key, val = line.split("=", 1)
-        # .env como fuente de verdad: sobreescribe el entorno (evita tokens obsoletos).
+        # .env is the source of truth: it overrides the environment (avoids stale tokens).
         os.environ[key.strip()] = val.strip()
 
 
@@ -36,20 +35,17 @@ def main() -> int:
     if "kaggle_username" in os.environ:
         os.environ["KAGGLE_USERNAME"] = os.environ["kaggle_username"]
     if "KAGGLE_API_TOKEN" not in os.environ and "KAGGLE_KEY" not in os.environ:
-        print("ERROR: faltan credenciales Kaggle en .env", file=sys.stderr)
+        print("ERROR: Kaggle credentials are missing from .env", file=sys.stderr)
         return 1
 
-    print(f"Descargando '{COMP}' en {ROOT} ...")
-    subprocess.run(
-        ["kaggle", "competitions", "download", "-c", COMP, "-p", str(ROOT)],
-        check=True,
-    )
+    print(f"Downloading '{COMP}' into {ROOT} ...")
+    subprocess.run(["kaggle", "competitions", "download", "-c", COMP, "-p", str(ROOT)], check=True)
     for zpath in ROOT.glob("*.zip"):
-        print(f"Descomprimiendo {zpath.name} ...")
+        print(f"Unzipping {zpath.name} ...")
         with zipfile.ZipFile(zpath) as z:
             z.extractall(ROOT)
         zpath.unlink()
-    print("Listo.")
+    print("Done.")
     return 0
 
 

@@ -2,14 +2,14 @@
 
 @AGENTS.md
 
-## Notas específicas para Claude Code
+## Notes specific to Claude Code
 
-- Windows: los logs de kernels se descargan con `PYTHONUTF8=1`, o salen de 0 bytes.
-- Las credenciales de Kaggle están en `.env` (cargar con `set -a; . ./.env; set +a`); nunca
-  imprimirlas ni commitearlas.
-- Scripts con `\n` o comillas: escribirlos con la herramienta Write, no con heredocs de Bash.
-  Mensajes de commit con `git commit -F <archivo>`.
-- No lanzar GPU (push de kernels, Save & Run) sin anunciarlo y tener visto bueno.
-- Plan vigente: **`plan.md`** (base = copia fiel de Franzen; S1-S4 casi obsoletos, DESIGN 8.85).
-  Regla de diseño: nada de notas narradas en el prompt ("frames yes, narration no").
-- **Cuota de tokens**: no lanzar flujos multiagente grandes sin acordar el tamaño; el del 2026-10-03 gastó ~6,95 M de tokens y agotó el límite de sesión.
+- Windows: download kernel logs with `PYTHONUTF8=1`, otherwise they come out empty (cp1252 errors).
+- Kaggle credentials live in `.env` (`set -a; . ./.env; set +a`); never print or commit them. `.env*` files are protected by
+  a permission rule, so do not try to create `.env.example`.
+- Scripts containing `\n` or quotes: write them with the Write tool, not Bash heredocs. Commit with `git commit -F <file>`.
+- Do not launch GPU work (kernel pushes, Save & Run) or submissions without announcing them and getting a go-ahead.
+- Token quota is limited: do not start large multi-agent workflows without agreeing their size first (a 13-agent audit on
+  2026-10-03 spent ~7 M tokens and hit the session limit). Have agents write their reports to disk before returning.
+- Background jobs are killed after roughly 30 minutes: poll with a loop capped at ~25 minutes and relaunch it.
+- A kernel pushed with Kaggle's public python image runs without the GPU; use the pinned image in `scripts/push_kernels.py`.

@@ -12,9 +12,9 @@
 Every build is gated: exactly one cell added (or one cell edited, for g15), every other cell byte-identical to its base,
 and all code cells compile. The inserted cell goes right AFTER the cell where Franzen applies his harness patch and BEFORE
 the notebook imports the harness. Needs: kaggle kernels pull dfranzen/arc-agi-3-milestone-2-solution
-                                          -p _tmp_pub/dfranzen_arc-agi-3-milestone-2-solution -m
+                                          -p .work/pub/dfranzen_arc-agi-3-milestone-2-solution -m
 
-Usage:  python scripts/build_arm.py h1
+Usage:  python scripts/kaggle/build_arm.py h1
 """
 
 from __future__ import annotations
@@ -26,9 +26,9 @@ import json
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 NB = ROOT / "notebooks"
-PULLED = ROOT / "_tmp_pub" / "dfranzen_arc-agi-3-milestone-2-solution" / "arc-agi-3-milestone-2-solution.ipynb"
+PULLED = ROOT / ".work" / "pub" / "dfranzen_arc-agi-3-milestone-2-solution" / "arc-agi-3-milestone-2-solution.ipynb"
 ANCHOR = "harness patch applied successfully"          # printed by Franzen's patch cell
 
 H1_CELL = '''# H1 SANDBOX HARDENING — experiment arm (docs/RESULTS.md). One variable:

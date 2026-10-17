@@ -1,9 +1,9 @@
 """Download the competition data (arc-prize-2026-arc-agi-3) with the Kaggle CLI.
 
-Reads credentials from .env (KAGGLE_API_TOKEN, kaggle_username) and unzips into the repo root (the data ships as
+Reads credentials from .env (KAGGLE_API_TOKEN, kaggle_username) and unzips into data/ (the data ships as
 ARC-AGI-3-Agents/, environment_files/, arc_agi_3_wheels/). None of it is versioned: see .gitignore.
 
-Usage:  python scripts/download_data.py
+Usage:  python scripts/kaggle/download_data.py
 """
 
 from __future__ import annotations
@@ -14,8 +14,9 @@ import sys
 import zipfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 COMP = "arc-prize-2026-arc-agi-3"
+DATA = ROOT / "data"
 
 
 def load_env(env_path: Path) -> None:
@@ -38,12 +39,13 @@ def main() -> int:
         print("ERROR: Kaggle credentials are missing from .env", file=sys.stderr)
         return 1
 
-    print(f"Downloading '{COMP}' into {ROOT} ...")
-    subprocess.run(["kaggle", "competitions", "download", "-c", COMP, "-p", str(ROOT)], check=True)
-    for zpath in ROOT.glob("*.zip"):
+    DATA.mkdir(exist_ok=True)
+    print(f"Downloading '{COMP}' into {DATA} ...")
+    subprocess.run(["kaggle", "competitions", "download", "-c", COMP, "-p", str(DATA)], check=True)
+    for zpath in DATA.glob("*.zip"):
         print(f"Unzipping {zpath.name} ...")
         with zipfile.ZipFile(zpath) as z:
-            z.extractall(ROOT)
+            z.extractall(DATA)
         zpath.unlink()
     print("Done.")
     return 0

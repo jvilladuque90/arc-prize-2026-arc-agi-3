@@ -79,7 +79,7 @@ what, and with what result.
 
 ```mermaid
 flowchart LR
-  A["Control<br/>faithful Franzen copy"] --> B["Arm: control + ONE cell<br/>(scripts/build_arm.py)"]
+  A["Control<br/>faithful Franzen copy"] --> B["Arm: control + ONE cell<br/>(scripts/kaggle/build_arm.py)"]
   B --> C["Unit test on the real<br/>patched harness (tests/)"]
   C --> D["Local gate: 10 or 15 games, 25 min<br/>catches breakage, never ranks"]
   D --> E["Hidden-set samples,<br/>one submission per day,<br/>alternating with the control"]

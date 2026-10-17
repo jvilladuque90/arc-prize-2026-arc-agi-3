@@ -47,18 +47,20 @@ Full tables, errata and the list of ideas still open: [docs/RESULTS.md](docs/RES
 
 ```
 README.md · README.es.md      this overview (English / Spanish)
-docs/
-  APPROACH.md                 how the current system works, explained simply
-  RESULTS.md                  submission history, every experiment, corrections to earlier claims
-  IDEAS.md                    research: ideas proven elsewhere, what blocked them, open veins
-  ROADMAP.md                  what is running and what comes next
-  archive/                    the original Spanish lab notebook and older design notes (historical)
-src/arc3/                     harness patches applied to Franzen's code: hardening (H1), reasoning effort (E1), pre-seeded helpers (M1), stagnation restart (C1)
-scripts/                      kernel publishing, submission automation, notebook builder (build_arm.py)
-notebooks/                    the Kaggle notebooks actually submitted or used as diagnostics
-tests/                        one test file per patch, run against the real patched harness; `scripts/check_repo.py` checks docs, registry and notebooks agree
-archive/legacy/               the superseded pipeline: state-graph explorer, vLLM/NVFP4 arms, Colab benches
-kernel_versions.json          pushed kernel versions (needed at submit time)
+AGENTS.md · CLAUDE.md         rules and conventions for agents working in the repo
+docs/                         APPROACH (how it works + diagrams) · RESULTS · IDEAS · ROADMAP, each in EN and ES
+src/arc3/                     harness patches applied to Franzen's code: hardening (H1), reasoning effort (E1),
+                              pre-seeded helpers (M1), stagnation restart (C1)
+notebooks/                    the Kaggle notebooks submitted or used as diagnostics + kernel_versions.json
+scripts/
+  kaggle/                     push_kernels.py · build_arm.py · prepare_harness_tree.py · download_data.py
+  submit/                     submit_at_reset.py · daily_alternate.py · arm_submit_task.ps1
+  check_repo.py               checks that docs, registry, notebooks, links and tests agree
+tests/                        one test file per patch, run against the real patched harness
+archive/                      history, kept for transparency (README inside)
+  legacy/                     the superseded pipeline: state-graph explorer, vLLM/NVFP4 arms, Colab benches
+  docs/                       the original Spanish lab notebook and older design notes
+data/  .work/                 git-ignored: competition data / scratch (pulled public kernels, logs, run outputs)
 ```
 
 ## Reproduce
@@ -66,17 +68,17 @@ kernel_versions.json          pushed kernel versions (needed at submit time)
 ```bash
 pip install -r requirements.txt
 # create a .env file with two lines:  KAGGLE_API_TOKEN=...  and  kaggle_username=...   (git-ignored; never commit it)
-python scripts/download_data.py                       # competition data (not versioned)
-kaggle kernels pull dfranzen/arc-agi-3-milestone-2-solution -p _tmp_pub/dfranzen_arc-agi-3-milestone-2-solution -m
-python scripts/build_arm.py fork                  # notebooks/franzen_m2.ipynb (faithful copy, checked cell by cell)
-python scripts/prepare_harness_tree.py                # patched harness tree used by the tests
+python scripts/kaggle/download_data.py                       # competition data (not versioned)
+kaggle kernels pull dfranzen/arc-agi-3-milestone-2-solution -p .work/pub/dfranzen_arc-agi-3-milestone-2-solution -m
+python scripts/kaggle/build_arm.py fork                  # notebooks/franzen_m2.ipynb (faithful copy, checked cell by cell)
+python scripts/kaggle/prepare_harness_tree.py                # patched harness tree used by the tests
 python scripts/check_repo.py --tests                  # consistency check + the four patch test files
-python scripts/push_kernels.py franzenm2 --dry-run    # inspect; add --gpu (no --dry-run) to run on Kaggle
-python scripts/submit_at_reset.py juliancamilovilla/arc-agi3-franzen-m2 "message"   # waits for the daily quota
+python scripts/kaggle/push_kernels.py franzenm2 --dry-run    # inspect; add --gpu (no --dry-run) to run on Kaggle
+python scripts/submit/submit_at_reset.py juliancamilovilla/arc-agi3-franzen-m2 "message"   # waits for the daily quota
 ```
 
-Daily submissions alternate between the control and the current candidate with `scripts/daily_alternate.py`
-(armed as a Windows scheduled task by `scripts/arm_submit_task.ps1`).
+Daily submissions alternate between the control and the current candidate with `scripts/submit/daily_alternate.py`
+(armed as a Windows scheduled task by `scripts/submit/arm_submit_task.ps1`).
 
 ## Attribution
 

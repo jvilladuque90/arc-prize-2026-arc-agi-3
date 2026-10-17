@@ -1,11 +1,11 @@
-# docs/archive/
+# archive/docs/
 
 [Español abajo](#español)
 
 The original **lab notebook**, in Spanish, written day by day while the experiments ran. It is kept unedited as a historical
 record, and it **contains mistakes that were corrected later** — the corrections are listed in
-[docs/RESULTS.md, section 4](../RESULTS.md#4-corrections-to-earlier-claims). For a readable summary start with
-[docs/RESULTS.md](../RESULTS.md) and [docs/IDEAS.md](../IDEAS.md).
+[docs/RESULTS.md, section 4](../../docs/RESULTS.md#4-corrections-to-earlier-claims). For a readable summary start with
+[docs/RESULTS.md](../../docs/RESULTS.md) and [docs/IDEAS.md](../../docs/IDEAS.md).
 
 | File | Content |
 |---|---|
@@ -20,5 +20,5 @@ record, and it **contains mistakes that were corrected later** — the correctio
 
 La **bitácora de laboratorio** original, en español, escrita día a día mientras corrían los experimentos. Se conserva sin editar
 como registro histórico y **contiene errores que se corrigieron después**: las correcciones están en
-[docs/RESULTS.es.md, sección 4](../RESULTS.es.md#4-correcciones-a-afirmaciones-previas). Para un resumen legible, empezar por
-[docs/RESULTS.es.md](../RESULTS.es.md) y [docs/IDEAS.es.md](../IDEAS.es.md).
+[docs/RESULTS.es.md, sección 4](../../docs/RESULTS.es.md#4-correcciones-a-afirmaciones-previas). Para un resumen legible, empezar por
+[docs/RESULTS.es.md](../../docs/RESULTS.es.md) y [docs/IDEAS.es.md](../../docs/IDEAS.es.md).

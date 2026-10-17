@@ -1,7 +1,7 @@
 """Repository self-check: is what the docs say consistent with what the code does? Exit code 1 if anything is off.
 
 Checks
-  1. every kernel in scripts/push_kernels.py points at an existing notebook, and every notebook in notebooks/ is registered;
+  1. every kernel in scripts/kaggle/push_kernels.py points at an existing notebook, and every notebook in notebooks/ is registered;
   2. every notebook's code cells compile;
   3. every public doc has both language versions (X.md and X.es.md);
   4. every relative Markdown link resolves;
@@ -22,7 +22,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "scripts"))
+sys.path.insert(0, str(ROOT / "scripts" / "kaggle"))
 problems: list[str] = []
 
 
@@ -42,7 +42,7 @@ def main() -> int:
     registered = {Path(c["notebook"]).name for c in KERNELS.values()}
     present = {p.name for p in (ROOT / "notebooks").glob("*.ipynb")}
     for name in sorted(registered - present):
-        bad(f"registered notebook is missing: notebooks/{name} (build it with scripts/build_arm.py)")
+        bad(f"registered notebook is missing: notebooks/{name} (build it with scripts/kaggle/build_arm.py)")
     for name in sorted(present - registered):
         bad(f"notebook is not in the registry: notebooks/{name}")
     if registered == present:
@@ -71,7 +71,7 @@ def main() -> int:
     good(f"{len(docs)} English docs, each with a Spanish version") if len(problems) == 0 else None
 
     print("4. Markdown links")
-    md_files = list(ROOT.glob("*.md")) + list((ROOT / "docs").rglob("*.md")) + list((ROOT / "archive").glob("*.md"))
+    md_files = list(ROOT.glob("*.md")) + list((ROOT / "docs").rglob("*.md")) + list((ROOT / "archive").glob("*.md")) + [ROOT / "archive" / "docs" / "README.md"]
     broken = 0
     for p in md_files:
         for m in re.finditer(r"\]\(([^)#\s]+)(#[^)]*)?\)", p.read_text(encoding="utf-8")):
@@ -84,7 +84,7 @@ def main() -> int:
     good(f"{len(md_files)} Markdown files, no broken relative links") if not broken else None
 
     print("5. kernel_versions.json")
-    versions = json.loads((ROOT / "kernel_versions.json").read_text(encoding="utf-8"))
+    versions = json.loads((ROOT / "notebooks" / "kernel_versions.json").read_text(encoding="utf-8"))
     slugs = {"juliancamilovilla/" + c["slug"] for c in KERNELS.values()}
     for key in versions:
         if key not in slugs:
@@ -95,7 +95,7 @@ def main() -> int:
     print("6. nothing sensitive is tracked")
     tracked = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.splitlines()
     for f in tracked:
-        if f == ".env" or f.startswith(("environment_files/", "arc_agi_3_wheels/", "ARC-AGI-3-Agents/", "_tmp_")):
+        if f == ".env" or f.startswith(("environment_files/", "arc_agi_3_wheels/", "ARC-AGI-3-Agents/", "data/", ".work/")):
             bad(f"tracked but must not be: {f}")
     good(f"{len(tracked)} tracked files, none sensitive")
 

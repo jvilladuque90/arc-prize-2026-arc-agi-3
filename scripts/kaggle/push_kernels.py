@@ -4,12 +4,12 @@
 shape and cost GPU quota, so GPU is opt-in (`--gpu`). Kernels are always PUBLIC: the ARC Prize requires all code
 to be open source to be prize-eligible.
 
-The pushed version number is written to kernel_versions.json, which scripts/submit_at_reset.py reads
+The pushed version number is written to notebooks/kernel_versions.json, which scripts/submit/submit_at_reset.py reads
 (code competitions need the version number at submit time).
 
 Examples:
-  python scripts/push_kernels.py franzenm2 --dry-run      # print the metadata, push nothing
-  python scripts/push_kernels.py franzenm2 --gpu          # push and run on the RTX PRO 6000
+  python scripts/kaggle/push_kernels.py franzenm2 --dry-run      # print the metadata, push nothing
+  python scripts/kaggle/push_kernels.py franzenm2 --gpu          # push and run on the RTX PRO 6000
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ import subprocess
 import tempfile
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 COMP = "arc-prize-2026-arc-agi-3"
 
 # What the Franzen-based kernels attach (all public Kaggle datasets and models), and the pinned image that
@@ -123,7 +123,7 @@ def main() -> int:
     # Record the pushed version: code-competition submissions need it.
     m = re.search(r"[Kk]ernel version (\d+)", r.stdout or "")
     if r.returncode == 0 and m:
-        vfile = ROOT / "kernel_versions.json"
+        vfile = ROOT / "notebooks" / "kernel_versions.json"
         versions = json.loads(vfile.read_text(encoding="utf-8")) if vfile.exists() else {}
         versions[meta["id"]] = int(m.group(1))
         vfile.write_text(json.dumps(versions, indent=2) + "\n", encoding="utf-8")

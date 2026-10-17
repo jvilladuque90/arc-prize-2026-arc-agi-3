@@ -6,7 +6,7 @@ env/
 .kaggle/
 
 # --- Competition data (never versioned: Kaggle rules / privacy) ---
-# Re-download with: python scripts/download_data.py
+# Re-download with: python scripts/kaggle/download_data.py
 environment_files/
 arc_agi_3_wheels/
 ARC-AGI-3-Agents/
@@ -14,6 +14,7 @@ data/
 
 # --- Third-party bundles and scratch work (public kernels we study; not redistributed) ---
 _tmp_*/
+.work/
 .submit_message.txt
 dataset-metadata.json
 

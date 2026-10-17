@@ -1,6 +1,6 @@
 """Tests for E1 (src/arc3/franzen_effort.py) against Franzen's REAL patched tool_agent.py. CPU only.
 
-Needs the patched harness tree: `python scripts/prepare_harness_tree.py` (or set ARC3_HARNESS_TREE).
+Needs the patched harness tree: `python scripts/kaggle/prepare_harness_tree.py` (or set ARC3_HARNESS_TREE).
 
 Usage:  python tests/test_franzen_effort.py
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-TREE = Path(os.environ.get("ARC3_HARNESS_TREE", ROOT / "_tmp_pub" / "franzen" / "src" / "ARC3-Inference"))
+TREE = Path(os.environ.get("ARC3_HARNESS_TREE", ROOT / ".work" / "pub" / "franzen" / "src" / "ARC3-Inference"))
 sys.path.insert(0, str(TREE))
 
 from arc3 import franzen_effort as e1  # noqa: E402

@@ -17,7 +17,7 @@ kernels point at an earlier layout). The current work lives in `src/`, `scripts/
 | `vendor/` | a snapshot of an early public agent |
 
 The results and verdicts of these experiments are summarised in [docs/RESULTS.md](../docs/RESULTS.md); the complete story
-(in Spanish) is in [docs/archive/DESIGN.md](../docs/archive/DESIGN.md).
+(in Spanish) is in [archive/docs/DESIGN.md](docs/DESIGN.md).
 
 ---
 
@@ -30,4 +30,4 @@ kernels fijados apuntan a una estructura anterior). El trabajo vigente está en 
 enmascarado, agente híbrido con LLM), los módulos de los ~25 «brazos» de harness probados sobre la base vLLM/NVFP4, sus pruebas,
 58 notebooks de Kaggle, sus constructores, los bancos de Colab y las salidas crudas de los bancos locales tempranos.
 Los resultados y veredictos están resumidos en [docs/RESULTS.es.md](../docs/RESULTS.es.md); la historia completa (en español)
-en [docs/archive/DESIGN.md](../docs/archive/DESIGN.md).
+en [archive/docs/DESIGN.md](docs/DESIGN.md).

@@ -9,7 +9,7 @@ Steps:
 Output (git-ignored):  <out>/src/ARC3-Inference  (patched)  and  <out>/src/ARC3-Inference-orig  (original).
 Needs Kaggle credentials in .env.
 
-Usage:  python scripts/prepare_harness_tree.py [--out _tmp_pub/franzen]
+Usage:  python scripts/kaggle/prepare_harness_tree.py [--out .work/pub/franzen]
 """
 
 from __future__ import annotations
@@ -22,10 +22,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 NOTEBOOK_REF = "dfranzen/arc-agi-3-milestone-2-solution"
 BUNDLE_REF = "dfranzen/taaf-kaggle-source-bundle-copy"
-NB_DIR = ROOT / "_tmp_pub" / "dfranzen_arc-agi-3-milestone-2-solution"
+NB_DIR = ROOT / ".work" / "pub" / "dfranzen_arc-agi-3-milestone-2-solution"
 NB_FILE = NB_DIR / "arc-agi-3-milestone-2-solution.ipynb"
 PATCH_HEADER = "%%writefile /kaggle/harness-changes.patch"
 
@@ -49,14 +49,14 @@ def run(*cmd: str, cwd: Path | None = None) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default="_tmp_pub/franzen")
+    ap.add_argument("--out", default=".work/pub/franzen")
     out = ROOT / ap.parse_args().out
     load_env()
 
     if not NB_FILE.exists():
         run("kaggle", "kernels", "pull", NOTEBOOK_REF, "-p", str(NB_DIR), "-m")
 
-    bundle = ROOT / "_tmp_pub" / "bundle"
+    bundle = ROOT / ".work" / "pub" / "bundle"
     if not (bundle / "src" / "ARC3-Inference").exists():
         run("kaggle", "datasets", "download", "-d", BUNDLE_REF, "-p", str(bundle), "--unzip")
 

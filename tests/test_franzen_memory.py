@@ -2,7 +2,7 @@
 
 Checks the seed functions themselves, that the harness's own retention validation accepts them and that no seed collides with a
 name the sandbox provides, and the behaviour of the REAL patched ToolAgent (a new game starts from the seeded library).
-Needs the patched harness tree: `python scripts/prepare_harness_tree.py` (or set ARC3_HARNESS_TREE).
+Needs the patched harness tree: `python scripts/kaggle/prepare_harness_tree.py` (or set ARC3_HARNESS_TREE).
 
 Usage:  python tests/test_franzen_memory.py
 """
@@ -18,7 +18,7 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-TREE = Path(os.environ.get("ARC3_HARNESS_TREE", ROOT / "_tmp_pub" / "franzen" / "src" / "ARC3-Inference"))
+TREE = Path(os.environ.get("ARC3_HARNESS_TREE", ROOT / ".work" / "pub" / "franzen" / "src" / "ARC3-Inference"))
 sys.path.insert(0, str(TREE))
 
 from arc3 import franzen_memory as m1  # noqa: E402

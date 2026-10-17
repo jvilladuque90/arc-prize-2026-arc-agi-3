@@ -82,7 +82,7 @@ dice que, y con que resultado.
 
 ```mermaid
 flowchart LR
-  A["Control<br/>copia fiel de Franzen"] --> B["Brazo: control + UNA celda<br/>(scripts/build_arm.py)"]
+  A["Control<br/>copia fiel de Franzen"] --> B["Brazo: control + UNA celda<br/>(scripts/kaggle/build_arm.py)"]
   B --> C["Prueba unitaria sobre el<br/>harness parcheado real (tests/)"]
   C --> D["Compuerta local: 10 o 15 juegos, 25 min<br/>detecta roturas, nunca clasifica"]
   D --> E["Muestras en el set oculto,<br/>un envio al dia,<br/>alternando con el control"]

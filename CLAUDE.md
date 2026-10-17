@@ -12,4 +12,4 @@
 - Token quota is limited: do not start large multi-agent workflows without agreeing their size first (a 13-agent audit on
   2026-10-03 spent ~7 M tokens and hit the session limit). Have agents write their reports to disk before returning.
 - Background jobs are killed after roughly 30 minutes: poll with a loop capped at ~25 minutes and relaunch it.
-- A kernel pushed with Kaggle's public python image runs without the GPU; use the pinned image in `scripts/push_kernels.py`.
+- A kernel pushed with Kaggle's public python image runs without the GPU; use the pinned image in `scripts/kaggle/push_kernels.py`.

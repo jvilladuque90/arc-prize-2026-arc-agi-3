@@ -7,7 +7,7 @@ and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the publ
 
 - Base: a faithful copy of Daniel Franzen's public Milestone-2 solution (`notebooks/franzen_m2.ipynb`). Hidden-set score
   **25.7 mean, sd 1.6 (n = 6)**.
-- Daily submissions alternate between that control and the D′ scheduler variant (`scripts/daily_alternate.py`, armed as the
+- Daily submissions alternate between that control and the D′ scheduler variant (`scripts/submit/daily_alternate.py`, armed as the
   Windows task `ARC-AGI3-SubmitOneShot`). The decision rule is in `docs/ROADMAP.md`.
 - Every experiment tried on top of a base so far was neutral or negative (`docs/RESULTS.md`). The superseded pipeline is in
   `archive/legacy/` and is not maintained.
@@ -32,14 +32,14 @@ and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the publ
 | Path | Purpose |
 |---|---|
 | `src/arc3/` | patches applied to Franzen's `tool_agent.py` by exact-anchor replacement: `franzen_hardening.py` (H1), `franzen_effort.py` (E1), `franzen_memory.py` (M1), `franzen_stagnation.py` (C1) |
-| `scripts/build_arm.py` | builds `notebooks/franzen_*.ipynb` (control copy and one-cell arms) with cell-by-cell gates |
-| `scripts/push_kernels.py` | publishes a notebook as a public Kaggle kernel (`--gpu` to run on the RTX PRO 6000; `--dry-run` first) |
-| `scripts/submit_at_reset.py`, `daily_alternate.py`, `arm_submit_task.ps1` | submission automation |
-| `scripts/prepare_harness_tree.py` | builds the patched harness the tests run against |
+| `scripts/kaggle/build_arm.py` | builds `notebooks/franzen_*.ipynb` (control copy and one-cell arms) with cell-by-cell gates |
+| `scripts/kaggle/push_kernels.py` | publishes a notebook as a public Kaggle kernel (`--gpu` to run on the RTX PRO 6000; `--dry-run` first) |
+| `scripts/submit/submit_at_reset.py`, `daily_alternate.py`, `arm_submit_task.ps1` | submission automation |
+| `scripts/kaggle/prepare_harness_tree.py` | builds the patched harness the tests run against |
 | `tests/`, `scripts/check_repo.py` | one test file per patch; `python scripts/check_repo.py --tests` checks docs, registry, notebooks, links and tests together |
 
 ## Documentation discipline
 
 Public docs are bilingual (English first, `.es.md` beside it) and short. Record each result once in `docs/RESULTS.md`
 (and `.es.md`), the open questions in `docs/IDEAS.md`, and the plan in `docs/ROADMAP.md`. Commit messages: a short subject, a
-two-line body, then a pointer to the doc section. The Spanish lab notebook in `docs/archive/` is frozen.
+two-line body, then a pointer to the doc section. The Spanish lab notebook in `archive/docs/` is frozen.

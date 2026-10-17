@@ -8,8 +8,8 @@ The script is idempotent per UTC day (safe to fire several times a night) and re
 A submission that ended in ERROR/CANCELED does not count as the day's submission and is retried.
 
 Usage:
-  python scripts/submit_at_reset.py juliancamilovilla/arc-agi3-franzen-m2 "message"
-  python scripts/submit_at_reset.py <kernel> "<message>" --now        # try once, do not wait
+  python scripts/submit/submit_at_reset.py juliancamilovilla/arc-agi3-franzen-m2 "message"
+  python scripts/submit/submit_at_reset.py <kernel> "<message>" --now        # try once, do not wait
 Environment: SUBMIT_MAX_MINUTES (default 240) bounds the retry window.
 """
 
@@ -22,12 +22,13 @@ import sys
 import time
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 COMP = "arc-prize-2026-arc-agi-3"
-LOG = ROOT / "daily_submit.log"
+LOG = ROOT / ".work" / "logs" / "daily_submit.log"
 
 
 def log(msg: str) -> None:
+    LOG.parent.mkdir(parents=True, exist_ok=True)
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     line = f"{stamp}  {msg}"
     print(line, flush=True)
@@ -52,7 +53,7 @@ def main() -> int:
     args = [a for a in sys.argv[1:] if a != "--now"]
     wait = "--now" not in sys.argv
     kernel, message = args[0], args[1]
-    version = json.loads((ROOT / "kernel_versions.json").read_text(encoding="utf-8"))[kernel]
+    version = json.loads((ROOT / "notebooks" / "kernel_versions.json").read_text(encoding="utf-8"))[kernel]
 
     load_env()
     try:

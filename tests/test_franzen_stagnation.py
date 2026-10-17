@@ -1,7 +1,7 @@
 """Tests for C1 (src/arc3/franzen_stagnation.py): fresh reasoning context after a very expensive unfinished level. CPU only.
 
 Checks the restart policy on a stand-in agent, the patch application, and the wiring on the REAL patched ToolAgent.
-Needs the patched harness tree: `python scripts/prepare_harness_tree.py` (or set ARC3_HARNESS_TREE).
+Needs the patched harness tree: `python scripts/kaggle/prepare_harness_tree.py` (or set ARC3_HARNESS_TREE).
 
 Usage:  python tests/test_franzen_stagnation.py
 """
@@ -16,7 +16,7 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
-TREE = Path(os.environ.get("ARC3_HARNESS_TREE", ROOT / "_tmp_pub" / "franzen" / "src" / "ARC3-Inference"))
+TREE = Path(os.environ.get("ARC3_HARNESS_TREE", ROOT / ".work" / "pub" / "franzen" / "src" / "ARC3-Inference"))
 sys.path.insert(0, str(TREE))
 
 from arc3 import franzen_stagnation as c1  # noqa: E402

@@ -7,7 +7,7 @@ Final submission deadline: **2026-11-02**. One submission per day.
 ## Running now
 
 - **Daily alternation** (from 2026-10-18 UTC): the faithful Franzen copy (control) on one day, the D′ scheduler variant on the
-  next, chosen by the parity of the UTC date by `scripts/daily_alternate.py`. If the chosen kernel is not in `COMPLETE` state, the
+  next, chosen by the parity of the UTC date by `scripts/submit/daily_alternate.py`. If the chosen kernel is not in `COMPLETE` state, the
   other one is submitted instead. Armed as a Windows scheduled task with five triggers per day (the late ones retry after a
   platform error, which is only visible hours after the submission).
 - Both kernels are public; the control is a verbatim copy and D′ is a verbatim copy of its author's notebook.

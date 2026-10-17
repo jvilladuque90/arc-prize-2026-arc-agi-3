@@ -3,7 +3,7 @@
 [English](RESULTS.md) · [Volver al README](../README.es.md)
 
 Todos los números son **puntajes públicos del set oculto** salvo los marcados *local* (una demo de 10 o 15 juegos en Kaggle). Los
-números de sección (§) remiten a la bitácora original en español: [docs/archive/DESIGN.md](archive/DESIGN.md).
+números de sección (§) remiten a la bitácora original en español: [archive/docs/DESIGN.md](../archive/docs/DESIGN.md).
 
 ## 1. Historial en el set oculto
 

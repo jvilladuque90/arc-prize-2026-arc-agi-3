@@ -3,7 +3,7 @@
 [Español](RESULTS.es.md) · [Back to the README](../README.md)
 
 Every number below is a **hidden-set public score** unless marked *local* (a 10- or 15-game demo run on Kaggle). Section numbers
-(§) point to the original Spanish lab notebook in [docs/archive/DESIGN.md](archive/DESIGN.md).
+(§) point to the original Spanish lab notebook in [archive/docs/DESIGN.md](../archive/docs/DESIGN.md).
 
 ## 1. Hidden-set history
 

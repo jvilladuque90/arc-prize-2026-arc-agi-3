@@ -5,7 +5,7 @@ until the quota opens). Every firing on the same UTC day picks the SAME kernel, 
 candidate. Fallback: if the chosen kernel is not in COMPLETE state (e.g. its Save & Run failed), the next one in the
 rotation is used.
 
-Edit ROTATION to change the candidates. Fired by the scheduled task armed with scripts/arm_submit_task.ps1 -Alternate.
+Edit ROTATION to change the candidates. `--dry-run` shows the choice without submitting. Fired by the scheduled task armed with scripts/submit/arm_submit_task.ps1 -Alternate.
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-LOG = ROOT / "daily_submit.log"
+ROOT = Path(__file__).resolve().parents[2]
+LOG = ROOT / ".work" / "logs" / "daily_submit.log"
 
 ROTATION = [
     ("juliancamilovilla/arc-agi3-franzen-m2",
@@ -31,6 +31,7 @@ ROTATION = [
 
 
 def log(msg: str) -> None:
+    LOG.parent.mkdir(parents=True, exist_ok=True)
     with LOG.open("a", encoding="utf-8") as fh:
         fh.write(f"{datetime.datetime.now(datetime.timezone.utc):%Y-%m-%dT%H:%M:%SZ}  [alternate] {msg}\n")
 
@@ -63,7 +64,10 @@ def main() -> int:
         kernel, message = ROTATION[(first + step) % len(ROTATION)]
         if is_complete(kernel):
             log(f"{today}: it is the turn of {kernel}" + ("" if step == 0 else " (fallback)"))
-            return subprocess.run([sys.executable, str(ROOT / "scripts" / "submit_at_reset.py"), kernel, message],
+            if "--dry-run" in sys.argv:
+                print(f"[dry-run] would submit {kernel} (version in notebooks/kernel_versions.json)")
+                return 0
+            return subprocess.run([sys.executable, str(ROOT / "scripts" / "submit" / "submit_at_reset.py"), kernel, message],
                                   cwd=str(ROOT)).returncode
         log(f"{today}: {kernel} is not COMPLETE; trying the next one")
     log("no kernel in the rotation is COMPLETE; nothing submitted")

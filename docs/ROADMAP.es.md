@@ -7,7 +7,7 @@ Fecha límite de envíos: **2026-11-02**. Un envío por día.
 ## En marcha
 
 - **Alternancia diaria** (desde el 2026-10-18 UTC): la copia fiel de Franzen (control) un día y la variante D′ del planificador al
-  siguiente, elegidas por la paridad de la fecha UTC con `scripts/daily_alternate.py`. Si el kernel elegido no está en estado
+  siguiente, elegidas por la paridad de la fecha UTC con `scripts/submit/daily_alternate.py`. Si el kernel elegido no está en estado
   `COMPLETE`, se envía el otro. Está armada como tarea programada de Windows con cinco disparos al día (los tardíos reintentan tras
   un error de plataforma, que solo se ve horas después del envío).
 - Ambos kernels son públicos; el control es una copia literal y D′ es una copia literal del notebook de su autor.

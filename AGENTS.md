@@ -6,7 +6,7 @@ and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the publ
 ## Current state (2026-10-17)
 
 - Base: a faithful copy of Daniel Franzen's public Milestone-2 solution (`notebooks/franzen_m2.ipynb`). Hidden-set score
-  **25.7 mean, sd 1.6 (n = 6)**.
+  **25.5 mean, sd 1.5 (n = 7)**. Two exact-zero submissions on 21-22 Oct were infrastructure failures (docs/RESULTS.md §3.1).
 - Daily submissions alternate between that control and the D′ scheduler variant (`scripts/submit/daily_alternate.py`, armed as the
   Windows task `ARC-AGI3-SubmitOneShot`). The decision rule is in `docs/ROADMAP.md`.
 - Every experiment tried on top of a base so far was neutral or negative (`docs/RESULTS.md`). The superseded pipeline is in

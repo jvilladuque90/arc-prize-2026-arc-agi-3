@@ -14,7 +14,7 @@ Fecha límite de envíos: **2026-11-02**. Un envío por día.
 
 ## Regla de decisión
 
-El control tiene 6 muestras ocultas (media 25,7, sd 1,6). D′ solo se mantiene si su media con **al menos 4 muestras** supera a la
+El control tiene 7 muestras ocultas (media 25,5, sd 1,5); D′ tiene 2 (27,30; 25,30). Un 0,00 exacto es un fallo de infraestructura y no cuenta (RESULTS §3.1). D′ solo se mantiene si su media con **al menos 4 muestras** supera a la
 del control en más de ~3 puntos; si no, gana el control. Desde el **2026-10-29** solo se envía la mejor configuración, para
 aprovechar el máximo de la tabla.
 

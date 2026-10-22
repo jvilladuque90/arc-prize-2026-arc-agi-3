@@ -14,7 +14,7 @@ and the measurement mistakes made along the way. All kernels are public and the 
 | | |
 |---|---|
 | Current base | A faithful copy of Daniel Franzen's public Milestone-2 solution (SGLang, INT4 Qwen3.8-Flash-Next, 128K context) |
-| Hidden-set score of the base | **25.7 mean, sd 1.6 (n = 6)**, best 27.63 |
+| Hidden-set score of the base | **25.5 mean, sd 1.5 (n = 7)**, best 27.63 |
 | Leaderboard (4,425 teams) | top 68.9 · 3rd 50.4 · 10th 41.7 · 100th 33.2 · this entry 27.63 (rank ~1,090) |
 | Score before adopting that base | 3–5 |
 

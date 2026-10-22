@@ -41,8 +41,7 @@ def is_complete(slug: str) -> bool:
         from kaggle.api.kaggle_api_extended import KaggleApi
         api = KaggleApi()
         api.authenticate()
-        owner, name = slug.split("/")
-        return "COMPLETE" in str(getattr(api.kernels_status(owner, name), "status", "")).upper()
+        return "COMPLETE" in str(getattr(api.kernels_status(slug), "status", "")).upper()   # signature: kernels_status(kernel)
     except Exception as exc:  # noqa: BLE001
         log(f"could not query the status of {slug} ({type(exc).__name__}); assuming it is fine")
         return True

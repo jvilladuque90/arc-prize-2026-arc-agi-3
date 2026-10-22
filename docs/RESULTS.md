@@ -16,7 +16,8 @@ Every number below is a **hidden-set public score** unless marked *local* (a 10-
 | 3 Oct → | **Franzen Milestone-2 solution, unchanged** | 25.01 · 25.17 · 23.39 · 27.15 · 27.63 · 25.97 | n = 6, **mean 25.7, sd 1.6** |
 | 9 Oct | + H1 (sandbox robustness fixes) | 24.17 | within noise |
 | 10 Oct | + E1 (`reasoning_effort=medium`) | **20.98** | ~3 sd *below* the control |
-| 18 Oct → | alternating control / D′ scheduler | pending | see [ROADMAP](ROADMAP.md) |
+| 18–20 Oct | alternating D′ / control / D′ | 27.30 · 24.30 · 25.30 | D′: n = 2, mean 26.3; control now n = 7, mean 25.5, sd 1.5 |
+| 21–22 Oct | control / D′ | **0.00 · 0.00** | infrastructure failure, see §3.1 (not counted as samples) |
 
 Leaderboard on 2026-10-17 (4,425 teams): 1st 68.9, 2nd 67.5, 3rd 50.4, 10th 41.7, 25th 36.9, 100th 33.2. Most of the 25th–100th
 band are unmodified copies of the same public solution, lifted by taking the maximum over many daily submissions.
@@ -73,6 +74,18 @@ his 10 — a 25-game mix of **21.7**, close to the 25.7 seen on the hidden set. 
 
 Reproducibility note: the experiment notebooks in `notebooks/` were regenerated with English comments after the kernels H1, D1,
 E1 and G15 had been pushed to Kaggle. The code that runs is identical; only comments and the embedded modules' docstrings differ.
+
+### 3.1 Incident: two exact-zero submissions (2026-10-21 and 22)
+
+The unchanged control and the D′ kernel both returned `COMPLETE` with a score of **0.00**, after 27.30 / 24.30 / 25.30 on the three
+previous days. What we know: both produced a submission file of exactly **3,411 bytes** (normal runs: 3,800–3,900), so they failed in
+the same way, most likely without playing at all; Franzen's datasets and models were last updated on 28–29 Sep, so the inputs did not
+change; the leaderboard did not collapse (47 of the top 100 teams submitted on 22 Oct); Kaggle does not expose the rerun logs.
+What we do not know: the cause. Hypotheses, none confirmed: a server start that exceeded the harness's ~31-minute startup cliff
+under storage contention; or the account's two-session GPU cap being occupied by other projects when the rerun started (on 22 Oct
+Kaggle refused new GPU pushes with "Maximum batch GPU session count of 2 reached" while none of our ARC kernels was running).
+Handling: an exact 0.00 is treated as an infrastructure failure, not as a sample of the arm; the gate runs of the new arms double as a
+canary of the current environment; and the status check of the alternating submitter, which never worked (wrong API signature), is fixed.
 
 ## 4. Corrections to earlier claims
 

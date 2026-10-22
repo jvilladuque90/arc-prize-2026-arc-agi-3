@@ -14,7 +14,7 @@ Final submission deadline: **2026-11-02**. One submission per day.
 
 ## Decision rule
 
-The control has 6 hidden samples (mean 25.7, sd 1.6). D′ is kept only if its mean over **at least 4 samples** exceeds the control's
+The control has 7 hidden samples (mean 25.5, sd 1.5); D′ has 2 (27.30, 25.30). An exact 0.00 is an infrastructure failure and does not count (RESULTS §3.1). D′ is kept only if its mean over **at least 4 samples** exceeds the control's
 by more than ~3 points; otherwise the control wins. From **2026-10-29** only the better configuration is submitted, to exploit the
 leaderboard's maximum.
 

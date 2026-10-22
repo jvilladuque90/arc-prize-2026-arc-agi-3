@@ -16,7 +16,8 @@ números de sección (§) remiten a la bitácora original en español: [archive/
 | 3 oct → | **Solución del Milestone 2 de Franzen, sin cambios** | 25,01 · 25,17 · 23,39 · 27,15 · 27,63 · 25,97 | n = 6, **media 25,7, sd 1,6** |
 | 9 oct | + H1 (arreglos de robustez del sandbox) | 24,17 | dentro del ruido |
 | 10 oct | + E1 (`reasoning_effort=medium`) | **20,98** | ~3 sd *por debajo* del control |
-| 18 oct → | alternando control / prioridad D′ del planificador | pendiente | ver [ROADMAP](ROADMAP.es.md) |
+| 18–20 oct | alternando D′ / control / D′ | 27,30 · 24,30 · 25,30 | D′: n = 2, media 26,3; el control ya tiene n = 7, media 25,5, sd 1,5 |
+| 21–22 oct | control / D′ | **0,00 · 0,00** | fallo de infraestructura, ver §3.1 (no cuentan como muestras) |
 
 Tabla de posiciones el 2026-10-17 (4.425 equipos): 1.º 68,9, 2.º 67,5, 3.º 50,4, 10.º 41,7, 25.º 36,9, 100.º 33,2. Buena parte de la
 franja 25.º–100.º son copias sin modificar de la misma solución pública, elevadas por tomar el máximo de muchos envíos diarios.
@@ -74,6 +75,20 @@ en sus 10: una mezcla de 25 juegos de **21,7**, cercana al 25,7 visto en el ocul
 Nota de reproducibilidad: los notebooks de experimento de `notebooks/` se regeneraron con comentarios en inglés después de haber
 subido a Kaggle los kernels H1, D1, E1 y G15. El código que se ejecuta es idéntico; solo difieren los comentarios y los docstrings de
 los módulos embebidos.
+
+### 3.1 Incidente: dos envíos con cero exacto (2026-10-21 y 22)
+
+El control sin cambios y el kernel D′ devolvieron `COMPLETE` con un puntaje de **0,00**, tras 27,30 / 24,30 / 25,30 en los tres días
+anteriores. Lo que sabemos: ambos generaron un archivo de envío de exactamente **3.411 bytes** (los normales pesan 3.800–3.900),
+así que fallaron igual, con probabilidad sin llegar a jugar; los datasets y modelos de Franzen se actualizaron por última vez el 28–29
+de septiembre, así que los insumos no cambiaron; la tabla no se hundió (47 de los 100 primeros equipos enviaron el 22 de octubre);
+Kaggle no expone los logs del rerun. Lo que no sabemos: la causa. Hipótesis, ninguna confirmada: un arranque del servidor que superó
+el «acantilado» de ~31 minutos del harness bajo contención de almacenamiento; o el tope de dos sesiones de GPU de la cuenta ocupado por
+otros proyectos cuando empezó el rerun (el 22 de octubre Kaggle rechazó nuevos pushes de GPU con «Maximum batch GPU session count of 2
+reached» sin que corriera ningún kernel de ARC nuestro).
+Tratamiento: un 0,00 exacto se trata como fallo de infraestructura y no como muestra del brazo; las corridas de compuerta de los brazos
+nuevos sirven además de canario del entorno actual; y se corrigió la comprobación de estado del enviador alterno, que nunca funcionó
+(firma de API equivocada).
 
 ## 4. Correcciones a afirmaciones previas
 

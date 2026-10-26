@@ -20,7 +20,7 @@ aprovechar el máximo de la tabla.
 
 ## Próximos brazos (un cambio cada uno, en este orden)
 
-0. **Primero la corrección del rerun**: todos los notebooks reconocen ya un rerun puntuado por `ARC_BASE_URL` (RESULTS §3.1); el control corregido pasa de nuevo la compuerta antes de volver a enviar.
+0. **Primero las correcciones de infraestructura**: todos los notebooks reconocen ya un rerun puntuado por `ARC_BASE_URL` y esperan hasta 55 min al servidor (RESULTS §3.1); el control corregido pasa de nuevo la compuerta antes de volver a enviar.
 1. **Memoria de niveles resueltos (S1 / V10)**: *construida y con pruebas unitarias* (`notebooks/franzen_s1.ipynb`, del notebook público de `lalalia9`, 31,46); compuerta y luego muestras ocultas contra el control. Pasa por delante de M1/C1 porque es la única adición pública con ganancia reportada.
 2. **Funciones auxiliares precargadas (M1 / V4)**: *construido y con pruebas unitarias* (`notebooks/franzen_m1.ipynb`); su compuerta falló dos veces por el montaje de un dataset (no por el código); se reintenta cuando pase la del control.
 3. **Reinicio por estancamiento (C1 / V5)**: *construido y con pruebas unitarias* (`notebooks/franzen_c1.ipynb`, portado de `heliosli`); mismo camino. Su efecto solo puede aparecer en el rerun oculto.

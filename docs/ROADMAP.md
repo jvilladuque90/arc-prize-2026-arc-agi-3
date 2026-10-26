@@ -20,7 +20,7 @@ leaderboard's maximum.
 
 ## Next arms (one change each, in this order)
 
-0. **Rerun fix first**: every notebook now recognises a scored rerun by `ARC_BASE_URL` (RESULTS §3.1); the corrected control is re-gated before anything is submitted again.
+0. **Infrastructure fixes first**: every notebook now recognises a scored rerun by `ARC_BASE_URL` and waits up to 55 min for the server (RESULTS §3.1); the corrected control is re-gated before anything is submitted again.
 1. **Solved-level memory (S1 / V10)** — *built and unit-tested* (`notebooks/franzen_s1.ipynb`, from `lalalia9`'s public 31.46 notebook); gate, then hidden samples against the control. Moved ahead of M1/C1 because it is the only public addition with a reported gain.
 2. **Pre-seeded helper functions (M1 / V4)** — *built and unit-tested* (`notebooks/franzen_m1.ipynb`); its gate failed twice on a dataset mount (not the code); retry after the control gate passes.
 3. **Stagnation reset (C1 / V5)** — *built and unit-tested* (`notebooks/franzen_c1.ipynb`, ported from `heliosli`); same path. Its effect can only appear in the hidden rerun.

@@ -89,6 +89,12 @@ line: a rerun is recognised by either variable (`scripts/kaggle/build_arm.py rer
 Handling: an exact 0.00 is not a sample of the arm; the earlier hypotheses (slow server start, GPU session cap) were wrong; the
 status check of the alternating submitter, which never worked (wrong API signature), is also fixed.
 
+**Second infrastructure fix (26 Oct gate of the corrected control):** the server was not ready after Franzen's 12-minute
+start-up limit (`DEADLINE at 722s … releasing the benchmark with the server still loading`; earlier gates were READY at
+~8–9 min), so the ten demo games spent part of their 25 minutes on connection retries and the gate scored 22.3 instead of
+~46. In a scored rerun each game has 532 minutes, so waiting for a ready server costs nothing: every notebook now waits up to
+55 minutes (`build_arm.py startup`), as the public notebooks do. That gate is not a sample of anything.
+
 ### 3.2 Audit of public baselines (2026-10-26)
 
 Leaderboard: 71.48 / 68.91 / 56.02 at the top; Franzen himself 38.85. None of those versions is public. Of the public

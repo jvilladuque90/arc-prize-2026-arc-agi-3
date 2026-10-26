@@ -92,6 +92,13 @@ aplicada al control y a todos los brazos).
 Tratamiento: un 0,00 exacto no es muestra del brazo; las hipótesis anteriores (arranque lento, tope de sesiones de GPU) eran
 erróneas; también se corrigió la comprobación de estado del enviador alterno, que nunca funcionó (firma de API equivocada).
 
+**Segunda corrección de infraestructura (compuerta del 26 oct del control corregido):** el servidor no estaba listo al
+cumplirse el límite de arranque de 12 minutos de Franzen (`DEADLINE at 722s … releasing the benchmark with the server still
+loading`; las compuertas anteriores estaban READY a los ~8–9 min), así que los diez juegos de la demo gastaron parte de sus
+25 minutos en reintentos de conexión y la compuerta dio 22,3 en vez de ~46. En un rerun puntuado cada juego tiene 532
+minutos, así que esperar al servidor no cuesta nada: todos los notebooks esperan ahora hasta 55 minutos
+(`build_arm.py startup`), como hacen los notebooks públicos. Esa compuerta no es muestra de nada.
+
 ### 3.2 Auditoría de baselines públicos (2026-10-26)
 
 Tabla: 71,48 / 68,91 / 56,02 arriba; el propio Franzen, 38,85. Ninguna de esas versiones es pública. De los kernels públicos y

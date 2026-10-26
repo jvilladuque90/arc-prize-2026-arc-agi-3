@@ -13,6 +13,7 @@
   rerun                     every notebooks/franzen_*.ipynb  in place: a scored rerun is also recognised by ARC_BASE_URL
                             (Kaggle stopped injecting KAGGLE_IS_COMPETITION_RERUN around 21 Oct; without this the offline
                             branch runs and a placeholder parquet scores 0.00 — docs/RESULTS.md §3.1). Applies to the control too.
+  startup                   every notebooks/franzen_*.ipynb  in place: wait up to 55 min (not 12) for the server before playing.
 
 Every build is gated: exactly one cell added (or one cell edited, for g15), every other cell byte-identical to its base,
 and all code cells compile. The inserted cell goes right AFTER the cell where Franzen applies his harness patch and BEFORE
@@ -119,17 +120,27 @@ RERUN_NEW = ('TRUE_SUBMISSION = (os.environ.get("KAGGLE_IS_COMPETITION_RERUN", "
              '                   or bool(os.environ.get("ARC_BASE_URL", "").strip()))  # rerun fix, docs/RESULTS.md §3.1')
 
 
-def apply_rerun_fix(path: Path) -> int:
+# startup: Franzen waits at most 12 minutes for the server, then "releases the benchmark with the server still loading";
+# every game then burns its own budget on connection retries (gate of 26 Oct: DEADLINE at 722 s, demo 22.3 instead of ~46).
+# In the scored rerun the games have 532 minutes each, so waiting for a ready server costs nothing. Public notebooks use 45–55.
+STARTUP_OLD = "SERVER_STARTUP_TIMEOUT = 12 * 60"
+STARTUP_NEW = "SERVER_STARTUP_TIMEOUT = 55 * 60  # startup fix, docs/RESULTS.md §3.1 (Franzen: 12 * 60)"
+
+FIXES = {"rerun": (RERUN_OLD, RERUN_NEW), "startup": (STARTUP_OLD, STARTUP_NEW)}
+
+
+def apply_rerun_fix(path: Path, fix: str = "rerun") -> int:
+    old, new = FIXES[fix]
     nb = load(path)
-    hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and RERUN_OLD in src(c)]
-    if not hits and any(RERUN_NEW in src(c) for c in nb["cells"] if c.get("cell_type") == "code"):
-        print(f"{path.name}: already fixed")
+    hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and old in src(c)]
+    if not hits and any(new in src(c) for c in nb["cells"] if c.get("cell_type") == "code"):
+        print(f"{path.name}: already fixed ({fix})")
         return 0
-    if len(hits) != 1 or src(nb["cells"][hits[0]]).count(RERUN_OLD) != 1:
-        print(f"{path.name}: rerun anchor not found exactly once")
+    if len(hits) != 1 or src(nb["cells"][hits[0]]).count(old) != 1:
+        print(f"{path.name}: {fix} anchor not found exactly once")
         return 1
     before = load(path)["cells"]
-    nb["cells"][hits[0]]["source"] = src(nb["cells"][hits[0]]).replace(RERUN_OLD, RERUN_NEW).splitlines(keepends=True)
+    nb["cells"][hits[0]]["source"] = src(nb["cells"][hits[0]]).replace(old, new).splitlines(keepends=True)
     path.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
     diff = [k for k, (o, n) in enumerate(zip(before, load(path)["cells"])) if src(o) != src(n)]
     bad = code_compiles(load(path))
@@ -185,14 +196,14 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "solved"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "solved"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()
 
     control = NB / "franzen_m2.ipynb"
-    if a.arm == "rerun":
-        return max(apply_rerun_fix(p) for p in sorted(NB.glob("franzen_*.ipynb")))
+    if a.arm in FIXES:
+        return max(apply_rerun_fix(p, a.arm) for p in sorted(NB.glob("franzen_*.ipynb")))
     if a.arm == "fork":
         if not PULLED.exists():
             print(f"missing {PULLED}; see the usage line in this file's docstring")

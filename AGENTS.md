@@ -31,7 +31,7 @@ and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the publ
 
 | Path | Purpose |
 |---|---|
-| `src/arc3/` | patches applied to Franzen's `tool_agent.py` by exact-anchor replacement: `franzen_hardening.py` (H1), `franzen_effort.py` (E1), `franzen_memory.py` (M1), `franzen_stagnation.py` (C1) |
+| `src/arc3/` | patches applied to Franzen's `tool_agent.py` by exact-anchor replacement: `franzen_hardening.py` (H1), `franzen_effort.py` (E1), `franzen_memory.py` (M1), `franzen_stagnation.py` (C1), `franzen_solved_levels.py` (S1) |
 | `scripts/kaggle/build_arm.py` | builds `notebooks/franzen_*.ipynb` (control copy and one-cell arms) with cell-by-cell gates |
 | `scripts/kaggle/push_kernels.py` | publishes a notebook as a public Kaggle kernel (`--gpu` to run on the RTX PRO 6000; `--dry-run` first) |
 | `scripts/submit/submit_at_reset.py`, `daily_alternate.py`, `arm_submit_task.ps1` | submission automation |

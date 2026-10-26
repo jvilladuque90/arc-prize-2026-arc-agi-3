@@ -92,6 +92,16 @@ aplicada al control y a todos los brazos).
 Tratamiento: un 0,00 exacto no es muestra del brazo; las hipótesis anteriores (arranque lento, tope de sesiones de GPU) eran
 erróneas; también se corrigió la comprobación de estado del enviador alterno, que nunca funcionó (firma de API equivocada).
 
+### 3.2 Auditoría de baselines públicos (2026-10-26)
+
+Tabla: 71,48 / 68,91 / 56,02 arriba; el propio Franzen, 38,85. Ninguna de esas versiones es pública. De los kernels públicos y
+~30 repositorios de GitHub revisados, nada supera al control de Franzen más allá del ruido: el notebook «mejorado» más votado es
+una copia byte a byte; los kernels «31,54» son D′ (dos muestras ocultas nuestras del mismo código: 27,3 y 25,3); una reescritura
+«30,58» declara su efecto como no medido; un repositorio de GitHub que afirma 35,35 solo contiene un README. El único mecanismo
+con ganancia reportada es la memoria de niveles resueltos de `lalalia9` (31,46, una muestra), construida aquí como S1 (IDEAS V10).
+Varios de esos notebooks también suben el tiempo de arranque del servidor a 45–55 minutos y uno documenta el fallo de detección
+del rerun de §3.1.
+
 ## 4. Correcciones a afirmaciones previas
 
 La bitácora archivada contiene estos errores, conservados por transparencia:

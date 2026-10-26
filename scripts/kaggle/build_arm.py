@@ -8,6 +8,8 @@
   memory                    notebooks/franzen_m1.ipynb      control + M1 cell: pre-seeded helper functions (src/arc3/franzen_memory.py)
   stagnation                notebooks/franzen_c1.ipynb      control + C1 cell: fresh context after a stagnant level (src/arc3/franzen_stagnation.py)
   g15                       notebooks/franzen_g15.ipynb     control, but the demo plays the 15 games Franzen leaves out
+  solved                    notebooks/franzen_s1.ipynb      control + S1 cell AFTER the customization hook: solved-level memory
+                            (src/arc3/franzen_solved_levels.py, from lalalia9's public notebook, CC-BY 4.0)
   rerun                     every notebooks/franzen_*.ipynb  in place: a scored rerun is also recognised by ARC_BASE_URL
                             (Kaggle stopped injecting KAGGLE_IS_COMPETITION_RERUN around 21 Oct; without this the offline
                             branch runs and a placeholder parquet scores 0.00 — docs/RESULTS.md §3.1). Applies to the control too.
@@ -89,6 +91,18 @@ _nst["apply_to_tree"](Path(BUNDLE_DIR) / "src" / "ARC3-Inference")
 print("__TAG__ applied to", Path(BUNDLE_DIR) / "src" / "ARC3-Inference", flush=True)
 '''
 
+# S1: runtime monkey-patch of ToolAgent; needs the harness imported, so it goes AFTER the customization hook cell.
+HOOK_ANCHOR = "# Make one-off changes to `bm`, `bm.games`, or `bm.solver` here before the run starts."
+S1_CELL = '''# S1 SOLVED-LEVEL MEMORY — experiment arm (docs/IDEAS.md V10). One variable: the solved-level block pinned at the end
+# of the system prompt (lalalia9 / rellik13, CC-BY 4.0; module embedded below, see src/arc3/franzen_solved_levels.py).
+import base64 as _b64s
+_nss = {}
+exec(compile(_b64s.b64decode("__B64__").decode("utf-8"), "franzen_solved_levels.py", "exec"), _nss)
+import inference.agent.tool_agent as _ta_check
+assert _ta_check.ToolAgent.analyze is _nss["_slm_analyze"], "S1 patch did not take"
+print("S1 solved-level memory installed", flush=True)
+'''
+
 # g15: the demo plays the 15 public games Franzen's demo excludes, with a cap that leaves ~25 slot-minutes per game
 G15_OLD_EXCLUDED = ("demo_excluded_games = [] if TRUE_SUBMISSION else ['bp35', 'cd82', 'cn04', 'dc22', 'g50t', 'ka59', "
                     "'lf52', 'ls20', 'm0r0', 's5i5', 'sk48', 'sp80', 'su15', 'tn36', 'wa30']")
@@ -145,11 +159,11 @@ def code_compiles(nb: dict) -> list[str]:
     return bad
 
 
-def insert_after_patch(base: Path, out: Path, cell_src: str) -> int:
+def insert_after_patch(base: Path, out: Path, cell_src: str, anchor: str = ANCHOR) -> int:
     nb = load(base)
-    hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and ANCHOR in src(c)]
+    hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and anchor in src(c)]
     if len(hits) != 1:
-        print(f"expected exactly 1 cell with the patch anchor, found {len(hits)}")
+        print(f"expected exactly 1 cell with the anchor {anchor!r}, found {len(hits)}")
         return 1
     at = hits[0] + 1
     nb["cells"].insert(at, {"cell_type": "code", "execution_count": None, "metadata": {}, "outputs": [],
@@ -171,7 +185,7 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "solved"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()
@@ -203,6 +217,9 @@ def main() -> int:
         cell = with_module(TREE_CELL, ROOT / "src" / "arc3" / f"{spec[2]}.py")
         cell = cell.replace("__TITLE__", spec[0]).replace("__WHAT__", spec[1]).replace("__MODULE__", spec[2]).replace("__TAG__", spec[3])
         return insert_after_patch(control, NB / f"{spec[4]}.ipynb", cell)
+    if a.arm == "solved":
+        return insert_after_patch(control, NB / "franzen_s1.ipynb",
+                                  with_module(S1_CELL, ROOT / "src" / "arc3" / "franzen_solved_levels.py"), HOOK_ANCHOR)
     if a.arm == "g15":
         nb = load(control)
         hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and G15_OLD_EXCLUDED in src(c)]

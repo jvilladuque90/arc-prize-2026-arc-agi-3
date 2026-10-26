@@ -45,6 +45,7 @@ author, **[L]** local measurement, **[C]** author claim without a number, **[our
 | V7 | **Keep literal constants alongside functions** (42 % of function attempts are rejected for "unavailable dependencies") | Modest | Touches host and sandbox; cannot be run end to end on Windows |
 | V8 | **Scheduler priority variants** (D′ running; pace on) | Probably within noise | Daily alternation with the control |
 | V9 | **A different checkpoint** (reasoning-efficient fine-tune, NVIDIA NVFP4, expert-pruned) | The only route to a large gain, but the best-documented candidate *raised* total tokens by 11.9 % in agentic use and its 4-bit format shrinks the KV pool ~20 % | Only after V1; cannot be validated on the hidden set |
+| V10 | **Solved-level memory** (public) — **built as S1** (`src/arc3/franzen_solved_levels.py`, verbatim from `lalalia9`'s notebook, public 31.46, after `rellik13`'s M85, CC-BY 4.0): when a level is cleared, the facts the harness already has (actions, the winning tail, the clearing reasoning) plus one model-written "Rule for level N" line are pinned at the *end* of the system prompt, rewritten only at a history trim (prefix cache kept) | The only text addition any public write-up reports as helping (+2.8 claimed, one sample each); it is the agent's own data and rule, not harness prose | Unit-tested on the real harness; the 26 Oct audit of public kernels found nothing else beyond D′ (RESULTS §3.2) |
 
 ## 4. Not tried, and why
 

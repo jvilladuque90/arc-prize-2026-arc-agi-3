@@ -53,6 +53,7 @@ KERNELS = {
     # Context and memory arms (built and unit-tested; see docs/IDEAS.md V4 and V5).
     "franzenm1": _franzen("franzen_m1", "arc-agi3-franzen-m1"),            # pre-seeded helper functions
     "franzenc1": _franzen("franzen_c1", "arc-agi3-franzen-c1"),            # fresh context after a stagnant level
+    "franzens1": _franzen("franzen_s1", "arc-agi3-franzen-s1"),            # solved-level memory (lalalia9, CC-BY 4.0)
     # Diagnostics on the 15 public games Franzen's demo leaves out (never submitted).
     "franzeng15": _franzen("franzen_g15", "arc-agi3-franzen-g15"),
     "e1medg15": _franzen("franzen_g15_med", "arc-agi3-e1-med-g15"),

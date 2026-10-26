@@ -89,6 +89,15 @@ line: a rerun is recognised by either variable (`scripts/kaggle/build_arm.py rer
 Handling: an exact 0.00 is not a sample of the arm; the earlier hypotheses (slow server start, GPU session cap) were wrong; the
 status check of the alternating submitter, which never worked (wrong API signature), is also fixed.
 
+### 3.2 Audit of public baselines (2026-10-26)
+
+Leaderboard: 71.48 / 68.91 / 56.02 at the top; Franzen himself 38.85. None of those versions is public. Of the public
+kernels and ~30 GitHub repositories reviewed, nothing beats the Franzen control beyond noise: the most-voted "improved" notebook
+is a byte-identical copy; the "31.54" kernels are D′ (two of our hidden samples of the same code: 27.3, 25.3); a "30.58" rewrite
+reports its own effect as unmeasured; a GitHub repository claiming 35.35 holds only a README. The one mechanism with a reported
+gain is `lalalia9`'s solved-level memory (31.46, one sample) — built here as S1 (IDEAS V10). Several of these notebooks also
+raise the server start-up timeout to 45–55 minutes and one documents the rerun-detection failure of §3.1.
+
 ## 4. Corrections to earlier claims
 
 The archived lab notebook contains these mistakes, kept for transparency:

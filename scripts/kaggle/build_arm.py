@@ -8,6 +8,9 @@
   memory                    notebooks/franzen_m1.ipynb      control + M1 cell: pre-seeded helper functions (src/arc3/franzen_memory.py)
   stagnation                notebooks/franzen_c1.ipynb      control + C1 cell: fresh context after a stagnant level (src/arc3/franzen_stagnation.py)
   g15                       notebooks/franzen_g15.ipynb     control, but the demo plays the 15 games Franzen leaves out
+  rerun                     every notebooks/franzen_*.ipynb  in place: a scored rerun is also recognised by ARC_BASE_URL
+                            (Kaggle stopped injecting KAGGLE_IS_COMPETITION_RERUN around 21 Oct; without this the offline
+                            branch runs and a placeholder parquet scores 0.00 — docs/RESULTS.md §3.1). Applies to the control too.
 
 Every build is gated: exactly one cell added (or one cell edited, for g15), every other cell byte-identical to its base,
 and all code cells compile. The inserted cell goes right AFTER the cell where Franzen applies his harness patch and BEFORE
@@ -94,6 +97,32 @@ G15_NEW_EXCLUDED = ("demo_excluded_games = [] if TRUE_SUBMISSION else ['ar25', '
 G15_OLD_CAP = "bm.solver.max_runtime_s_per_game = 25*60 #532*60 * bm.solver.concurrency // 110"
 G15_NEW_CAP = "bm.solver.max_runtime_s_per_game = int(37.5*60)  # G15: 15 games for 10 slots"
 
+# rerun: Franzen decides "scored rerun or interactive demo" from one env var that Kaggle stopped injecting (~21 Oct).
+# The scoring rerun always injects ARC_BASE_URL (the gateway); an interactive Save & Run never does. The check runs
+# before the benchmark cell's os.environ.setdefault("ARC_BASE_URL", ...), so the demo branch is unaffected.
+RERUN_OLD = 'TRUE_SUBMISSION = os.environ.get("KAGGLE_IS_COMPETITION_RERUN", "").strip().lower() in {"1", "true"}'
+RERUN_NEW = ('TRUE_SUBMISSION = (os.environ.get("KAGGLE_IS_COMPETITION_RERUN", "").strip().lower() in {"1", "true"}\n'
+             '                   or bool(os.environ.get("ARC_BASE_URL", "").strip()))  # rerun fix, docs/RESULTS.md §3.1')
+
+
+def apply_rerun_fix(path: Path) -> int:
+    nb = load(path)
+    hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and RERUN_OLD in src(c)]
+    if not hits and any(RERUN_NEW in src(c) for c in nb["cells"] if c.get("cell_type") == "code"):
+        print(f"{path.name}: already fixed")
+        return 0
+    if len(hits) != 1 or src(nb["cells"][hits[0]]).count(RERUN_OLD) != 1:
+        print(f"{path.name}: rerun anchor not found exactly once")
+        return 1
+    before = load(path)["cells"]
+    nb["cells"][hits[0]]["source"] = src(nb["cells"][hits[0]]).replace(RERUN_OLD, RERUN_NEW).splitlines(keepends=True)
+    path.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
+    diff = [k for k, (o, n) in enumerate(zip(before, load(path)["cells"])) if src(o) != src(n)]
+    bad = code_compiles(load(path))
+    print(f"{path.name}: cell {hits[0]} edited; exactly one cell differs: {'OK' if diff == [hits[0]] else diff}; "
+          f"compiles: {'OK' if not bad else bad}")
+    return 0 if diff == [hits[0]] and not bad else 1
+
 
 def load(path: Path) -> dict:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -142,12 +171,14 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()
 
     control = NB / "franzen_m2.ipynb"
+    if a.arm == "rerun":
+        return max(apply_rerun_fix(p) for p in sorted(NB.glob("franzen_*.ipynb")))
     if a.arm == "fork":
         if not PULLED.exists():
             print(f"missing {PULLED}; see the usage line in this file's docstring")

@@ -14,7 +14,7 @@ no, y los errores de medición cometidos por el camino. Todos los kernels son p�
 | | |
 |---|---|
 | Base actual | Una copia fiel de la solución pública del Milestone 2 de Daniel Franzen (SGLang, Qwen3.8-Flash-Next en INT4, contexto de 128K) |
-| Puntaje oculto de la base | **25,5 de media, sd 1,5 (n = 7)**, mejor 27,63 |
+| Puntaje oculto de la base | **25,3 de media, sd 1,5 (n = 8)**, mejor 27,63 |
 | Tabla de posiciones (4.425 equipos) | 1.º 68,9 · 3.º 50,4 · 10.º 41,7 · 100.º 33,2 · esta entrada 27,63 (puesto ~1.090) |
 | Puntaje antes de adoptar esa base | 3–5 |
 

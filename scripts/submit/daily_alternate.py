@@ -22,7 +22,7 @@ LOG = ROOT / ".work" / "logs" / "daily_submit.log"
 ROTATION = [
     ("juliancamilovilla/arc-agi3-franzen-m2",
      "franzen-m2 v2 (alternating): copy of dfranzen/arc-agi-3-milestone-2-solution with two infrastructure fixes only "
-     "(scored rerun also recognised by ARC_BASE_URL; 55-min server start-up wait). Control: 7 hidden samples, mean 25.5. "
+     "(scored rerun also recognised by ARC_BASE_URL; 55-min server start-up wait). Control: 8 hidden samples, mean 25.3. "
      "Credit: Daniel Franzen, Tufa Labs. docs/RESULTS.md section 3.1."),
     ("juliancamilovilla/arc-agi3-franzen-s1",
      "franzen-s1 v1 (alternating): the same control plus one cell, lalalia9's solved-level memory (facts of each cleared "

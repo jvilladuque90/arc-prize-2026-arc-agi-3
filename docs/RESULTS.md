@@ -18,7 +18,7 @@ Every number below is a **hidden-set public score** unless marked *local* (a 10-
 | 10 Oct | + E1 (`reasoning_effort=medium`) | **20.98** | ~3 sd *below* the control |
 | 18–20 Oct | alternating D′ / control / D′ | 27.30 · 24.30 · 25.30 | D′: n = 2, mean 26.3; control now n = 7, mean 25.5, sd 1.5 |
 | 21–23 Oct | control / D′ / control | **0.00 · 0.00 · 0.00** | placeholder parquet: rerun not recognised, see §3.1 (not samples) |
-| 27 Oct → | alternating control (fixed) / S1 | pending | see [ROADMAP](ROADMAP.md) |
+| 27 Oct → | alternating control (fixed) / S1 | 24.00 (control) | rerun fix confirmed on the scored branch; control now n = 8, mean 25.3, sd 1.5; S1 from 28 Oct, see [ROADMAP](ROADMAP.md) |
 
 Leaderboard on 2026-10-17 (4,425 teams): 1st 68.9, 2nd 67.5, 3rd 50.4, 10th 41.7, 25th 36.9, 100th 33.2. Most of the 25th–100th
 band are unmodified copies of the same public solution, lifted by taking the maximum over many daily submissions.

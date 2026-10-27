@@ -18,7 +18,7 @@ números de sección (§) remiten a la bitácora original en español: [archive/
 | 10 oct | + E1 (`reasoning_effort=medium`) | **20,98** | ~3 sd *por debajo* del control |
 | 18–20 oct | alternando D′ / control / D′ | 27,30 · 24,30 · 25,30 | D′: n = 2, media 26,3; el control ya tiene n = 7, media 25,5, sd 1,5 |
 | 21–23 oct | control / D′ / control | **0,00 · 0,00 · 0,00** | parquet de relleno: el rerun no se reconoció, ver §3.1 (no son muestras) |
-| 27 oct → | alternando control (corregido) / S1 | pendiente | ver [ROADMAP](ROADMAP.es.md) |
+| 27 oct → | alternando control (corregido) / S1 | 24,00 (control) | corrección del rerun confirmada en la rama puntuada; el control ya tiene n = 8, media 25,3, sd 1,5; S1 desde el 28 oct, ver [ROADMAP](ROADMAP.es.md) |
 
 Tabla de posiciones el 2026-10-17 (4.425 equipos): 1.º 68,9, 2.º 67,5, 3.º 50,4, 10.º 41,7, 25.º 36,9, 100.º 33,2. Buena parte de la
 franja 25.º–100.º son copias sin modificar de la misma solución pública, elevadas por tomar el máximo de muchos envíos diarios.

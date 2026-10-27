@@ -1,4 +1,4 @@
-"""Alternate the daily submission between kernels (decision of 2026-10-17).
+"""Alternate the daily submission between kernels (decision of 2026-10-17; rotation control / S1 since 2026-10-26).
 
 Picks the kernel by the parity of the UTC date and delegates to submit_at_reset.py (idempotent per UTC day, retries
 until the quota opens). Every firing on the same UTC day picks the SAME kernel, so the late retry firings never switch
@@ -21,12 +21,13 @@ LOG = ROOT / ".work" / "logs" / "daily_submit.log"
 
 ROTATION = [
     ("juliancamilovilla/arc-agi3-franzen-m2",
-     "franzen-m2 v1 (alternating): faithful, unedited copy of dfranzen/arc-agi-3-milestone-2-solution. "
-     "Control: 6+ hidden samples, mean 25.7. Credit: Daniel Franzen, Tufa Labs. docs/RESULTS.md."),
-    ("juliancamilovilla/arc-agi3-franzen-dprime",
-     "franzen-dprime v1 (alternating): faithful copy of shiiin9/affectify-arc-31-54-in-a-single-sub, i.e. Franzen M2 with a "
-     "single new cell, the D' slot priority of the scheduler (one public sample of 31.54, not conclusive). "
-     "Credit: shiiin9 / Affectify (Osaka Metropolitan University), Daniel Franzen, Tufa Labs."),
+     "franzen-m2 v2 (alternating): copy of dfranzen/arc-agi-3-milestone-2-solution with two infrastructure fixes only "
+     "(scored rerun also recognised by ARC_BASE_URL; 55-min server start-up wait). Control: 7 hidden samples, mean 25.5. "
+     "Credit: Daniel Franzen, Tufa Labs. docs/RESULTS.md section 3.1."),
+    ("juliancamilovilla/arc-agi3-franzen-s1",
+     "franzen-s1 v1 (alternating): the same control plus one cell, lalalia9's solved-level memory (facts of each cleared "
+     "level and the model's own rule pinned at the end of the system prompt; public 31.46, CC-BY 4.0, after rellik13's M85). "
+     "Credit: lalalia9, rellik13/sirikilohit, Daniel Franzen, Tufa Labs. docs/IDEAS.md V10."),
 ]
 
 

@@ -18,6 +18,7 @@ números de sección (§) remiten a la bitácora original en español: [archive/
 | 10 oct | + E1 (`reasoning_effort=medium`) | **20,98** | ~3 sd *por debajo* del control |
 | 18–20 oct | alternando D′ / control / D′ | 27,30 · 24,30 · 25,30 | D′: n = 2, media 26,3; el control ya tiene n = 7, media 25,5, sd 1,5 |
 | 21–23 oct | control / D′ / control | **0,00 · 0,00 · 0,00** | parquet de relleno: el rerun no se reconoció, ver §3.1 (no son muestras) |
+| 27 oct → | alternando control (corregido) / S1 | pendiente | ver [ROADMAP](ROADMAP.es.md) |
 
 Tabla de posiciones el 2026-10-17 (4.425 equipos): 1.º 68,9, 2.º 67,5, 3.º 50,4, 10.º 41,7, 25.º 36,9, 100.º 33,2. Buena parte de la
 franja 25.º–100.º son copias sin modificar de la misma solución pública, elevadas por tomar el máximo de muchos envíos diarios.
@@ -54,7 +55,8 @@ retenida, caché KV en FP8, game over/undo observables y código del agente que 
 | E1: `reasoning_effort=medium` (el defecto de la plantilla es `xhigh`) | 15 difíciles ×3,1 (5,38 → 16,66; 11/3/1 juegos, p = 0,006); 10 fáciles 46,3 → 38,0; **oculto 20,98** | **−** (el resultado local no se transfirió) |
 | Duración del primer tramo del planificador | simulación en CPU con las curvas de la demo: la curva es ~lineal (~2,2 pts/min), sin concavidad que aprovechar | descartado |
 | Ocupación de plazas (8,3–8,6 de 10 en uso) | el servidor está saturado: llenar todas da +4–7 % de tokens | **0** |
-| Prioridad D′ del planificador (notebook público, una muestra 31,54) | otras muestras del mismo código: 27,6–31,5 | **?** |
+| Prioridad D′ del planificador (notebook público, una muestra 31,54) | nuestras muestras ocultas: 27,30 y 25,30 | **?** (pausado tras dos muestras; S1 lo sustituye en la rotación) |
+| S1 — memoria de niveles resueltos (lalalia9, V10) | compuerta 44,91 frente a 42,15 del control el mismo día (sd de la media de una compuerta ≈ 4: no rankea); bloque de memoria fijado para 2–4 niveles por juego, sin errores | **?** (muestras ocultas desde el 27 oct, alternando con el control) |
 
 ### Diagnóstico: el set oculto es una mezcla (§8.87)
 
@@ -98,6 +100,8 @@ loading`; las compuertas anteriores estaban READY a los ~8–9 min), así que lo
 25 minutos en reintentos de conexión y la compuerta dio 22,3 en vez de ~46. En un rerun puntuado cada juego tiene 532
 minutos, así que esperar al servidor no cuesta nada: todos los notebooks esperan ahora hasta 55 minutos
 (`build_arm.py startup`), como hacen los notebooks públicos. Esa compuerta no es muestra de nada.
+Con ambas correcciones la compuerta del control llegó a READY a los 889 s y dio 42,15; la de S1 llegó a READY a los **1.711 s**
+(28,5 min, muy por encima del límite viejo) y dio 44,91.
 
 ### 3.2 Auditoría de baselines públicos (2026-10-26)
 

@@ -18,6 +18,7 @@ Every number below is a **hidden-set public score** unless marked *local* (a 10-
 | 10 Oct | + E1 (`reasoning_effort=medium`) | **20.98** | ~3 sd *below* the control |
 | 18–20 Oct | alternating D′ / control / D′ | 27.30 · 24.30 · 25.30 | D′: n = 2, mean 26.3; control now n = 7, mean 25.5, sd 1.5 |
 | 21–23 Oct | control / D′ / control | **0.00 · 0.00 · 0.00** | placeholder parquet: rerun not recognised, see §3.1 (not samples) |
+| 27 Oct → | alternating control (fixed) / S1 | pending | see [ROADMAP](ROADMAP.md) |
 
 Leaderboard on 2026-10-17 (4,425 teams): 1st 68.9, 2nd 67.5, 3rd 50.4, 10th 41.7, 25th 36.9, 100th 33.2. Most of the 25th–100th
 band are unmodified copies of the same public solution, lifted by taking the maximum over many daily submissions.
@@ -54,7 +55,8 @@ game-over/undo, and persistent agent-written code.
 | E1 — `reasoning_effort=medium` (template default is `xhigh`) | 15 hard games ×3.1 (5.38 → 16.66, 11/3/1 games, p = 0.006); 10 easy games 46.3 → 38.0; **hidden 20.98** | **−** (local result did not transfer) |
 | First-stint length of the scheduler | CPU simulation on the demo curves: curve is ~linear (~2.2 pts/min), no concavity to exploit | dropped |
 | Slot occupancy (8.3–8.6 of 10 in use) | server is saturated: filling all slots gives +4–7 % tokens | **0** |
-| D′ scheduler priority (public notebook, one sample 31.54) | other samples of the same code: 27.6–31.5 | **?** |
+| D′ scheduler priority (public notebook, one sample 31.54) | our hidden samples: 27.30, 25.30 | **?** (paused after two samples; replaced in the rotation by S1) |
+| S1 — solved-level memory (lalalia9, V10) | gate 44.91 vs control 42.15 the same day (sd of a gate mean ≈ 4: no ranking); memory block pinned for 2–4 levels per game, no errors | **?** (hidden samples from 27 Oct, alternating with the control) |
 
 ### Diagnostic: the hidden set is a mix (§8.87)
 
@@ -94,6 +96,8 @@ start-up limit (`DEADLINE at 722s … releasing the benchmark with the server st
 ~8–9 min), so the ten demo games spent part of their 25 minutes on connection retries and the gate scored 22.3 instead of
 ~46. In a scored rerun each game has 532 minutes, so waiting for a ready server costs nothing: every notebook now waits up to
 55 minutes (`build_arm.py startup`), as the public notebooks do. That gate is not a sample of anything.
+With both fixes the control gate reached READY at 889 s and scored 42.15; the S1 gate reached READY at **1,711 s** (28.5 min,
+well past the old limit) and scored 44.91.
 
 ### 3.2 Audit of public baselines (2026-10-26)
 

@@ -7,8 +7,10 @@ and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the publ
 
 - Base: a faithful copy of Daniel Franzen's public Milestone-2 solution (`notebooks/franzen_m2.ipynb`). Hidden-set score
   **25.3 mean, sd 1.5 (n = 8)**. Three exact-zero submissions on 21-23 Oct were a rerun-detection failure, fixed in every notebook (docs/RESULTS.md §3.1).
-- Daily submissions alternate between that control (with two infrastructure fixes) and the S1 solved-level-memory arm (`scripts/submit/daily_alternate.py`, armed as the
-  Windows task `ARC-AGI3-SubmitOneShot`). The decision rule is in `docs/ROADMAP.md`.
+- From 2026-10-29 the daily submission is the stacked kernel X1 (control + S1 solved-level memory + M1 seeded helpers + all
+  infrastructure fixes, `notebooks/franzen_x1.ipynb`) via `scripts/submit/daily_alternate.py`, armed as the Windows task
+  `ARC-AGI3-SubmitOneShot`. The decision rule is in `docs/ROADMAP.md`. Kaggle mounts inputs in one of two layouts; only
+  notebooks with the layout fix (`docs/RESULTS.md` §3.1) may be submitted.
 - Every experiment tried on top of a base so far was neutral or negative (`docs/RESULTS.md`). The superseded pipeline is in
   `archive/legacy/` and is not maintained.
 

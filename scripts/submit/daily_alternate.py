@@ -1,4 +1,4 @@
-"""Alternate the daily submission between kernels (decision of 2026-10-17; rotation control / S1 since 2026-10-26).
+"""Alternate the daily submission between kernels (decision of 2026-10-17; control / S1 from 2026-10-26; X1 alone from 2026-10-29).
 
 Picks the kernel by the parity of the UTC date and delegates to submit_at_reset.py (idempotent per UTC day, retries
 until the quota opens). Every firing on the same UTC day picks the SAME kernel, so the late retry firings never switch
@@ -20,14 +20,14 @@ ROOT = Path(__file__).resolve().parents[2]
 LOG = ROOT / ".work" / "logs" / "daily_submit.log"
 
 ROTATION = [
-    ("juliancamilovilla/arc-agi3-franzen-m2",
-     "franzen-m2 v2 (alternating): copy of dfranzen/arc-agi-3-milestone-2-solution with two infrastructure fixes only "
-     "(scored rerun also recognised by ARC_BASE_URL; 55-min server start-up wait). Control: 8 hidden samples, mean 25.3. "
-     "Credit: Daniel Franzen, Tufa Labs. docs/RESULTS.md section 3.1."),
-    ("juliancamilovilla/arc-agi3-franzen-s1",
-     "franzen-s1 v1 (alternating): the same control plus one cell, lalalia9's solved-level memory (facts of each cleared "
-     "level and the model's own rule pinned at the end of the system prompt; public 31.46, CC-BY 4.0, after rellik13's M85). "
-     "Credit: lalalia9, rellik13/sirikilohit, Daniel Franzen, Tufa Labs. docs/IDEAS.md V10."),
+    # Final week (ROADMAP item 5, from 2026-10-29): one stacked kernel every day. It is the only kernel that carries the
+    # layout fix (RESULTS §3.1), so there is no fallback: a kernel without it can score 0.00 on an old-layout container.
+    ("juliancamilovilla/arc-agi3-franzen-x1",
+     "franzen-x1 v2 (final week, daily): copy of dfranzen/arc-agi-3-milestone-2-solution with infrastructure fixes "
+     "(scored rerun recognised by ARC_BASE_URL; 55-min server wait; both Kaggle input layouts) plus two cells: lalalia9's "
+     "solved-level memory (public 31.46, CC-BY 4.0, after rellik13's M85) and 7 pre-seeded helper functions for the "
+     "persistent library. Gates: 40.1 / 44.9 / 45.5 vs control 42.2 (all within gate noise). "
+     "Credit: Daniel Franzen, Tufa Labs, lalalia9, rellik13/sirikilohit. docs/ROADMAP.md item 5."),
 ]
 
 

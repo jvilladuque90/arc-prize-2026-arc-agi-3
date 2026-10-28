@@ -18,7 +18,8 @@ Every number below is a **hidden-set public score** unless marked *local* (a 10-
 | 10 Oct | + E1 (`reasoning_effort=medium`) | **20.98** | ~3 sd *below* the control |
 | 18–20 Oct | alternating D′ / control / D′ | 27.30 · 24.30 · 25.30 | D′: n = 2, mean 26.3; control now n = 7, mean 25.5, sd 1.5 |
 | 21–23 Oct | control / D′ / control | **0.00 · 0.00 · 0.00** | placeholder parquet: rerun not recognised, see §3.1 (not samples) |
-| 27 Oct → | alternating control (fixed) / S1 | 24.00 (control) | rerun fix confirmed on the scored branch; control now n = 8, mean 25.3, sd 1.5; S1 from 28 Oct, see [ROADMAP](ROADMAP.md) |
+| 27–28 Oct | alternating control (fixed) / S1 | 24.00 (control) · S1 pending | rerun fix confirmed on the scored branch; control now n = 8, mean 25.3, sd 1.5 |
+| 29 Oct → | **X1** = control + S1 + M1, all fixes, daily | pending | final-week rule, [ROADMAP](ROADMAP.md) item 5 |
 
 Leaderboard on 2026-10-17 (4,425 teams): 1st 68.9, 2nd 67.5, 3rd 50.4, 10th 41.7, 25th 36.9, 100th 33.2. Most of the 25th–100th
 band are unmodified copies of the same public solution, lifted by taking the maximum over many daily submissions.
@@ -57,6 +58,7 @@ game-over/undo, and persistent agent-written code.
 | Slot occupancy (8.3–8.6 of 10 in use) | server is saturated: filling all slots gives +4–7 % tokens | **0** |
 | D′ scheduler priority (public notebook, one sample 31.54) | our hidden samples: 27.30, 25.30 | **?** (paused after two samples; replaced in the rotation by S1) |
 | M1 — pre-seeded helper functions (V4) | gate 45.48 vs control 42.15 (paired by game 4–1–5, p = 0.38; the two games that moved most, r11l and tr87, moved the same way under S1, i.e. they are the noisy ones); patch applied, 1,405 actions, 866 K tokens, no errors | **0** on the gate (not broken; no ranking) |
+| X1 — S1 + M1 stacked (final-week kernel) | gate 40.09 (control 42.15, S1 44.91, M1 45.48: all within the gate's sd ≈ 4); both patches active (memory blocks pinned for 1–7 levels, library seeded); 1,130 actions, 841 K tokens; ran on an **old-layout container** and finished, which validates the layout fix. One game (tr87) was given up by the scheduler at level 2 (52 of 58 actions) — the control also idled there in one run | **0** on the gate (not broken); submitted daily from 29 Oct |
 | S1 — solved-level memory (lalalia9, V10) | gate 44.91 vs control 42.15 the same day (sd of a gate mean ≈ 4: no ranking); memory block pinned for 2–4 levels per game, no errors | **?** (hidden samples from 27 Oct, alternating with the control) |
 
 ### Diagnostic: the hidden set is a mix (§8.87)

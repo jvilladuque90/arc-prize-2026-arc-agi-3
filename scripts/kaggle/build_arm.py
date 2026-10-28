@@ -16,6 +16,8 @@
   startup                   every notebooks/franzen_*.ipynb  in place: wait up to 55 min (not 12) for the server before playing.
   mount                     every notebooks/franzen_*.ipynb  in place: wait up to 10 min for the source-bundle dataset to be
                             mounted before copying it, and list /kaggle/input if it never appears (six gates died there).
+  layout, wheels, envfiles  every notebooks/franzen_*.ipynb  in place (apply mount first): resolve every /kaggle/input path to
+                            whichever of Kaggle's two mount layouts the container uses (the real cause of those failures).
   stack                     notebooks/franzen_x1.ipynb      franzen_s1 + the M1 cell: the final-week stacked kernel (ROADMAP 5)
   mtp4                      notebooks/franzen_t1.ipynb      control with ONE launcher constant changed: SPEC_STEPS 3 -> 4
                             (one more MTP draft step; docs/IDEAS.md V3). Judged on the gate's decode tok/s and accept length,
@@ -147,7 +149,38 @@ MOUNT_NEW = ("# Apply harness patch\n"
              "        print(_d, sorted(os.listdir(_d)) if os.path.isdir(_d) else 'MISSING', flush=True)\n"
              "BUNDLE_DIR = Path('/kaggle/taaf-kaggle-source-share')\n")
 
-FIXES = {"rerun": (RERUN_OLD, RERUN_NEW), "startup": (STARTUP_OLD, STARTUP_NEW), "mount": (MOUNT_OLD, MOUNT_NEW)}
+# layout: the T1 v2 gate (28 Oct) waited the full 10 minutes and then listed /kaggle/input: ['arc-prize-2026-arc-agi-3',
+# 'models', 'pennyroyal-v253', 'taaf-kaggle-source-bundle-copy'] — some containers still use Kaggle's OLD flat layout
+# (/kaggle/input/<slug>) while others use the new one (/kaggle/input/datasets/<user>/<slug>, /kaggle/input/competitions/<slug>).
+# Models were under /kaggle/input/models in both. Resolve every input path to whichever layout exists.
+LAYOUT_OLD = MOUNT_NEW
+LAYOUT_NEW = ("# Apply harness patch\n"
+              "# layout fix, docs/RESULTS.md §3.1: Kaggle mounts inputs in one of two layouts; use whichever exists.\n"
+              "def _kaggle_input(new, old):\n"
+              "    for _ in range(24):  # up to 2 min for a late mount\n"
+              "        if os.path.isdir(new): return new\n"
+              "        if os.path.isdir(old): return old\n"
+              "        time.sleep(5)\n"
+              "    print('input not found in either layout:', new, old, '| /kaggle/input =',\n"
+              "          sorted(os.listdir('/kaggle/input')) if os.path.isdir('/kaggle/input') else 'MISSING', flush=True)\n"
+              "    return new\n"
+              "WHEELHOUSE_DIR  = _kaggle_input(WHEELHOUSE_DIR, '/kaggle/input/pennyroyal-v253')\n"
+              "ORIG_BUNDLE_DIR = _kaggle_input(ORIG_BUNDLE_DIR, '/kaggle/input/taaf-kaggle-source-bundle-copy')\n"
+              "ARC_WHEELS_DIR  = _kaggle_input('/kaggle/input/competitions/arc-prize-2026-arc-agi-3/arc_agi_3_wheels',\n"
+              "                                '/kaggle/input/arc-prize-2026-arc-agi-3/arc_agi_3_wheels')\n"
+              "print(f'inputs: {WHEELHOUSE_DIR} | {ORIG_BUNDLE_DIR} | {ARC_WHEELS_DIR}', flush=True)\n"
+              "BUNDLE_DIR = Path('/kaggle/taaf-kaggle-source-share')\n")
+
+# wheels: the arc-agi runtime install (a later cell) hard-codes the new competition path; use the resolved one.
+WHEELS_OLD = '        "/kaggle/input/competitions/arc-prize-2026-arc-agi-3/arc_agi_3_wheels",\n'
+WHEELS_NEW = '        ARC_WHEELS_DIR,  # layout fix, docs/RESULTS.md §3.1\n'
+
+# envfiles: the offline (demo) branch locates the competition's environment files next to the wheelhouse; same resolution.
+ENVFILES_OLD = '    competition_env_files = str(Path("/kaggle/input/competitions/arc-prize-2026-arc-agi-3/arc_agi_3_wheels").parent / "environment_files")\n'
+ENVFILES_NEW = '    competition_env_files = str(Path(ARC_WHEELS_DIR).parent / "environment_files")  # layout fix, docs/RESULTS.md §3.1\n'
+
+FIXES = {"rerun": (RERUN_OLD, RERUN_NEW), "startup": (STARTUP_OLD, STARTUP_NEW), "mount": (MOUNT_OLD, MOUNT_NEW),
+         "layout": (LAYOUT_OLD, LAYOUT_NEW), "wheels": (WHEELS_OLD, WHEELS_NEW), "envfiles": (ENVFILES_OLD, ENVFILES_NEW)}
 
 # mtp4 (T1): the speculative drafter proposes SPEC_STEPS tokens per step; the 26 Oct gates accepted 2.69 of 3 on average
 # (decode 675 tok/s). A fourth step is lossless (acceptance is exact) and trades draft cost for longer accepted runs.
@@ -240,7 +273,7 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "mount", "solved", "mtp4", "stack"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "mount", "layout", "wheels", "envfiles", "solved", "mtp4", "stack"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()

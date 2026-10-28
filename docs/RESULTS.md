@@ -103,9 +103,14 @@ well past the old limit) and scored 44.91.
 **Third infrastructure fix (28 Oct):** six gates (M1 and C1 on 23–24 Oct and 28 Oct, T1 on 28 Oct, public and private, old and
 freshly created kernels) died 5 s into the notebook because `/kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy` was
 not there to copy, while the identical metadata mounted on 26 Oct and on every script-kernel probe, and the dataset itself is
-unchanged since 28 Sep. Every notebook now waits up to 10 minutes for the mount and lists `/kaggle/input` if it never appears
-(`build_arm.py mount`). The three scored submissions of 27–28 Oct were not affected. Two fresh-slug copies pushed five
-minutes apart on 28 Oct split the same way (M1-b mounted and ran, C1-b did not), so the failure is per container, not per kernel.
+unchanged since 28 Sep. Two fresh-slug copies pushed five minutes apart on 28 Oct split the same way (M1-b mounted and ran, C1-b did not), so the
+failure is per container, not per kernel. A gate that waited 10 minutes and then listed `/kaggle/input` found the cause:
+**some containers still use Kaggle's old flat layout** (`/kaggle/input/taaf-kaggle-source-bundle-copy`,
+`/kaggle/input/pennyroyal-v253`, `/kaggle/input/arc-prize-2026-arc-agi-3`) while others use the new one
+(`/kaggle/input/datasets/<user>/<slug>`, `/kaggle/input/competitions/<slug>`); models sit under `/kaggle/input/models` in both.
+Franzen's notebook hard-codes the new layout. Every notebook now resolves each input path to whichever layout exists
+(`build_arm.py layout`, `wheels`, `envfiles`); a scored rerun landing on an old-layout container would otherwise also fail, so
+no kernel without this fix should be submitted again.
 
 ### 3.2 Audit of public baselines (2026-10-26)
 

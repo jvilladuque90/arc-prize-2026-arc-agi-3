@@ -107,9 +107,14 @@ Con ambas correcciones la compuerta del control llegó a READY a los 889 s y dio
 **Tercera corrección de infraestructura (28 oct):** seis compuertas (M1 y C1 el 23–24 oct y el 28 oct, T1 el 28 oct; públicas y
 privadas, kernels viejos y recién creados) murieron a los 5 s del notebook porque `/kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy`
 no estaba para copiarlo, mientras que el mismo metadata montó el 26 oct y en todas las sondas de kernel-script, y el dataset no ha
-cambiado desde el 28 sep. Todos los notebooks esperan ahora hasta 10 minutos al montaje y listan `/kaggle/input` si nunca aparece
-(`build_arm.py mount`). Los tres envíos puntuados del 27–28 oct no se vieron afectados. Dos copias con slug nuevo empujadas con
-cinco minutos de diferencia el 28 oct se repartieron igual (M1-b montó y corrió, C1-b no): el fallo es por contenedor, no por kernel.
+cambiado desde el 28 sep. Dos copias con slug nuevo empujadas con cinco minutos de diferencia el 28 oct se repartieron igual (M1-b montó y corrió, C1-b no):
+el fallo es por contenedor, no por kernel. Una compuerta que esperó 10 minutos y luego listó `/kaggle/input` encontró la causa:
+**algunos contenedores siguen usando el layout plano antiguo de Kaggle** (`/kaggle/input/taaf-kaggle-source-bundle-copy`,
+`/kaggle/input/pennyroyal-v253`, `/kaggle/input/arc-prize-2026-arc-agi-3`) y otros el nuevo (`/kaggle/input/datasets/<usuario>/<slug>`,
+`/kaggle/input/competitions/<slug>`); los modelos están en `/kaggle/input/models` en ambos. El notebook de Franzen tiene escrito el
+layout nuevo. Todos los notebooks resuelven ahora cada ruta de entrada al layout que exista (`build_arm.py layout`, `wheels`,
+`envfiles`); un rerun puntuado que cayera en un contenedor con layout antiguo fallaría igual, así que no se vuelve a enviar ningún
+kernel sin esta corrección.
 
 ### 3.2 Auditoría de baselines públicos (2026-10-26)
 

@@ -22,10 +22,11 @@ leaderboard's maximum.
 
 0. **Infrastructure fixes** (done 26 Oct): every notebook recognises a scored rerun by `ARC_BASE_URL` and waits up to 55 min for the server (RESULTS §3.1); the corrected control re-gated at 42.15.
 1. **Solved-level memory (S1 / V10)** — *gated 44.91 on 26 Oct* (`notebooks/franzen_s1.ipynb`, from `lalalia9`'s public 31.46 notebook); **now alternating daily with the control** (`scripts/submit/daily_alternate.py`), D′ paused at two samples. Moved ahead of M1/C1 because it is the only public addition with a reported gain.
-2. **Pre-seeded helper functions (M1 / V4)** — *built and unit-tested* (`notebooks/franzen_m1.ipynb`); its gate failed twice on a dataset mount (not the code); retry after the control gate passes.
-3. **Stagnation reset (C1 / V5)** — *built and unit-tested* (`notebooks/franzen_c1.ipynb`, ported from `heliosli`); same path. Its effect can only appear in the hidden rerun.
-4. **Replay bench (V1)** — the tool that lets us judge serving and numeric changes without spending submissions.
-5. **Calibrated FP8 KV scales (V2)** — validated with the replay bench first.
+2. **Pre-seeded helper functions (M1 / V4)** — *built and unit-tested* (`notebooks/franzen_m1.ipynb`); its gate failed twice on a dataset mount (not the code); third gate pushed 27 Oct (v3, private: Kaggle now refuses public kernels with the competition as a source until it ends).
+3. **Stagnation reset (C1 / V5)** — *built and unit-tested* (`notebooks/franzen_c1.ipynb`, ported from `heliosli`); gate queued behind M1. Its effect can only appear in the hidden rerun.
+4. **MTP depth 4 (T1 / V3)** — *built 27 Oct* (`notebooks/franzen_t1.ipynb`); judged on the gate's decode tok/s and accept length (repeatable to ~1 %), not on its score.
+5. **Final week (from 29 Oct)**: with ~5 submissions left no arm can be confirmed on the hidden set (sd 1.5), so one *stacked* kernel — S1 plus whatever passed its gate without losing throughput — is submitted daily. The leaderboard keeps the maximum (control best 27.63), so this cannot lower the final score. Pre-registered rule, written here before 29 Oct.
+6. **Replay bench (V1)** and **calibrated FP8 KV scales (V2)** — after the competition unless time appears.
 
 Each arm needs: a unit test against the real patched harness, a local gate (breakage only), then hidden-set samples against the
 control. Ideas that cannot be validated (lossy serving tricks, model swaps) are not shipped. Details and ranking:

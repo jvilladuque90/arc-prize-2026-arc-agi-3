@@ -14,6 +14,9 @@
                             (Kaggle stopped injecting KAGGLE_IS_COMPETITION_RERUN around 21 Oct; without this the offline
                             branch runs and a placeholder parquet scores 0.00 — docs/RESULTS.md §3.1). Applies to the control too.
   startup                   every notebooks/franzen_*.ipynb  in place: wait up to 55 min (not 12) for the server before playing.
+  mtp4                      notebooks/franzen_t1.ipynb      control with ONE launcher constant changed: SPEC_STEPS 3 -> 4
+                            (one more MTP draft step; docs/IDEAS.md V3). Judged on the gate's decode tok/s and accept length,
+                            which repeat to ~1 % between runs, not on its score.
 
 Every build is gated: exactly one cell added (or one cell edited, for g15), every other cell byte-identical to its base,
 and all code cells compile. The inserted cell goes right AFTER the cell where Franzen applies his harness patch and BEFORE
@@ -128,6 +131,29 @@ STARTUP_NEW = "SERVER_STARTUP_TIMEOUT = 55 * 60  # startup fix, docs/RESULTS.md 
 
 FIXES = {"rerun": (RERUN_OLD, RERUN_NEW), "startup": (STARTUP_OLD, STARTUP_NEW)}
 
+# mtp4 (T1): the speculative drafter proposes SPEC_STEPS tokens per step; the 26 Oct gates accepted 2.69 of 3 on average
+# (decode 675 tok/s). A fourth step is lossless (acceptance is exact) and trades draft cost for longer accepted runs.
+MTP_OLD = "    SPEC_STEPS=3,\n"
+MTP_NEW = "    SPEC_STEPS=4,  # T1 throughput arm, docs/IDEAS.md V3 (Franzen: 3)\n"
+EDITS = {"mtp4": ("franzen_t1", MTP_OLD, MTP_NEW)}
+
+
+def edit_one_cell(base: Path, out: Path, old: str, new: str) -> int:
+    """Copy `base` to `out` with `old` replaced by `new` in the single cell that holds it; gate as apply_rerun_fix."""
+    nb = load(base)
+    hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and old in src(c)]
+    if len(hits) != 1 or src(nb["cells"][hits[0]]).count(old) != 1:
+        print(f"{out.name}: anchor {old.strip()!r} not found exactly once in {base.name}")
+        return 1
+    nb["cells"][hits[0]]["source"] = src(nb["cells"][hits[0]]).replace(old, new).splitlines(keepends=True)
+    out.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
+    orig, new_cells = load(base)["cells"], load(out)["cells"]
+    diff = [k for k, (o, n) in enumerate(zip(orig, new_cells)) if src(o) != src(n)]
+    bad = code_compiles(load(out))
+    print(f"{out.name}: cell {hits[0]} edited; same cell count: {'OK' if len(orig) == len(new_cells) else 'FAIL'}; "
+          f"exactly one cell differs: {'OK' if diff == [hits[0]] else diff}; compiles: {'OK' if not bad else bad}")
+    return 0 if len(orig) == len(new_cells) and diff == [hits[0]] and not bad else 1
+
 
 def apply_rerun_fix(path: Path, fix: str = "rerun") -> int:
     old, new = FIXES[fix]
@@ -196,7 +222,7 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "solved"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "solved", "mtp4"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()
@@ -204,6 +230,9 @@ def main() -> int:
     control = NB / "franzen_m2.ipynb"
     if a.arm in FIXES:
         return max(apply_rerun_fix(p, a.arm) for p in sorted(NB.glob("franzen_*.ipynb")))
+    if a.arm in EDITS:
+        stem, old, new = EDITS[a.arm]
+        return edit_one_cell(control, NB / f"{stem}.ipynb", old, new)
     if a.arm == "fork":
         if not PULLED.exists():
             print(f"missing {PULLED}; see the usage line in this file's docstring")

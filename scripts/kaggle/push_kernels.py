@@ -54,6 +54,7 @@ KERNELS = {
     "franzenm1": _franzen("franzen_m1", "arc-agi3-franzen-m1"),            # pre-seeded helper functions
     "franzenc1": _franzen("franzen_c1", "arc-agi3-franzen-c1"),            # fresh context after a stagnant level
     "franzens1": _franzen("franzen_s1", "arc-agi3-franzen-s1"),            # solved-level memory (lalalia9, CC-BY 4.0)
+    "franzent1": _franzen("franzen_t1", "arc-agi3-franzen-t1"),            # throughput: SPEC_STEPS 3 -> 4
     # Diagnostics on the 15 public games Franzen's demo leaves out (never submitted).
     "franzeng15": _franzen("franzen_g15", "arc-agi3-franzen-g15"),
     "e1medg15": _franzen("franzen_g15_med", "arc-agi3-e1-med-g15"),
@@ -79,6 +80,9 @@ def main() -> int:
     ap.add_argument("kernel", choices=list(KERNELS))
     ap.add_argument("--gpu", action="store_true", help="run on the RTX PRO 6000 (uses GPU quota)")
     ap.add_argument("--dataset", action="append", default=[], help="extra dataset user/slug; repeatable")
+    ap.add_argument("--private", action="store_true",
+                    help="since 2026-10-27 Kaggle refuses public kernels with the competition as a source until it ends; "
+                         "the code stays open in this repository and the kernels are made public afterwards")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -94,7 +98,7 @@ def main() -> int:
         "code_file": Path(cfg["notebook"]).name,
         "language": "python",
         "kernel_type": "notebook",
-        "is_private": False,            # open source is a prize requirement
+        "is_private": bool(args.private),   # open source is a prize requirement; see --private
         "enable_gpu": bool(args.gpu),
         "enable_internet": False,       # the evaluation has no internet
         "dataset_sources": args.dataset or cfg["default_datasets"],

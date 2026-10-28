@@ -22,10 +22,11 @@ aprovechar el máximo de la tabla.
 
 0. **Correcciones de infraestructura** (hechas el 26 oct): todos los notebooks reconocen un rerun puntuado por `ARC_BASE_URL` y esperan hasta 55 min al servidor (RESULTS §3.1); el control corregido volvió a pasar la compuerta con 42,15.
 1. **Memoria de niveles resueltos (S1 / V10)**: *compuerta 44,91 el 26 oct* (`notebooks/franzen_s1.ipynb`, del notebook público de `lalalia9`, 31,46); **ya alterna a diario con el control** (`scripts/submit/daily_alternate.py`), D′ en pausa con dos muestras. Pasa por delante de M1/C1 porque es la única adición pública con ganancia reportada.
-2. **Funciones auxiliares precargadas (M1 / V4)**: *construido y con pruebas unitarias* (`notebooks/franzen_m1.ipynb`); su compuerta falló dos veces por el montaje de un dataset (no por el código); se reintenta cuando pase la del control.
-3. **Reinicio por estancamiento (C1 / V5)**: *construido y con pruebas unitarias* (`notebooks/franzen_c1.ipynb`, portado de `heliosli`); mismo camino. Su efecto solo puede aparecer en el rerun oculto.
-4. **Banco de repetición (V1)**: la herramienta que permite juzgar cambios de servicio y numéricos sin gastar envíos.
-5. **Escalas de KV FP8 calibradas (V2)**: se valida primero con el banco de repetición.
+2. **Funciones auxiliares precargadas (M1 / V4)**: *construido y con pruebas unitarias* (`notebooks/franzen_m1.ipynb`); su compuerta falló dos veces por el montaje de un dataset (no por el código); tercera compuerta lanzada el 27 oct (v3, privada: Kaggle ya no admite kernels públicos con la competición como fuente hasta que termine).
+3. **Reinicio por estancamiento (C1 / V5)**: *construido y con pruebas unitarias* (`notebooks/franzen_c1.ipynb`, portado de `heliosli`); compuerta en cola detrás de M1. Su efecto solo puede aparecer en el rerun oculto.
+4. **MTP profundidad 4 (T1 / V3)**: *construido el 27 oct* (`notebooks/franzen_t1.ipynb`); se juzga por tok/s y longitud aceptada de la compuerta (repetibles al ~1 %), no por su score.
+5. **Última semana (desde el 29 oct)**: con ~5 envíos ningún brazo se puede confirmar en el oculto (sd 1,5), así que se envía a diario un único kernel *apilado*: S1 más lo que haya pasado su compuerta sin perder throughput. La tabla guarda el máximo (mejor control 27,63), así que esto no puede bajar el resultado final. Regla preinscrita aquí antes del 29 oct.
+6. **Banco de repetición (V1)** y **escalas de KV FP8 calibradas (V2)**: después de la competición salvo que sobre tiempo.
 
 Cada brazo necesita: una prueba unitaria contra el harness parcheado real, una compuerta local (solo roturas) y luego muestras
 ocultas contra el control. Lo que no se puede validar (trucos de servicio con pérdida, cambios de modelo) no se envía. Detalle y

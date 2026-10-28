@@ -107,7 +107,8 @@ Con ambas correcciones la compuerta del control llegó a READY a los 889 s y dio
 privadas, kernels viejos y recién creados) murieron a los 5 s del notebook porque `/kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy`
 no estaba para copiarlo, mientras que el mismo metadata montó el 26 oct y en todas las sondas de kernel-script, y el dataset no ha
 cambiado desde el 28 sep. Todos los notebooks esperan ahora hasta 10 minutos al montaje y listan `/kaggle/input` si nunca aparece
-(`build_arm.py mount`). Los tres envíos puntuados del 27–28 oct no se vieron afectados.
+(`build_arm.py mount`). Los tres envíos puntuados del 27–28 oct no se vieron afectados. Dos copias con slug nuevo empujadas con
+cinco minutos de diferencia el 28 oct se repartieron igual (M1-b montó y corrió, C1-b no): el fallo es por contenedor, no por kernel.
 
 ### 3.2 Auditoría de baselines públicos (2026-10-26)
 

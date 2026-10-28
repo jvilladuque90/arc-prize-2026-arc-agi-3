@@ -108,7 +108,7 @@ Con ambas correcciones la compuerta del control llegó a READY a los 889 s y dio
 privadas, kernels viejos y recién creados) murieron a los 5 s del notebook porque `/kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy`
 no estaba para copiarlo, mientras que el mismo metadata montó el 26 oct y en todas las sondas de kernel-script, y el dataset no ha
 cambiado desde el 28 sep. Dos copias con slug nuevo empujadas con cinco minutos de diferencia el 28 oct se repartieron igual (M1-b montó y corrió, C1-b no):
-el fallo es por contenedor, no por kernel. Una compuerta que esperó 10 minutos y luego listó `/kaggle/input` encontró la causa:
+el fallo es por contenedor, no por kernel. Dos compuertas que esperaron 10 minutos y luego listaron `/kaggle/input` (T1 v2, C1-b v2) encontraron la causa:
 **algunos contenedores siguen usando el layout plano antiguo de Kaggle** (`/kaggle/input/taaf-kaggle-source-bundle-copy`,
 `/kaggle/input/pennyroyal-v253`, `/kaggle/input/arc-prize-2026-arc-agi-3`) y otros el nuevo (`/kaggle/input/datasets/<usuario>/<slug>`,
 `/kaggle/input/competitions/<slug>`); los modelos están en `/kaggle/input/models` en ambos. El notebook de Franzen tiene escrito el

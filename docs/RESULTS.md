@@ -104,7 +104,7 @@ well past the old limit) and scored 44.91.
 freshly created kernels) died 5 s into the notebook because `/kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy` was
 not there to copy, while the identical metadata mounted on 26 Oct and on every script-kernel probe, and the dataset itself is
 unchanged since 28 Sep. Two fresh-slug copies pushed five minutes apart on 28 Oct split the same way (M1-b mounted and ran, C1-b did not), so the
-failure is per container, not per kernel. A gate that waited 10 minutes and then listed `/kaggle/input` found the cause:
+failure is per container, not per kernel. Two gates that waited 10 minutes and then listed `/kaggle/input` (T1 v2, C1-b v2) found the cause:
 **some containers still use Kaggle's old flat layout** (`/kaggle/input/taaf-kaggle-source-bundle-copy`,
 `/kaggle/input/pennyroyal-v253`, `/kaggle/input/arc-prize-2026-arc-agi-3`) while others use the new one
 (`/kaggle/input/datasets/<user>/<slug>`, `/kaggle/input/competitions/<slug>`); models sit under `/kaggle/input/models` in both.

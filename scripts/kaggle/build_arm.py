@@ -14,6 +14,8 @@
                             (Kaggle stopped injecting KAGGLE_IS_COMPETITION_RERUN around 21 Oct; without this the offline
                             branch runs and a placeholder parquet scores 0.00 — docs/RESULTS.md §3.1). Applies to the control too.
   startup                   every notebooks/franzen_*.ipynb  in place: wait up to 55 min (not 12) for the server before playing.
+  mount                     every notebooks/franzen_*.ipynb  in place: wait up to 10 min for the source-bundle dataset to be
+                            mounted before copying it, and list /kaggle/input if it never appears (six gates died there).
   mtp4                      notebooks/franzen_t1.ipynb      control with ONE launcher constant changed: SPEC_STEPS 3 -> 4
                             (one more MTP draft step; docs/IDEAS.md V3). Judged on the gate's decode tok/s and accept length,
                             which repeat to ~1 % between runs, not on its score.
@@ -129,7 +131,22 @@ RERUN_NEW = ('TRUE_SUBMISSION = (os.environ.get("KAGGLE_IS_COMPETITION_RERUN", "
 STARTUP_OLD = "SERVER_STARTUP_TIMEOUT = 12 * 60"
 STARTUP_NEW = "SERVER_STARTUP_TIMEOUT = 55 * 60  # startup fix, docs/RESULTS.md §3.1 (Franzen: 12 * 60)"
 
-FIXES = {"rerun": (RERUN_OLD, RERUN_NEW), "startup": (STARTUP_OLD, STARTUP_NEW)}
+# mount: six gates (23-24 Oct, 28 Oct) died 5 s into the notebook at `cp -a $ORIG_BUNDLE_DIR` with "cannot stat
+# /kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy", while the same metadata mounted on 26 Oct and on every
+# script-kernel probe. Wait for the dataset instead of assuming it is there at second 5, and list /kaggle/input when it is not.
+MOUNT_OLD = "# Apply harness patch\nBUNDLE_DIR = Path('/kaggle/taaf-kaggle-source-share')\n"
+MOUNT_NEW = ("# Apply harness patch\n"
+             "# mount fix, docs/RESULTS.md §3.1: wait up to 10 min for Kaggle to mount the source bundle before copying it.\n"
+             "_mount_t0 = time.time()\n"
+             "while not os.path.isdir(ORIG_BUNDLE_DIR) and time.time() - _mount_t0 < 600:\n"
+             "    time.sleep(5)\n"
+             "print(f'bundle mounted after {time.time() - _mount_t0:.0f}s: {os.path.isdir(ORIG_BUNDLE_DIR)}', flush=True)\n"
+             "if not os.path.isdir(ORIG_BUNDLE_DIR):\n"
+             "    for _d in ('/kaggle/input', '/kaggle/input/datasets', '/kaggle/input/datasets/dfranzen', '/kaggle/input/models'):\n"
+             "        print(_d, sorted(os.listdir(_d)) if os.path.isdir(_d) else 'MISSING', flush=True)\n"
+             "BUNDLE_DIR = Path('/kaggle/taaf-kaggle-source-share')\n")
+
+FIXES = {"rerun": (RERUN_OLD, RERUN_NEW), "startup": (STARTUP_OLD, STARTUP_NEW), "mount": (MOUNT_OLD, MOUNT_NEW)}
 
 # mtp4 (T1): the speculative drafter proposes SPEC_STEPS tokens per step; the 26 Oct gates accepted 2.69 of 3 on average
 # (decode 675 tok/s). A fourth step is lossless (acceptance is exact) and trades draft cost for longer accepted runs.
@@ -222,7 +239,7 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "solved", "mtp4"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "mount", "solved", "mtp4"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()

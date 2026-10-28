@@ -103,6 +103,12 @@ minutos, así que esperar al servidor no cuesta nada: todos los notebooks espera
 Con ambas correcciones la compuerta del control llegó a READY a los 889 s y dio 42,15; la de S1 llegó a READY a los **1.711 s**
 (28,5 min, muy por encima del límite viejo) y dio 44,91.
 
+**Tercera corrección de infraestructura (28 oct):** seis compuertas (M1 y C1 el 23–24 oct y el 28 oct, T1 el 28 oct; públicas y
+privadas, kernels viejos y recién creados) murieron a los 5 s del notebook porque `/kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy`
+no estaba para copiarlo, mientras que el mismo metadata montó el 26 oct y en todas las sondas de kernel-script, y el dataset no ha
+cambiado desde el 28 sep. Todos los notebooks esperan ahora hasta 10 minutos al montaje y listan `/kaggle/input` si nunca aparece
+(`build_arm.py mount`). Los tres envíos puntuados del 27–28 oct no se vieron afectados.
+
 ### 3.2 Auditoría de baselines públicos (2026-10-26)
 
 Tabla: 71,48 / 68,91 / 56,02 arriba; el propio Franzen, 38,85. Ninguna de esas versiones es pública. De los kernels públicos y

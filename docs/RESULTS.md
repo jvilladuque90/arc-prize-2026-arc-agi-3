@@ -99,6 +99,12 @@ start-up limit (`DEADLINE at 722s … releasing the benchmark with the server st
 With both fixes the control gate reached READY at 889 s and scored 42.15; the S1 gate reached READY at **1,711 s** (28.5 min,
 well past the old limit) and scored 44.91.
 
+**Third infrastructure fix (28 Oct):** six gates (M1 and C1 on 23–24 Oct and 28 Oct, T1 on 28 Oct, public and private, old and
+freshly created kernels) died 5 s into the notebook because `/kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy` was
+not there to copy, while the identical metadata mounted on 26 Oct and on every script-kernel probe, and the dataset itself is
+unchanged since 28 Sep. Every notebook now waits up to 10 minutes for the mount and lists `/kaggle/input` if it never appears
+(`build_arm.py mount`). The three scored submissions of 27–28 Oct were not affected.
+
 ### 3.2 Audit of public baselines (2026-10-26)
 
 Leaderboard: 71.48 / 68.91 / 56.02 at the top; Franzen himself 38.85. None of those versions is public. Of the public

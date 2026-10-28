@@ -55,6 +55,10 @@ KERNELS = {
     "franzenc1": _franzen("franzen_c1", "arc-agi3-franzen-c1"),            # fresh context after a stagnant level
     "franzens1": _franzen("franzen_s1", "arc-agi3-franzen-s1"),            # solved-level memory (lalalia9, CC-BY 4.0)
     "franzent1": _franzen("franzen_t1", "arc-agi3-franzen-t1"),            # throughput: SPEC_STEPS 3 -> 4
+    # Fresh slugs for M1/C1: the original kernels failed three gates at the bundle copy ("cannot stat
+    # /kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy") while the same metadata mounts on every newer kernel.
+    "franzenm1b": _franzen("franzen_m1", "arc-agi3-franzen-m1-b"),
+    "franzenc1b": _franzen("franzen_c1", "arc-agi3-franzen-c1-b"),
     # Diagnostics on the 15 public games Franzen's demo leaves out (never submitted).
     "franzeng15": _franzen("franzen_g15", "arc-agi3-franzen-g15"),
     "e1medg15": _franzen("franzen_g15_med", "arc-agi3-e1-med-g15"),

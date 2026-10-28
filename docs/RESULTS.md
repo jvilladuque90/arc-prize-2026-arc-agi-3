@@ -56,6 +56,7 @@ game-over/undo, and persistent agent-written code.
 | First-stint length of the scheduler | CPU simulation on the demo curves: curve is ~linear (~2.2 pts/min), no concavity to exploit | dropped |
 | Slot occupancy (8.3–8.6 of 10 in use) | server is saturated: filling all slots gives +4–7 % tokens | **0** |
 | D′ scheduler priority (public notebook, one sample 31.54) | our hidden samples: 27.30, 25.30 | **?** (paused after two samples; replaced in the rotation by S1) |
+| M1 — pre-seeded helper functions (V4) | gate 45.48 vs control 42.15 (paired by game 4–1–5, p = 0.38; the two games that moved most, r11l and tr87, moved the same way under S1, i.e. they are the noisy ones); patch applied, 1,405 actions, 866 K tokens, no errors | **0** on the gate (not broken; no ranking) |
 | S1 — solved-level memory (lalalia9, V10) | gate 44.91 vs control 42.15 the same day (sd of a gate mean ≈ 4: no ranking); memory block pinned for 2–4 levels per game, no errors | **?** (hidden samples from 27 Oct, alternating with the control) |
 
 ### Diagnostic: the hidden set is a mix (§8.87)

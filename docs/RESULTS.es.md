@@ -56,6 +56,7 @@ retenida, caché KV en FP8, game over/undo observables y código del agente que 
 | Duración del primer tramo del planificador | simulación en CPU con las curvas de la demo: la curva es ~lineal (~2,2 pts/min), sin concavidad que aprovechar | descartado |
 | Ocupación de plazas (8,3–8,6 de 10 en uso) | el servidor está saturado: llenar todas da +4–7 % de tokens | **0** |
 | Prioridad D′ del planificador (notebook público, una muestra 31,54) | nuestras muestras ocultas: 27,30 y 25,30 | **?** (pausado tras dos muestras; S1 lo sustituye en la rotación) |
+| M1 — funciones auxiliares precargadas (V4) | compuerta 45,48 frente a 42,15 del control (pareado por juego 4–1–5, p = 0,38; los dos juegos que más se movieron, r11l y tr87, se movieron igual con S1: son los ruidosos); parche aplicado, 1.405 acciones, 866 K tokens, sin errores | **0** en compuerta (no rompe; no rankea) |
 | S1 — memoria de niveles resueltos (lalalia9, V10) | compuerta 44,91 frente a 42,15 del control el mismo día (sd de la media de una compuerta ≈ 4: no rankea); bloque de memoria fijado para 2–4 niveles por juego, sin errores | **?** (muestras ocultas desde el 27 oct, alternando con el control) |
 
 ### Diagnóstico: el set oculto es una mezcla (§8.87)

@@ -22,12 +22,13 @@ LOG = ROOT / ".work" / "logs" / "daily_submit.log"
 ROTATION = [
     # Final week (ROADMAP item 5, from 2026-10-29): one stacked kernel every day. It is the only kernel that carries the
     # layout fix (RESULTS §3.1), so there is no fallback: a kernel without it can score 0.00 on an old-layout container.
-    ("juliancamilovilla/arc-agi3-franzen-x1",
-     "franzen-x1 v2 (final week, daily): copy of dfranzen/arc-agi-3-milestone-2-solution with infrastructure fixes "
-     "(scored rerun recognised by ARC_BASE_URL; 55-min server wait; both Kaggle input layouts) plus two cells: lalalia9's "
-     "solved-level memory (public 31.46, CC-BY 4.0, after rellik13's M85) and 7 pre-seeded helper functions for the "
-     "persistent library. Gates: 40.1 / 44.9 / 45.5 vs control 42.2 (all within gate noise). "
-     "Credit: Daniel Franzen, Tufa Labs, lalalia9, rellik13/sirikilohit. docs/ROADMAP.md item 5."),
+    ("juliancamilovilla/arc-agi3-franzen-x2",
+     "franzen-x2 v2 (final week, daily): copy of dfranzen/arc-agi-3-milestone-2-solution with infrastructure fixes "
+     "(scored rerun recognised by ARC_BASE_URL; 55-min server wait; both Kaggle input layouts) plus three cells: lalalia9's "
+     "solved-level memory (public 31.46, CC-BY 4.0, after rellik13's M85), 7 pre-seeded helper functions for the "
+     "persistent library, and heliosli's stagnation reset (one fresh context after 96K tokens on an unfinished level). "
+     "Gates: 43.5 (X2) / 40.1 (X1) / 50.7 (C1) vs control 42.2 (all within gate noise); X1 hidden 26.91, 25.64. "
+     "Credit: Daniel Franzen, Tufa Labs, lalalia9, rellik13/sirikilohit, heliosli. docs/ROADMAP.md item 5."),
 ]
 
 

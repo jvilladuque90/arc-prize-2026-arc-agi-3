@@ -57,6 +57,7 @@ KERNELS = {
     "franzent1": _franzen("franzen_t1", "arc-agi3-franzen-t1"),            # throughput: SPEC_STEPS 3 -> 4
     "franzenx1": _franzen("franzen_x1", "arc-agi3-franzen-x1"),            # final-week stack: S1 + M1
     "franzenx2": _franzen("franzen_x2", "arc-agi3-franzen-x2"),            # X1 + C1
+    "franzent2": _franzen("franzen_t2", "arc-agi3-franzen-t2"),            # throughput: 12 active streams
     # Fresh slugs for M1/C1: the original kernels failed three gates at the bundle copy ("cannot stat
     # /kaggle/input/datasets/dfranzen/taaf-kaggle-source-bundle-copy") while the same metadata mounts on every newer kernel.
     "franzenm1b": _franzen("franzen_m1", "arc-agi3-franzen-m1-b"),

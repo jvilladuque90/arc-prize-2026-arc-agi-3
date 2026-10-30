@@ -20,6 +20,7 @@
                             whichever of Kaggle's two mount layouts the container uses (the real cause of those failures).
   stack                     notebooks/franzen_x1.ipynb      franzen_s1 + the M1 cell: the final-week stacked kernel (ROADMAP 5)
   stack2                    notebooks/franzen_x2.ipynb      franzen_x1 + the C1 cell
+  streams12                 notebooks/franzen_t2.ipynb      T2: 12 active streams (throughput instrument)
   mtp4                      notebooks/franzen_t1.ipynb      control with ONE launcher constant changed: SPEC_STEPS 3 -> 4
                             (one more MTP draft step; docs/IDEAS.md V3). Judged on the gate's decode tok/s and accept length,
                             which repeat to ~1 % between runs, not on its score.
@@ -189,6 +190,37 @@ MTP_OLD = "    SPEC_STEPS=3,\n"
 MTP_NEW = "    SPEC_STEPS=4,  # T1 throughput arm, docs/IDEAS.md V3 (Franzen: 3)\n"
 EDITS = {"mtp4": ("franzen_t1", MTP_OLD, MTP_NEW)}
 
+# T2: 12 active streams instead of 10 (docs/IDEAS.md V3). Three cells change: the agent gate, the server limits and the
+# demo game list (12 games so that 12 streams can actually run in a gate). Judged on aggregate decode tok/s and KV
+# retractions, not on its score. The hidden rerun has 110 games, so only the first two edits matter there.
+T2_EDITS = (
+    ("    'ARC3_MAX_ACTIVE_STREAMS': 10,\n", "    'ARC3_MAX_ACTIVE_STREAMS': 12,  # T2, docs/IDEAS.md V3 (Franzen: 10)\n"),
+    ("    MAXREQ=10,\n    CUDAGRAPH_MAXBS=10,\n", "    MAXREQ=12,  # T2 (Franzen: 10)\n    CUDAGRAPH_MAXBS=12,  # T2 (Franzen: 10)\n"),
+    ("demo_excluded_games = [] if TRUE_SUBMISSION else ['bp35', 'cd82', 'cn04',",
+     "demo_excluded_games = [] if TRUE_SUBMISSION else ['cn04',"),  # T2: 12 demo games
+)
+
+
+def edit_cells(base: Path, out: Path, edits) -> int:
+    """Copy `base` to `out` applying each (old, new) in the single cell that holds it; gate: exactly len(edits) cells differ."""
+    nb = load(base)
+    touched = []
+    for old, new in edits:
+        hits = [i for i, c in enumerate(nb["cells"]) if c.get("cell_type") == "code" and old in src(c)]
+        if len(hits) != 1 or src(nb["cells"][hits[0]]).count(old) != 1:
+            print(f"{out.name}: anchor {old.strip()[:60]!r} not found exactly once in {base.name}")
+            return 1
+        nb["cells"][hits[0]]["source"] = src(nb["cells"][hits[0]]).replace(old, new).splitlines(keepends=True)
+        touched.append(hits[0])
+    out.write_text(json.dumps(nb, indent=1, ensure_ascii=False), encoding="utf-8")
+    orig, new_cells = load(base)["cells"], load(out)["cells"]
+    diff = [k for k, (o, n) in enumerate(zip(orig, new_cells)) if src(o) != src(n)]
+    bad = code_compiles(load(out))
+    ok = len(orig) == len(new_cells) and diff == sorted(set(touched)) and not bad
+    print(f"{out.name}: cells {sorted(set(touched))} edited; exactly those differ: {'OK' if diff == sorted(set(touched)) else diff}; "
+          f"compiles: {'OK' if not bad else bad}")
+    return 0 if ok else 1
+
 
 def edit_one_cell(base: Path, out: Path, old: str, new: str) -> int:
     """Copy `base` to `out` with `old` replaced by `new` in the single cell that holds it; gate as apply_rerun_fix."""
@@ -274,7 +306,7 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "mount", "layout", "wheels", "envfiles", "solved", "mtp4", "stack", "stack2"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "mount", "layout", "wheels", "envfiles", "solved", "mtp4", "stack", "stack2", "streams12"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()
@@ -282,6 +314,8 @@ def main() -> int:
     control = NB / "franzen_m2.ipynb"
     if a.arm in FIXES:
         return max(apply_rerun_fix(p, a.arm) for p in sorted(NB.glob("franzen_*.ipynb")))
+    if a.arm == "streams12":
+        return edit_cells(control, NB / "franzen_t2.ipynb", T2_EDITS)
     if a.arm in EDITS:
         stem, old, new = EDITS[a.arm]
         return edit_one_cell(control, NB / f"{stem}.ipynb", old, new)
@@ -323,7 +357,9 @@ def main() -> int:
         cell = (cell.replace("__TITLE__", "C1 STAGNATION RESTART")
                     .replace("__WHAT__", "one fresh reasoning context after 96K tokens on an unfinished level")
                     .replace("__MODULE__", "franzen_stagnation").replace("__TAG__", "C1"))
-        return insert_after_patch(NB / "franzen_x1.ipynb", NB / "franzen_x2.ipynb", cell)
+        # C1 must come AFTER M1: C1's second edit inserts two lines before `self._history_messages = []`, which is
+        # part of M1's anchor (the X2 v1 gate failed at "anchor found 0 times: 'if _persistent_functions():'").
+        return insert_after_patch(NB / "franzen_x1.ipynb", NB / "franzen_x2.ipynb", cell, "M1 applied to")
     if a.arm == "solved":
         return insert_after_patch(control, NB / "franzen_s1.ipynb",
                                   with_module(S1_CELL, ROOT / "src" / "arc3" / "franzen_solved_levels.py"), HOOK_ANCHOR)

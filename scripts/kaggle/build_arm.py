@@ -19,6 +19,7 @@
   layout, wheels, envfiles  every notebooks/franzen_*.ipynb  in place (apply mount first): resolve every /kaggle/input path to
                             whichever of Kaggle's two mount layouts the container uses (the real cause of those failures).
   stack                     notebooks/franzen_x1.ipynb      franzen_s1 + the M1 cell: the final-week stacked kernel (ROADMAP 5)
+  stack2                    notebooks/franzen_x2.ipynb      franzen_x1 + the C1 cell
   mtp4                      notebooks/franzen_t1.ipynb      control with ONE launcher constant changed: SPEC_STEPS 3 -> 4
                             (one more MTP draft step; docs/IDEAS.md V3). Judged on the gate's decode tok/s and accept length,
                             which repeat to ~1 % between runs, not on its score.
@@ -273,7 +274,7 @@ def with_module(template: str, module: Path, level: str = "") -> str:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "mount", "layout", "wheels", "envfiles", "solved", "mtp4", "stack"])
+    ap.add_argument("arm", choices=["fork", "h1", "d1", "effort", "memory", "stagnation", "g15", "rerun", "startup", "mount", "layout", "wheels", "envfiles", "solved", "mtp4", "stack", "stack2"])
     ap.add_argument("--base", choices=["m2", "g15"], default="m2")
     ap.add_argument("--level", choices=["medium", "low"], default="medium")
     a = ap.parse_args()
@@ -316,6 +317,13 @@ def main() -> int:
                     .replace("__WHAT__", "the persistent-function library starts each game with 7 tested utilities")
                     .replace("__MODULE__", "franzen_memory").replace("__TAG__", "M1"))
         return insert_after_patch(NB / "franzen_s1.ipynb", NB / "franzen_x1.ipynb", cell)
+    if a.arm == "stack2":
+        # X2 = X1 + the C1 cell (stagnation reset, gated 50.68 on 28 Oct); one cell added over X1.
+        cell = with_module(TREE_CELL, ROOT / "src" / "arc3" / "franzen_stagnation.py")
+        cell = (cell.replace("__TITLE__", "C1 STAGNATION RESTART")
+                    .replace("__WHAT__", "one fresh reasoning context after 96K tokens on an unfinished level")
+                    .replace("__MODULE__", "franzen_stagnation").replace("__TAG__", "C1"))
+        return insert_after_patch(NB / "franzen_x1.ipynb", NB / "franzen_x2.ipynb", cell)
     if a.arm == "solved":
         return insert_after_patch(control, NB / "franzen_s1.ipynb",
                                   with_module(S1_CELL, ROOT / "src" / "arc3" / "franzen_solved_levels.py"), HOOK_ANCHOR)

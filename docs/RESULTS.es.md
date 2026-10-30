@@ -18,8 +18,8 @@ números de sección (§) remiten a la bitácora original en español: [archive/
 | 10 oct | + E1 (`reasoning_effort=medium`) | **20,98** | ~3 sd *por debajo* del control |
 | 18–20 oct | alternando D′ / control / D′ | 27,30 · 24,30 · 25,30 | D′: n = 2, media 26,3; el control ya tiene n = 7, media 25,5, sd 1,5 |
 | 21–23 oct | control / D′ / control | **0,00 · 0,00 · 0,00** | parquet de relleno: el rerun no se reconoció, ver §3.1 (no son muestras) |
-| 27–28 oct | alternando control (corregido) / S1 | 24,00 (control) · S1 pendiente | corrección del rerun confirmada en la rama puntuada; el control ya tiene n = 8, media 25,3, sd 1,5 |
-| 29 oct → | **X1** = control + S1 + M1, todas las correcciones, a diario | pendiente | regla de la última semana, [ROADMAP](ROADMAP.es.md) punto 5 |
+| 27–28 oct | alternando control (corregido) / S1 | 24,00 (control) · **26,20** (S1) | corrección del rerun confirmada en la rama puntuada; el control ya tiene n = 8, media 25,3, sd 1,5; S1 n = 1 |
+| 29 oct → | **X1** = control + S1 + M1, todas las correcciones, a diario | **26,91** · 30 oct pendiente | regla de la última semana, [ROADMAP](ROADMAP.es.md) punto 5; el score del 29 oct prueba además la corrección de layout en la ruta puntuada |
 
 Tabla de posiciones el 2026-10-17 (4.425 equipos): 1.º 68,9, 2.º 67,5, 3.º 50,4, 10.º 41,7, 25.º 36,9, 100.º 33,2. Buena parte de la
 franja 25.º–100.º son copias sin modificar de la misma solución pública, elevadas por tomar el máximo de muchos envíos diarios.
@@ -57,9 +57,11 @@ retenida, caché KV en FP8, game over/undo observables y código del agente que 
 | Duración del primer tramo del planificador | simulación en CPU con las curvas de la demo: la curva es ~lineal (~2,2 pts/min), sin concavidad que aprovechar | descartado |
 | Ocupación de plazas (8,3–8,6 de 10 en uso) | el servidor está saturado: llenar todas da +4–7 % de tokens | **0** |
 | Prioridad D′ del planificador (notebook público, una muestra 31,54) | nuestras muestras ocultas: 27,30 y 25,30 | **?** (pausado tras dos muestras; S1 lo sustituye en la rotación) |
+| C1 — reinicio por estancamiento (V5) | compuerta 50,68 (la más alta de la semana, dentro de sd ≈ 4), 1.493 acciones, decodificación 668 tok/s, aceptación 2,71: servicio idéntico al control; el reinicio en sí no puede dispararse en una demo de 25 min | **0** en compuerta (no rompe); efecto oculto desconocido |
+| T1 — MTP profundidad 4 (V3) | el servidor nunca arrancó: `Qwen QSA requires speculative_num_draft_tokens <= the QSA compress ratio (4); got 5`, un límite duro de los kernels Pennyroyal/QSA: profundidad 3 es el máximo | **muerto** (no es ajustable) |
 | M1 — funciones auxiliares precargadas (V4) | compuerta 45,48 frente a 42,15 del control (pareado por juego 4–1–5, p = 0,38; los dos juegos que más se movieron, r11l y tr87, se movieron igual con S1: son los ruidosos); parche aplicado, 1.405 acciones, 866 K tokens, sin errores | **0** en compuerta (no rompe; no rankea) |
-| X1 — S1 + M1 apilados (kernel de la última semana) | compuerta 40,09 (control 42,15, S1 44,91, M1 45,48: todas dentro de la sd ≈ 4 de la compuerta); ambos parches activos (bloques de memoria fijados para 1–7 niveles, biblioteca sembrada); 1.130 acciones, 841 K tokens; corrió en un **contenedor con layout antiguo** y terminó, lo que valida la corrección de layout. El planificador abandonó un juego (tr87) en el nivel 2 (52 de 58 acciones); el control también se atascó ahí en una corrida | **0** en compuerta (no rompe); se envía a diario desde el 29 oct |
-| S1 — memoria de niveles resueltos (lalalia9, V10) | compuerta 44,91 frente a 42,15 del control el mismo día (sd de la media de una compuerta ≈ 4: no rankea); bloque de memoria fijado para 2–4 niveles por juego, sin errores | **?** (muestras ocultas desde el 27 oct, alternando con el control) |
+| X1 — S1 + M1 apilados (kernel de la última semana) | compuerta 40,09 (control 42,15, S1 44,91, M1 45,48: todas dentro de la sd ≈ 4 de la compuerta); ambos parches activos (bloques de memoria fijados para 1–7 niveles, biblioteca sembrada); 1.130 acciones, 841 K tokens; corrió en un **contenedor con layout antiguo** y terminó, lo que valida la corrección de layout. El planificador abandonó un juego (tr87) en el nivel 2 (52 de 58 acciones); el control también se atascó ahí en una corrida | **0** en compuerta (no rompe); oculto: 26,91 (29 oct, n = 1), se envía a diario desde el 29 oct |
+| S1 — memoria de niveles resueltos (lalalia9, V10) | compuerta 44,91 frente a 42,15 del control el mismo día (sd de la media de una compuerta ≈ 4: no rankea); bloque de memoria fijado para 2–4 niveles por juego, sin errores | **?** oculto: 26,20 (n = 1, +0,9 sobre la media del control, dentro de 1 sd) |
 
 ### Diagnóstico: el set oculto es una mezcla (§8.87)
 

@@ -27,8 +27,8 @@ for r, row in enumerate(grid):
         ax.add_patch(Rectangle((x0 + c * s, y0 + (7 - r) * s), s - 0.5, s - 0.5,
                                color=cmap.get(ch, "#22252b"), lw=0))
 
-ax.text(6, 44, "What moves an ARC-AGI-3 agent", color=INK, fontsize=26, weight="bold", va="center")
-ax.text(6, 37.5, "a base system, measured honestly", color=INK2, fontsize=21, va="center")
+ax.text(6, 44, "What Moves an ARC-AGI-3 Agent", color=INK, fontsize=26, weight="bold", va="center")
+ax.text(6, 37.5, "the base system, measured honestly", color=INK2, fontsize=21, va="center")
 stats = [("0.25 → 25.3", "hidden score from changing\nthe base system"),
          ("~25 changes", "on top of it: none left\nthe noise band"),
          ("55 %", "of the metric lost on\nlevels never solved")]
@@ -36,6 +36,6 @@ for i, (big, small) in enumerate(stats):
     y = 25 - i * 8.2
     ax.text(6, y, big, color=ORANGE if i == 0 else BLUE, fontsize=19, weight="bold", va="center")
     ax.text(36, y, small, color=INK2, fontsize=11.5, va="center", linespacing=1.2)
-ax.text(6, 3.5, "ARC Prize 2026 · Paper Track · Julian Camilo Villa", color=INK2, fontsize=11)
+ax.text(6, 3.5, "ARC Prize 2026 · Paper Track · Julian Camilo Villaduque", color=INK2, fontsize=11)
 fig.savefig(OUT, facecolor=BG)
 print("wrote", OUT)

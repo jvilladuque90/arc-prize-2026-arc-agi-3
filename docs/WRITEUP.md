@@ -1,9 +1,12 @@
 # What moves an ARC-AGI-3 agent: a base system, measured honestly
 
+*ARC Prize 2026 Paper Track (ARC-AGI-3). A faithful reproduction of the strongest public agent, about 25 controlled changes on top of it, and where the metric is actually lost.*
+
 [Español](WRITEUP.es.md) · [Back to the README](../README.md)
 
 **Team:** Julian Camilo Villa · **Competition:** ARC Prize 2026, ARC-AGI-3 (Kaggle) · **Final stack:** hidden-set mean 25.2 (n = 5); best submission 27.63 (control)
-**Code:** this repository; every kernel is a one-cell variant of `notebooks/franzen_m2.ipynb`
+**Submission IDs:** 56893893 (best, 27.63, control kernel [arc-agi3-franzen-m2](https://www.kaggle.com/code/juliancamilovilla/arc-agi3-franzen-m2)); 57924975 (final stack X2, 27.30, [arc-agi3-franzen-x2](https://www.kaggle.com/code/juliancamilovilla/arc-agi3-franzen-x2))  
+**Code:** [github.com/jvilladuque90/arc-prize-2026-arc-agi-3](https://github.com/jvilladuque90/arc-prize-2026-arc-agi-3) (MIT); every kernel is a one-cell variant of `notebooks/franzen_m2.ipynb`
 
 ## Summary
 
@@ -20,7 +23,7 @@ The useful results are about measurement rather than a new trick:
    solves. Only 2 % is lost on solved levels that took too many actions.
 4. **The server is bound by KV memory, not compute.** More parallel games decode faster at peak but generate 21 % fewer tokens.
 
-![Score by base system](figures/fig1_history.png)
+![Score by base system](figures/cover.png)
 
 ## 1. Approach
 
@@ -34,11 +37,11 @@ The control is an unmodified copy of Franzen's Milestone-2 notebook, which build
 - **Agent:** the model reasons with its full thinking kept in history. It acts through a Python tool. It sees the board as an upscaled
   image plus animation frames, and diagnoses each game over from a diff image. It can undo, and it keeps the helper functions it writes
   for the rest of the game.
-- **Scheduling:** a priority gate gives the GPU to the games with the most progress per token. It fades the queue out over the last 20 %
-  of the 9-hour budget.
 
 The three public milestone winners share long retained history, an FP8 KV cache, observable game over and undo, and persistent
 agent-written code. We took that shared core as the strongest prior available.
+
+![Score by base system](figures/fig1_history.png)
 
 ### 1.2 Our additions
 
@@ -81,7 +84,7 @@ two arms apart by 2 points needs about 8 samples each. No arm got close to that 
 ![Gate score versus hidden score](figures/fig3_gates.png)
 
 Identical gate runs differ by tens of points on single games. The best gate of the final month, C1 at 50.7, would have been a false
-lead. On the older pipeline the local bench was even anti-correlated with the hidden set across four arms (r = −0.35).
+lead. An older local bench was anti-correlated with the hidden set across four arms (r = −0.35).
 
 ### 2.3 Where the score is lost
 
@@ -89,9 +92,8 @@ lead. On the older pipeline the local bench was even anti-correlated with the hi
 
 The metric squares the ratio of baseline actions to actions taken, per level, and weights later levels more. We split the 50 game runs
 of our gates by level. Solved levels already score close to full: 40 % of the weight comes from levels solved in no more actions than
-the baseline. The loss is on levels never solved, usually the later ones that weigh most. A diagnostic run on the 15 public games
-outside Franzen's demo shows the same thing. The first level takes 2.6 minutes on easy games and 11.6 minutes on hard ones, and each
-action costs about 600 reasoning tokens against 2,200. The gap is how fast the model understands a new game.
+the baseline. The loss is on levels never solved, usually the later ones that weigh most. On hard public games each action costs
+about 2,200 reasoning tokens against 600 on easy ones. The gap is how fast the model understands a new game.
 
 ### 2.4 Throughput is capped by memory
 
@@ -106,19 +108,28 @@ If unsolved levels are the loss, more reasoning tokens per game should help, so 
 
 Franzen's configuration of 10 parallel games sits at the optimum.
 
-## 3. Lessons
+## 3. Why it works, and why the tweaks did not
 
-1. **Start from what the top public solutions share,** and change one thing at a time against a faithful copy.
-2. **Count the samples before running.** With a standard deviation of 1.6 and one sample per day, most ideas cannot be confirmed in
+An ARC-AGI-3 game is solved by forming a hypothesis about hidden rules, testing it with a few actions, and revising it. In this
+system each revision is paid in reasoning tokens. The score is therefore roughly the number of hypothesis cycles a game receives,
+times the chance that a cycle is right. The base system raises both terms. Fast serving raises the cycle count. Long retained
+history, diff images and persistent code mean each cycle starts from everything already learned. Our additions only reshaped
+context that the model already had, so they changed neither term much. The data agree: the loss sits on levels never
+understood (§2.3), and the cycle budget is capped by KV memory (§2.4). The method transfers to any agentic benchmark scored
+on a hidden set: reproduce the strongest public system first, instrument the mechanism, and size each test against the noise.
+
+## 4. Lessons
+
+1. **Count the samples before running.** With a standard deviation of 1.6 and one sample per day, most ideas cannot be confirmed in
    time. Know that before spending the submission.
-3. **Instrument the mechanism, not the score.** Tokens per second, acceptance length and KV usage repeat to about 1 %. They settled two
+2. **Instrument the mechanism, not the score.** Tokens per second, acceptance length and KV usage repeat to about 1 %. They settled two
    serving questions that score samples never could.
-4. **Infrastructure fails silently.** Three submissions scored exactly 0 when Kaggle stopped setting the rerun variable. Six gates died
+3. **Infrastructure fails silently.** Three submissions scored exactly 0 when Kaggle stopped setting the rerun variable. Six gates died
    when containers mounted inputs in an older directory layout. Both fixes are in every notebook (`docs/RESULTS.md` §3.1).
-5. **Harness-written notes do not help; the agent's own data might.** Seven note-writing variants all scored at or below the base. The
+4. **Harness-written notes do not help; the agent's own data might.** Seven note-writing variants all scored at or below the base. The
    only text addition with a public positive report, S1, is the agent's own rule.
 
-## 4. What we would try next
+## 5. What we would try next
 
 The remaining gap, from 25 to the 70s of the leaders, is speed of understanding. It does not come from action economy or scheduling.
 The candidates that address it are a stronger or more token-efficient model, calibrated FP8 KV scales, and a replay bench that judges
@@ -126,9 +137,8 @@ serving changes from saved prompts without spending submissions.
 
 ## Acknowledgements
 
-Daniel Franzen for publishing the Milestone-2 solution in full, and Tufa Labs for the harness it builds on. John Pezzulli (Pennyroyal),
-Mamy Ratsimbazafy and Gabriel Olympie for the SGLang work. Intel for the AutoRound weights and Albucino for the MTP draft. `lalalia9`
-and `rellik13` for the solved-level memory, and `heliosli` for the stagnation reset. The ARC Prize Foundation and Kaggle for running
-the competition.
+Daniel Franzen for publishing the Milestone-2 solution in full; Tufa Labs for the harness; John Pezzulli (Pennyroyal), Mamy
+Ratsimbazafy and Gabriel Olympie for SGLang work; Intel (AutoRound) and Albucino (MTP draft); `lalalia9`, `rellik13` and `heliosli`
+for S1 and C1; the ARC Prize Foundation and Kaggle.
 
 All numbers come from [docs/RESULTS.md](RESULTS.md). The figures are generated by `scripts/make_writeup_figures.py`.

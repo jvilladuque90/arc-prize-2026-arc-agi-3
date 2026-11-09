@@ -1,9 +1,12 @@
 # Qué mueve a un agente de ARC-AGI-3: un sistema base, medido con honestidad
 
+*ARC Prize 2026, Paper Track (ARC-AGI-3). Una reproducción fiel del mejor agente público, unos 25 cambios controlados sobre él, y dónde se pierde de verdad la métrica.*
+
 [English](WRITEUP.md) · [Volver al README](../README.es.md)
 
 **Equipo:** Julian Camilo Villa · **Concurso:** ARC Prize 2026, ARC-AGI-3 (Kaggle) · **Pila final:** media oculta 25,2 (n = 5); mejor envío 27,63 (control)
-**Código:** este repositorio; cada kernel es una variante de una celda de `notebooks/franzen_m2.ipynb`
+**IDs de envío:** 56893893 (mejor, 27,63, kernel de control [arc-agi3-franzen-m2](https://www.kaggle.com/code/juliancamilovilla/arc-agi3-franzen-m2)); 57924975 (pila final X2, 27,30, [arc-agi3-franzen-x2](https://www.kaggle.com/code/juliancamilovilla/arc-agi3-franzen-x2))  
+**Código:** [github.com/jvilladuque90/arc-prize-2026-arc-agi-3](https://github.com/jvilladuque90/arc-prize-2026-arc-agi-3) (MIT); cada kernel es una variante de una celda de `notebooks/franzen_m2.ipynb`
 
 ## Resumen
 
@@ -22,7 +25,7 @@ Los resultados útiles son de medición, no un truco nuevo:
 4. **El servidor está limitado por la memoria KV, no por el cómputo.** Más juegos en paralelo decodifican más rápido en el pico, pero
    generan un 21 % menos de tokens.
 
-![Score por sistema base](figures/fig1_history.png)
+![Score por sistema base](figures/cover.png)
 
 ## 1. Enfoque
 
@@ -36,11 +39,11 @@ El control es una copia sin cambios del notebook del Milestone 2 de Franzen, con
 - **Agente:** el modelo razona conservando todo su pensamiento en la historia. Actúa con una herramienta de Python. Ve el tablero como
   imagen ampliada más los fotogramas de animación, y diagnostica cada game over con una imagen de diferencias. Puede deshacer, y
   conserva las funciones auxiliares que escribe durante el resto del juego.
-- **Planificación:** una compuerta de prioridad da la GPU a los juegos con más progreso por token. Vacía la cola en el último 20 % del
-  presupuesto de 9 horas.
 
 Los tres ganadores públicos del hito comparten historia larga, caché KV FP8, game over y deshacer observables, y código persistente
 escrito por el agente. Tomamos ese núcleo común como el mejor punto de partida disponible.
+
+![Score por sistema base](figures/fig1_history.png)
 
 ### 1.2 Nuestros añadidos
 
@@ -110,20 +113,30 @@ Si la pérdida está en niveles sin resolver, más tokens de razonamiento por ju
 
 La configuración de Franzen de 10 juegos en paralelo está en el óptimo.
 
-## 3. Lecciones
+## 3. Por qué funciona, y por qué los ajustes no
 
-1. **Empezar por lo que comparten las mejores soluciones públicas,** y cambiar una cosa cada vez contra una copia fiel.
-2. **Contar las muestras antes de correr.** Con desviación estándar de 1,6 y una muestra al día, la mayoría de ideas no se pueden
+Un juego de ARC-AGI-3 se resuelve formulando una hipótesis sobre reglas ocultas, probándola con pocas acciones y corrigiéndola.
+Aquí cada corrección se paga en tokens de razonamiento. El score es por tanto, a grandes rasgos, el número de ciclos de hipótesis
+que recibe un juego por la probabilidad de que un ciclo acierte. El sistema base sube ambos términos: el servicio rápido sube el
+número de ciclos, y la historia larga, las imágenes de diferencias y el código persistente hacen que cada ciclo parta de todo lo
+ya aprendido. Nuestros añadidos solo reorganizaban contexto que el modelo ya tenía, así que no movieron ningún término. Los datos
+coinciden: la pérdida está en niveles nunca entendidos (§2.3) y el presupuesto de ciclos lo limita la memoria KV (§2.4). El
+método vale para cualquier benchmark agéntico con conjunto oculto: reproducir primero el mejor sistema público, instrumentar el
+mecanismo y dimensionar cada prueba frente al ruido.
+
+## 4. Lecciones
+
+1. **Contar las muestras antes de correr.** Con desviación estándar de 1,6 y una muestra al día, la mayoría de ideas no se pueden
    confirmar a tiempo. Hay que saberlo antes de gastar el envío.
-3. **Medir el mecanismo, no el score.** Tokens por segundo, longitud aceptada y uso de KV se repiten al ~1 %. Resolvieron dos
+2. **Medir el mecanismo, no el score.** Tokens por segundo, longitud aceptada y uso de KV se repiten al ~1 %. Resolvieron dos
    preguntas de servicio que las muestras de score nunca habrían resuelto.
-4. **La infraestructura falla en silencio.** Tres envíos dieron exactamente 0 cuando Kaggle dejó de fijar la variable de rerun. Seis
+3. **La infraestructura falla en silencio.** Tres envíos dieron exactamente 0 cuando Kaggle dejó de fijar la variable de rerun. Seis
    compuertas murieron cuando los contenedores montaron las entradas con un layout de directorios antiguo. Ambas correcciones están en
    todos los notebooks (`docs/RESULTS.es.md` §3.1).
-5. **Las notas escritas por el harness no ayudan; los datos del propio agente quizá sí.** Siete variantes de notas quedaron en la base
+4. **Las notas escritas por el harness no ayudan; los datos del propio agente quizá sí.** Siete variantes de notas quedaron en la base
    o por debajo. El único añadido de texto con un informe público positivo, S1, es la regla del propio agente.
 
-## 4. Qué probaríamos después
+## 5. Qué probaríamos después
 
 La brecha restante, de 25 a los 70 de los líderes, es velocidad de comprensión. No viene de la economía de acciones ni de la
 planificación. Los candidatos que la atacan son un modelo más fuerte o más eficiente en tokens, escalas KV FP8 calibradas, y un banco

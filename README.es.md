@@ -1,6 +1,6 @@
 # ARC Prize 2026 — ARC-AGI-3: un agente de código abierto y su bitácora de ingeniería
 
-[English](README.md) · [Cómo funciona](docs/APPROACH.es.md) · [Resultados y lecciones](docs/RESULTS.es.md) · [Investigación e ideas abiertas](docs/IDEAS.es.md) · [Hoja de ruta](docs/ROADMAP.es.md)
+[English](README.md) · **[Escrito del Paper Track](docs/WRITEUP.es.md)** · [Cómo funciona](docs/APPROACH.es.md) · [Resultados y lecciones](docs/RESULTS.es.md) · [Investigación e ideas abiertas](docs/IDEAS.es.md) · [Hoja de ruta](docs/ROADMAP.es.md)
 
 Este repositorio documenta una participación en la competencia [ARC Prize 2026 – ARC-AGI-3](https://www.kaggle.com/competitions/arc-prize-2026-arc-agi-3)
 de Kaggle, donde un agente debe aprender las reglas de **juegos interactivos de cuadrícula que nunca ha visto** y completar el
@@ -9,13 +9,14 @@ mayor número de niveles con el menor número de acciones, en una sola GPU y sin
 Es a la vez un pipeline de envíos que funciona y un registro honesto de lo que se probó: qué movió el puntaje del set oculto, qué
 no, y los errores de medición cometidos por el camino. Todos los kernels son públicos y el código tiene licencia MIT, como exige el premio.
 
-## Dónde estamos (2026-10-17)
+## Estado final (concurso cerrado, noviembre de 2026)
 
 | | |
 |---|---|
-| Base actual | Una copia fiel de la solución pública del Milestone 2 de Daniel Franzen (SGLang, Qwen3.8-Flash-Next en INT4, contexto de 128K) |
-| Puntaje oculto de la base | **25,3 de media, sd 1,5 (n = 8)**, mejor 27,63 |
-| Tabla de posiciones (4.425 equipos) | 1.º 68,9 · 3.º 50,4 · 10.º 41,7 · 100.º 33,2 · esta entrada 27,63 (puesto ~1.090) |
+| Base | Una copia fiel de la solución pública del Milestone 2 de Daniel Franzen (SGLang, Qwen3.8-Flash-Next en INT4, contexto de 128K) |
+| Puntaje oculto de la base | **25,3 de media, sd 1,6 (n = 8)**, mejor 27,63 (envío 56893893) |
+| Pila final X2 (S1 + M1 + C1) | 25,2 de media (n = 5), mejor 27,30 (envío 57924975) |
+| Cabeza de la tabla al cierre | 75,56 · 70,24 |
 | Puntaje antes de adoptar esa base | 3–5 |
 
 La historia de puntajes la domina una lección: **cambiar el sistema base llevó el puntaje de ~3 a ~26; cada uno de los unos 25

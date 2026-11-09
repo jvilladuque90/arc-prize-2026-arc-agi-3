@@ -3,7 +3,10 @@
 Guide for any agent (human or AI) working in this repository. Start with [README.md](README.md); the current state, results
 and plan live in `docs/` (RESULTS, IDEAS, ROADMAP). Spanish versions of the public docs end in `.es.md`.
 
-## Current state (2026-10-17)
+## Current state (final, 2026-11-09)
+
+The competition is closed; submissions are disabled. The Paper Track write-up is `docs/WRITEUP.md`.
+
 
 - Base: a faithful copy of Daniel Franzen's public Milestone-2 solution (`notebooks/franzen_m2.ipynb`). Hidden-set score
   **25.3 mean, sd 1.5 (n = 8)**. Three exact-zero submissions on 21-23 Oct were a rerun-detection failure, fixed in every notebook (docs/RESULTS.md §3.1).

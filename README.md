@@ -1,6 +1,6 @@
 # ARC Prize 2026 — ARC-AGI-3: an open-source agent and its engineering log
 
-[Español](README.es.md) · [How it works](docs/APPROACH.md) · [Results & lessons](docs/RESULTS.md) · [Research & open ideas](docs/IDEAS.md) · [Roadmap](docs/ROADMAP.md)
+[Español](README.es.md) · **[Paper Track write-up](docs/WRITEUP.md)** · [How it works](docs/APPROACH.md) · [Results & lessons](docs/RESULTS.md) · [Research & open ideas](docs/IDEAS.md) · [Roadmap](docs/ROADMAP.md)
 
 This repository documents a competition entry for the [ARC Prize 2026 – ARC-AGI-3](https://www.kaggle.com/competitions/arc-prize-2026-arc-agi-3)
 Kaggle competition, where an agent must learn the rules of **interactive grid games it has never seen** and complete as many
@@ -9,13 +9,14 @@ levels as possible, using as few actions as possible, on a single GPU with no in
 It is both a working submission pipeline and an honest record of what was tried: what moved the hidden-set score, what did not,
 and the measurement mistakes made along the way. All kernels are public and the code is MIT-licensed, as the prize requires.
 
-## Where things stand (2026-10-17)
+## Final status (competition closed, November 2026)
 
 | | |
 |---|---|
-| Current base | A faithful copy of Daniel Franzen's public Milestone-2 solution (SGLang, INT4 Qwen3.8-Flash-Next, 128K context) |
-| Hidden-set score of the base | **25.3 mean, sd 1.5 (n = 8)**, best 27.63 |
-| Leaderboard (4,425 teams) | top 68.9 · 3rd 50.4 · 10th 41.7 · 100th 33.2 · this entry 27.63 (rank ~1,090) |
+| Base | A faithful copy of Daniel Franzen's public Milestone-2 solution (SGLang, INT4 Qwen3.8-Flash-Next, 128K context) |
+| Hidden-set score of the base | **25.3 mean, sd 1.6 (n = 8)**, best 27.63 (submission 56893893) |
+| Final stack X2 (S1 + M1 + C1) | 25.2 mean (n = 5), best 27.30 (submission 57924975) |
+| Leaderboard top at close | 75.56 · 70.24 |
 | Score before adopting that base | 3–5 |
 
 The score history is dominated by one lesson: **changing the base system moved the score from ~3 to ~26; every one of the
